@@ -81,8 +81,13 @@ async function handleAutoLogin(nfcId: string) {
     console.log('开始自动登录流程');
     authStore.setLoading(true);
 
+    // 设置超时时间为1秒，确保快速响应
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('登录超时')), 1000)
+    })
+
     // 获取微信登录code
-    const loginResult = await new Promise<UniApp.LoginRes>((resolve, reject) => {
+    const loginPromise = new Promise<UniApp.LoginRes>((resolve, reject) => {
       uni.login({
         provider: 'weixin',
         success: resolve,
@@ -90,10 +95,12 @@ async function handleAutoLogin(nfcId: string) {
       });
     });
 
+    const loginResult = await Promise.race([loginPromise, timeoutPromise]) as UniApp.LoginRes
     console.log('微信登录成功，code:', loginResult.code);
 
-    // 调用后端登录接口
-    const response = await authService.login(loginResult.code, nfcId);
+    // 调用后端登录接口（带超时）
+    const apiPromise = authService.login(loginResult.code, nfcId)
+    const response = await Promise.race([apiPromise, timeoutPromise]) as any
 
     if (response.success) {
       const { status, token, user } = response.data;

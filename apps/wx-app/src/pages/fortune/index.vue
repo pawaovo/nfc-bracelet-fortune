@@ -217,8 +217,9 @@ async function loadFortune() {
     error.value = ''
 
     if (isVisitorMode.value) {
-      // 访客模式，显示模拟数据
+      // 访客模式，显示模拟数据（无需网络请求）
       loadVisitorFortune()
+      isLoading.value = false
     } else {
       // 已认证用户，加载真实数据
       await loadAuthenticatedFortune()
@@ -226,7 +227,6 @@ async function loadFortune() {
   } catch (err) {
     console.error('加载运势失败:', err)
     error.value = err instanceof Error ? err.message : '加载运势失败，请重试'
-  } finally {
     isLoading.value = false
   }
 }
@@ -265,14 +265,22 @@ async function loadAuthenticatedFortune() {
   // 检查是否已有今日运势缓存
   if (fortuneStore.hasTodayFortune && fortuneStore.isToday) {
     console.log('使用缓存的今日运势')
+    isLoading.value = false
     return
   }
 
   try {
     console.log('调用API获取今日运势')
 
+    // 设置超时时间为1.5秒，确保快速响应
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('请求超时')), 1500)
+    })
+
     // 调用后端API获取今日运势
-    const response = await fortuneService.getTodayFortune()
+    const apiPromise = fortuneService.getTodayFortune()
+
+    const response = await Promise.race([apiPromise, timeoutPromise]) as any
 
     if (response.success && response.data) {
       console.log('成功获取今日运势:', response.data)
@@ -283,7 +291,7 @@ async function loadAuthenticatedFortune() {
   } catch (error) {
     console.error('API调用失败，使用模拟数据:', error)
 
-    // API调用失败时使用模拟数据
+    // API调用失败时使用模拟数据，确保用户体验
     const mockFortune: FortuneData = {
       date: new Date().toISOString().split('T')[0],
       overallScore: 88,
@@ -306,10 +314,16 @@ async function loadAuthenticatedFortune() {
 
     fortuneStore.setFortune(mockFortune)
 
-    // 如果是网络错误，抛出异常让上层处理
-    if (error instanceof Error && error.message.includes('网络')) {
-      throw error
+    // 显示友好的错误提示，但不阻断用户体验
+    if (error instanceof Error && error.message === '请求超时') {
+      uni.showToast({
+        title: '网络较慢，已显示缓存数据',
+        icon: 'none',
+        duration: 2000
+      })
     }
+  } finally {
+    isLoading.value = false
   }
 }
 

@@ -14,15 +14,26 @@ export class FortunesService {
    */
   async getTodayFortune(userId: string) {
     const today = new Date().toISOString().split('T')[0];
-    
-    // 先查找是否已有今日运势记录
-    let existingFortune = await this.prisma.dailyFortune.findFirst({
+
+    // 使用唯一索引进行快速查找
+    let existingFortune = await this.prisma.dailyFortune.findUnique({
       where: {
-        userId,
-        date: today
+        userId_date: {
+          userId,
+          date: today
+        }
       },
       include: {
-        recommendation: true
+        recommendation: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            imageUrl: true,
+            price: true,
+            douyinUrl: true
+          }
+        }
       }
     });
 
@@ -34,9 +45,13 @@ export class FortunesService {
     // 没有记录，生成新的运势
     this.logger.log(`Generating new fortune for user ${userId} on ${today}`);
     
-    // 获取用户信息用于运势计算
+    // 获取用户信息用于运势计算（只获取必要字段）
     const user = await this.prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      select: {
+        id: true,
+        birthday: true
+      }
     });
 
     if (!user) {
@@ -308,7 +323,7 @@ export class FortunesService {
   private async getRecommendation(score: number) {
     // 根据分数推荐不同的商品
     let productQuery = {};
-    
+
     if (score >= 85) {
       // 高分推荐高端商品
       productQuery = { price: { gte: 500 } };
@@ -320,18 +335,30 @@ export class FortunesService {
       productQuery = { price: { lt: 200 } };
     }
 
+    // 优化查询：只获取必要字段，限制数量
     const products = await this.prisma.product.findMany({
       where: productQuery,
-      take: 5
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        imageUrl: true,
+        price: true,
+        douyinUrl: true
+      },
+      take: 3,  // 减少查询数量
+      orderBy: {
+        createdAt: 'desc'  // 优先推荐新商品
+      }
     });
 
     if (products.length === 0) {
       return null;
     }
 
-    // 随机选择一个商品
-    const randomIndex = Math.floor(Math.random() * products.length);
-    return products[randomIndex];
+    // 使用确定性随机选择（基于分数）
+    const index = score % products.length;
+    return products[index];
   }
 
   /**
