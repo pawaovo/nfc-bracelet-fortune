@@ -13,6 +13,8 @@ export interface User {
 }
 
 export interface UserPartial {
+  id: string;
+  wechatOpenId: string;
   name: string | null;
   birthday: Date | null;
 }

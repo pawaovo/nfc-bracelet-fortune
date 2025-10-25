@@ -4,7 +4,14 @@
     {
       "path": "pages/index/index",
       "style": {
-        "navigationBarTitleText": "uni-app"
+        "navigationBarTitleText": "专属运势"
+      }
+    },
+    {
+      "path": "pages/bind/index",
+      "style": {
+        "navigationBarTitleText": "绑定手链",
+        "navigationStyle": "custom"
       }
     }
   ],
