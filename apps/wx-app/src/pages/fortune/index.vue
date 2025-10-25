@@ -166,11 +166,11 @@
         </button>
       </view>
 
-      <!-- 历史记录入口 -->
+      <!-- 历史记录入口/返回按钮 -->
       <view v-if="!isVisitorMode" class="history-section">
-        <button class="history-button" @click="goToHistory">
-          <text class="history-icon"> 📊 </text>
-          <text class="history-text"> 查看历史运势 </text>
+        <button class="history-button" @click="handleHistoryNavigation">
+          <text class="history-icon"> {{ isHistoryMode ? '📋' : '📊' }} </text>
+          <text class="history-text"> {{ isHistoryMode ? '返回列表' : '查看历史运势' }} </text>
         </button>
       </view>
     </view>
@@ -193,22 +193,48 @@ const fortuneStore = useFortuneStore();
 const isLoading = ref(false);
 const error = ref('');
 const isVisitorMode = ref(false);
+const isHistoryMode = ref(false);
+const historyDate = ref('');
+const isPreviewMode = ref(false);
 
 // 计算属性
 const currentDate = computed(() => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}年${month}月${day}日`;
+  // 历史模式显示历史日期，否则显示今天
+  const dateToShow = isHistoryMode.value ? historyDate.value : new Date().toISOString().split('T')[0];
+
+  try {
+    const dateObj = new Date(dateToShow);
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}年${month}月${day}日`;
+  } catch (error) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}年${month}月${day}日`;
+  }
 });
 
 const welcomeMessage = computed(() => {
+  if (isPreviewMode.value) {
+    // 访客预览模式，显示通用欢迎语（不显示用户名）
+    return '这是运势预览';
+  }
+
   if (isVisitorMode.value) {
     if (authStore.user?.name) {
       return `${authStore.user.name}，这是你的运势预览`;
     }
     return '这是你的运势预览';
+  }
+
+  if (isHistoryMode.value) {
+    if (authStore.user?.name) {
+      return `${authStore.user.name}，这是你的历史运势`;
+    }
+    return '这是你的历史运势';
   }
 
   if (authStore.user?.name) {
@@ -229,8 +255,23 @@ onLoad((options: any) => {
     isVisitorMode.value = true;
   }
 
+  // 检查是否为预览模式
+  if (options?.preview === 'true') {
+    isPreviewMode.value = true;
+    console.log('访客预览模式');
+  }
+
+  // 检查是否为历史查看模式
+  if (options?.date) {
+    isHistoryMode.value = true;
+    historyDate.value = options.date;
+    console.log('历史查看模式，日期:', options.date);
+  }
+
   // 检查登录状态
-  checkAuthStatus();
+  if (!isHistoryMode.value && !isPreviewMode.value) {
+    checkAuthStatus();
+  }
 
   // 加载运势数据
   loadFortune();
@@ -265,7 +306,14 @@ async function loadFortune() {
     isLoading.value = true;
     error.value = '';
 
-    if (isVisitorMode.value) {
+    if (isHistoryMode.value) {
+      // 历史查看模式，加载指定日期的运势
+      await loadHistoryFortune();
+    } else if (isPreviewMode.value) {
+      // 访客预览模式，使用登录接口返回的预览数据
+      loadPreviewFortune();
+      isLoading.value = false;
+    } else if (isVisitorMode.value) {
       // 访客模式，显示模拟数据（无需网络请求）
       loadVisitorFortune();
       isLoading.value = false;
@@ -277,6 +325,46 @@ async function loadFortune() {
     console.error('加载运势失败:', err);
     error.value = err instanceof Error ? err.message : '加载运势失败，请重试';
     isLoading.value = false;
+  }
+}
+
+/**
+ * 加载访客预览运势（使用登录接口返回的预览数据）
+ */
+function loadPreviewFortune() {
+  try {
+    // 从本地存储获取预览数据
+    const previewData = uni.getStorageSync('previewData');
+
+    if (previewData && previewData.score && previewData.recommendation) {
+      console.log('使用预览数据:', previewData);
+
+      const mockFortune: FortuneData = {
+        date: new Date().toISOString().split('T')[0],
+        overallScore: previewData.score,
+        isAuth: false,
+        // 访客版只显示基本信息，详细信息用于模糊显示
+        comment: '这是运势预览，购买专属手链获取完整运势解读。',
+        careerLuck: Math.floor(Math.random() * 41) + 60,
+        wealthLuck: Math.floor(Math.random() * 41) + 60,
+        loveLuck: Math.floor(Math.random() * 41) + 60,
+        luckyColor: ['红色', '蓝色', '绿色', '金色', '紫色'][Math.floor(Math.random() * 5)],
+        luckyNumber: Math.floor(Math.random() * 9) + 1,
+        suggestion: '想要获得更准确的运势分析，请购买专属手链。',
+        recommendation: previewData.recommendation,
+      };
+
+      fortuneStore.setFortune(mockFortune);
+
+      // 清除预览数据（一次性使用）
+      uni.removeStorageSync('previewData');
+    } else {
+      console.warn('未找到预览数据，使用默认访客数据');
+      loadVisitorFortune();
+    }
+  } catch (error) {
+    console.error('加载预览数据失败:', error);
+    loadVisitorFortune();
   }
 }
 
@@ -317,6 +405,35 @@ function loadVisitorFortune() {
   };
 
   fortuneStore.setFortune(mockFortune);
+}
+
+/**
+ * 加载历史运势
+ */
+async function loadHistoryFortune() {
+  try {
+    console.log('调用API获取历史运势:', historyDate.value);
+
+    const response = await fortuneService.getFortuneByDate(historyDate.value);
+
+    if (response.success && response.data) {
+      console.log('成功获取历史运势:', response.data);
+      fortuneStore.setFortune(response.data);
+
+      // 历史模式下根据API返回的isAuth字段更新访客模式状态
+      if (response.data.isAuth === false) {
+        isVisitorMode.value = true;
+        console.log('历史运势API返回isAuth=false，切换到访客模式');
+      }
+    } else {
+      throw new Error(response.message || '获取历史运势失败');
+    }
+  } catch (error) {
+    console.error('API调用失败:', error);
+    throw error;
+  } finally {
+    isLoading.value = false;
+  }
 }
 
 /**
@@ -454,16 +571,27 @@ function copyDouyinLink(url: string) {
 }
 
 /**
- * 跳转到历史记录页面
+ * 处理历史导航（查看历史或返回列表）
  */
-function goToHistory() {
-  uni.navigateTo({
-    url: '/pages/history/index',
-  });
+function handleHistoryNavigation() {
+  if (isHistoryMode.value) {
+    // 历史模式下，返回历史列表页
+    console.log('历史模式，返回上一页');
+    uni.navigateBack();
+  } else {
+    // 正常模式下，跳转到历史页面
+    console.log('正常模式，跳转到历史页面');
+    uni.navigateTo({
+      url: '/pages/history/index',
+    });
+  }
 }
+
+
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/common.scss';
 .fortune-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -480,43 +608,14 @@ function goToHistory() {
   pointer-events: none;
 }
 
+/* 运势页面特有的装饰圆圈 */
 .decoration-circle {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-
-  &.decoration-circle-1 {
-    width: 200rpx;
-    height: 200rpx;
-    top: 10%;
-    right: -50rpx;
-    animation: float 6s ease-in-out infinite;
-  }
-
-  &.decoration-circle-2 {
-    width: 150rpx;
-    height: 150rpx;
-    top: 60%;
-    left: -30rpx;
-    animation: float 8s ease-in-out infinite reverse;
-  }
-
   &.decoration-circle-3 {
     width: 100rpx;
     height: 100rpx;
     top: 30%;
     left: 20%;
     animation: float 10s ease-in-out infinite;
-  }
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-20px);
   }
 }
 
@@ -533,31 +632,12 @@ function goToHistory() {
   text-align: center;
 }
 
+/* 运势页面特有的加载动画样式 */
 .loading-spinner {
-  width: 60rpx;
-  height: 60rpx;
-  border: 4rpx solid rgba(255, 255, 255, 0.3);
-  border-top: 4rpx solid #ffffff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
   margin-bottom: 30rpx;
 }
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.loading-text,
-.error-text {
-  color: #ffffff;
-  font-size: 28rpx;
-  line-height: 1.5;
-}
+/* loading-text 和 error-text 样式已移至公共样式文件 */
 
 .error-icon {
   font-size: 80rpx;

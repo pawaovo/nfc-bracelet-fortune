@@ -29,6 +29,7 @@ export class FortuneService {
       total: number;
       page: number;
       limit: number;
+      hasMore: boolean;
     }>
   > {
     return apiRequest.get(`fortune/history?page=${page}&limit=${limit}`);

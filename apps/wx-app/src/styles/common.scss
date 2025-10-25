@@ -1,0 +1,168 @@
+/* 公共样式文件 */
+
+/* 加载动画 */
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 4rpx solid rgba(255, 255, 255, 0.3);
+  border-top: 4rpx solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-more-spinner {
+  width: 40rpx;
+  height: 40rpx;
+  border: 3rpx solid rgba(255, 255, 255, 0.3);
+  border-top: 3rpx solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 浮动动画 */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+/* 分数徽章 */
+.score-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  border: 3rpx solid;
+
+  &.score-excellent {
+    background: rgba(255, 71, 87, 0.2);
+    border-color: #ff4757;
+  }
+
+  &.score-good {
+    background: rgba(255, 107, 53, 0.2);
+    border-color: #ff6b35;
+  }
+
+  &.score-normal {
+    background: rgba(255, 167, 38, 0.2);
+    border-color: #ffa726;
+  }
+
+  &.score-fair {
+    background: rgba(255, 235, 59, 0.2);
+    border-color: #ffeb3b;
+  }
+
+  &.score-poor {
+    background: rgba(158, 158, 158, 0.2);
+    border-color: #9e9e9e;
+  }
+}
+
+.score-text {
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.score-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 20rpx;
+  margin-top: 4rpx;
+}
+
+/* 背景装饰 */
+.background-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.decoration-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+
+  &.decoration-circle-1 {
+    width: 200rpx;
+    height: 200rpx;
+    top: 10%;
+    right: -50rpx;
+    animation: float 6s ease-in-out infinite;
+  }
+
+  &.decoration-circle-2 {
+    width: 150rpx;
+    height: 150rpx;
+    top: 60%;
+    left: -30rpx;
+    animation: float 8s ease-in-out infinite reverse;
+  }
+}
+
+/* 通用容器样式 */
+.loading-container,
+.error-container,
+.empty-container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 60rpx;
+  text-align: center;
+}
+
+.loading-text,
+.error-text,
+.empty-text {
+  color: #ffffff;
+  font-size: 28rpx;
+  line-height: 1.5;
+}
+
+.error-icon,
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+}
+
+.empty-desc {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 24rpx;
+  margin-top: 16rpx;
+}
+
+.retry-button {
+  margin-top: 40rpx;
+  padding: 20rpx 40rpx;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2rpx solid rgba(255, 255, 255, 0.5);
+  border-radius: 50rpx;
+  color: #ffffff;
+  font-size: 28rpx;
+}
+
+.loading-more-text,
+.no-more-text {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 24rpx;
+}

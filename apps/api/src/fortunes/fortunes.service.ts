@@ -122,6 +122,10 @@ export class FortunesService {
       }),
     ]);
 
+    // 计算是否还有更多数据
+    const totalLoaded = page * limit;
+    const hasMore = totalLoaded < total;
+
     return {
       fortunes: fortunes.map((fortune) =>
         this.formatFortuneResponse(fortune, isAuth),
@@ -129,6 +133,7 @@ export class FortunesService {
       total,
       page,
       limit,
+      hasMore,
     };
   }
 

@@ -218,9 +218,9 @@ async function handleAutoLogin(nfcId: string) {
     const response = await Promise.race([apiPromise, timeoutPromise]) as any
 
     if (response.success) {
-      const { status, token, user } = response.data;
+      const { status, token, user, previewScore, recommendation } = response.data;
 
-      console.log('登录响应:', { status, hasToken: !!token, hasUser: !!user });
+      console.log('登录响应:', { status, hasToken: !!token, hasUser: !!user, hasPreviewData: !!(previewScore && recommendation) });
 
       if (token && user) {
         // 保存认证信息
@@ -244,9 +244,18 @@ async function handleAutoLogin(nfcId: string) {
           break;
 
         case 'VISITOR_PREVIEW':
-          // 访客预览模式，跳转到运势页面（访客模式）
+          // 访客预览模式，保存预览数据并跳转到运势页面（访客模式）
+          if (previewScore && recommendation) {
+            // 保存预览数据到本地存储
+            uni.setStorageSync('previewData', {
+              score: previewScore,
+              recommendation: recommendation
+            });
+            console.log('保存访客预览数据:', { previewScore, recommendation });
+          }
+
           uni.redirectTo({
-            url: '/pages/fortune/index?mode=visitor'
+            url: '/pages/fortune/index?mode=visitor&preview=true'
           });
           break;
 
@@ -297,11 +306,20 @@ async function handleAuthenticatedNFCAccess(nfcId: string) {
   } catch (error) {
     console.error('NFC访问验证失败:', error);
 
-    // 验证失败，清除认证状态并跳转到绑定页面
-    authStore.logout();
-    uni.redirectTo({
-      url: `/pages/bind/index?nfcId=${nfcId}`
-    });
+    // 验证失败可能是因为手链未绑定，尝试通过自动登录流程绑定
+    console.log('尝试通过自动登录流程绑定未绑定的手链');
+
+    try {
+      await handleAutoLogin(nfcId);
+    } catch (loginError) {
+      console.error('自动登录绑定失败:', loginError);
+
+      // 如果自动登录也失败，清除认证状态并跳转到绑定页面
+      authStore.logout();
+      uni.redirectTo({
+        url: `/pages/bind/index?nfcId=${nfcId}`
+      });
+    }
   }
 }
 </script>
