@@ -177,6 +177,10 @@ const handleSubmitClick = async () => {
     if (response.success) {
       console.log('用户信息更新成功:', response.data);
 
+      // 更新 authStore 中的用户信息
+      const authStore = useAuthStore();
+      authStore.setUser(response.data);
+
       // 显示成功提示
       uni.showToast({
         title: '信息保存成功',
@@ -186,10 +190,20 @@ const handleSubmitClick = async () => {
 
       // 延迟跳转，让用户看到成功提示
       setTimeout(() => {
-        // 新访客（已补全信息但未绑定手链）跳转到访客版运势页
-        uni.redirectTo({
-          url: '/pages/fortune/index?mode=visitor',
-        });
+        // 检查用户是否通过NFC绑定流程进入
+        const currentNfcId = uni.getStorageSync('currentNfcId');
+
+        if (currentNfcId) {
+          // NFC绑定用户，跳转到完整版运势页面
+          uni.redirectTo({
+            url: '/pages/fortune/index?fromProfile=true',
+          });
+        } else {
+          // 新访客用户，跳转到访客版运势页面
+          uni.redirectTo({
+            url: '/pages/fortune/index?mode=visitor',
+          });
+        }
       }, 1500);
     } else {
       throw new Error(response.message || '保存失败');

@@ -56,6 +56,26 @@ function initializeApp() {
 async function handleAppLaunch(options: any) {
   const authStore = useAuthStore();
 
+  // 🧪 开发测试：模拟NFC首次绑定流程
+  const isDevelopmentNFCTest = true; // 开发测试开关
+  const testNfcId = 'NFC_FRESH_2025_001'; // 全新的测试NFC ID
+
+  if (isDevelopmentNFCTest) {
+    console.log('🧪 开发模式：模拟NFC首次绑定流程');
+
+    // 清除现有认证状态，模拟新用户
+    authStore.logout();
+    uni.removeStorageSync('currentNfcId');
+
+    // 确保options.query存在
+    if (!options.query) {
+      options.query = {};
+    }
+
+    // 强制模拟NFC启动
+    options.query.nfcId = testNfcId;
+  }
+
   // 检查是否通过NFC启动
   if (options.query && options.query.nfcId) {
     const nfcId = options.query.nfcId;
@@ -66,8 +86,11 @@ async function handleAppLaunch(options: any) {
 
     // 检查用户是否已登录
     if (!authStore.isAuthenticated) {
-      // 未登录，执行自动登录流程
-      await handleAutoLogin(nfcId);
+      // 🧪 开发模式：对于新的NFC ID，直接跳转到绑定页面（符合首次绑定流程）
+      console.log('🧪 未登录用户触碰NFC，跳转到绑定页面');
+      uni.redirectTo({
+        url: `/pages/bind/index?nfcId=${nfcId}`,
+      });
     } else {
       // 已登录，验证NFC访问权限并跳转
       await handleAuthenticatedNFCAccess(nfcId);

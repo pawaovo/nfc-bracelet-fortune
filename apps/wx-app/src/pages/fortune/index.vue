@@ -201,6 +201,7 @@ const isVisitorMode = ref(false);
 const isHistoryMode = ref(false);
 const historyDate = ref('');
 const isPreviewMode = ref(false);
+const fromProfile = ref(false); // 标识是否从个人信息页面跳转过来
 
 // 计算属性
 const currentDate = computed(() => {
@@ -268,6 +269,11 @@ onLoad((options: any) => {
     console.log('访客预览模式');
   }
 
+  // 检查是否从个人信息页面跳转过来
+  if (options?.fromProfile === 'true') {
+    fromProfile.value = true;
+  }
+
   // 检查是否为历史查看模式
   if (options?.date) {
     isHistoryMode.value = true;
@@ -275,8 +281,8 @@ onLoad((options: any) => {
     console.log('历史查看模式，日期:', options.date);
   }
 
-  // 检查登录状态
-  if (!isHistoryMode.value && !isPreviewMode.value) {
+  // 检查登录状态（从个人信息页面跳转过来的情况跳过检查）
+  if (!isHistoryMode.value && !isPreviewMode.value && !fromProfile.value) {
     checkAuthStatus();
   }
 
