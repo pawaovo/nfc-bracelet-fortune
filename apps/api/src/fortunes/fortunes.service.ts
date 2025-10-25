@@ -20,8 +20,7 @@ export class FortunesService {
     const today = new Date().toISOString().split('T')[0];
 
     // 检查用户是否绑定了手链
-    const userBracelets = await this.braceletsService.findByUserId(userId);
-    const isAuth = userBracelets.length > 0;
+    const isAuth = await this.checkUserAuth(userId);
 
     // 使用唯一索引进行快速查找
     const existingFortune = await this.prisma.dailyFortune.findUnique({
@@ -69,10 +68,10 @@ export class FortunesService {
     // 计算运势
     const fortuneData = await this.calculateFortune(user, today);
 
-    // 获取商品推荐（仅对已认证用户）
-    const recommendation = isAuth
-      ? await this.getRecommendation(fortuneData.overallScore)
-      : null;
+    // 获取商品推荐（访客版和完整版都需要显示）
+    const recommendation = await this.getRecommendation(
+      fortuneData.overallScore,
+    );
 
     // 保存到数据库
     const newFortune = await this.prisma.dailyFortune.create({
@@ -108,8 +107,7 @@ export class FortunesService {
     const skip = (page - 1) * limit;
 
     // 检查用户是否绑定了手链
-    const userBracelets = await this.braceletsService.findByUserId(userId);
-    const isAuth = userBracelets.length > 0;
+    const isAuth = await this.checkUserAuth(userId);
 
     const [fortunes, total] = await Promise.all([
       this.prisma.dailyFortune.findMany({
@@ -142,8 +140,7 @@ export class FortunesService {
    */
   async getFortuneByDate(userId: string, date: string) {
     // 检查用户是否绑定了手链
-    const userBracelets = await this.braceletsService.findByUserId(userId);
-    const isAuth = userBracelets.length > 0;
+    const isAuth = await this.checkUserAuth(userId);
 
     const fortune = await this.prisma.dailyFortune.findFirst({
       where: {
@@ -369,6 +366,16 @@ export class FortunesService {
     }
 
     return suggestions.join(' ');
+  }
+
+  /**
+   * 检查用户认证状态（是否绑定手链）
+   * @param userId 用户ID
+   * @returns 是否已认证
+   */
+  private async checkUserAuth(userId: string): Promise<boolean> {
+    const userBracelets = await this.braceletsService.findByUserId(userId);
+    return userBracelets.length > 0;
   }
 
   /**

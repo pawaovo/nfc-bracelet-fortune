@@ -142,11 +142,12 @@
         <view class="recommendation-header">
           <text class="recommendation-title"> 今日开运手链推荐 </text>
         </view>
-        <view class="recommendation-card" @click="handleRecommendationClick">
+        <view class="recommendation-card">
           <image
             class="recommendation-image"
             :src="fortuneData.recommendation.imageUrl"
             mode="aspectFill"
+            @error="onImageError"
           />
           <view class="recommendation-info">
             <text class="recommendation-name">
@@ -155,9 +156,14 @@
             <text class="recommendation-desc">
               {{ fortuneData.recommendation.description }}
             </text>
-            <text class="recommendation-action"> 点击查看详情 → </text>
           </view>
         </view>
+        <!-- 抖音店铺按钮 -->
+        <button class="shop-button" @click="handleShopClick">
+          <text class="shop-button-text">
+            {{ isVisitorMode ? '购买手链，解锁完整运势' : '去抖音店铺看看' }}
+          </text>
+        </button>
       </view>
 
       <!-- 历史记录入口 -->
@@ -175,12 +181,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useFortuneStore } from '@/stores/fortune';
-import {
-  fortuneService,
-  generateRandomScore,
-  generateRandomLuckyColor,
-  generateRandomLuckyNumber,
-} from '@/api/fortune';
+import { fortuneService } from '@/api/fortune';
 import type { FortuneData } from '@/stores/fortune';
 import StarRating from '@/components/StarRating.vue';
 
@@ -283,17 +284,27 @@ async function loadFortune() {
  * 加载访客运势（模拟数据）
  */
 function loadVisitorFortune() {
+  // 生成随机分数 (60-85)
+  const generateScore = () => Math.floor(Math.random() * 26) + 60;
+
+  // 随机幸运色
+  const colors = ['红色', '橙色', '黄色', '绿色', '蓝色', '紫色', '粉色', '金色'];
+  const luckyColor = colors[Math.floor(Math.random() * colors.length)];
+
+  // 随机幸运数字 (1-9)
+  const luckyNumber = Math.floor(Math.random() * 9) + 1;
+
   const mockFortune: FortuneData = {
     date: new Date().toISOString().split('T')[0],
-    overallScore: generateRandomScore(),
+    overallScore: generateScore(),
     isAuth: false,
     // 访客版只显示基本信息，详细信息用于模糊显示
     comment: '今日运势不错，适合尝试新事物。购买专属手链，获取完整运势解读和个性化建议。',
-    careerLuck: generateRandomScore(),
-    wealthLuck: generateRandomScore(),
-    loveLuck: generateRandomScore(),
-    luckyColor: generateRandomLuckyColor(),
-    luckyNumber: generateRandomLuckyNumber(),
+    careerLuck: generateScore(),
+    wealthLuck: generateScore(),
+    loveLuck: generateScore(),
+    luckyColor,
+    luckyNumber,
     suggestion: '保持积极心态，好运自然来。想要获得更准确的运势分析，请购买专属手链。',
     recommendation: {
       id: '1',
@@ -384,12 +395,26 @@ async function loadAuthenticatedFortune() {
 }
 
 /**
- * 处理商品推荐点击
+ * 处理抖音店铺按钮点击
  */
-function handleRecommendationClick() {
-  if (fortuneData.value?.recommendation?.douyinUrl) {
-    copyDouyinLink(fortuneData.value.recommendation.douyinUrl);
+function handleShopClick() {
+  const recommendation = fortuneData.value?.recommendation;
+  if (recommendation?.douyinUrl) {
+    copyDouyinLink(recommendation.douyinUrl);
+  } else {
+    uni.showToast({
+      title: '暂无店铺链接',
+      icon: 'none',
+      duration: 2000,
+    });
   }
+}
+
+/**
+ * 处理图片加载失败
+ */
+function onImageError() {
+  console.warn('商品推荐图片加载失败');
 }
 
 /**
@@ -413,9 +438,9 @@ function copyDouyinLink(url: string) {
     data: url,
     success: () => {
       uni.showToast({
-        title: '链接已复制，请前往抖音查看',
-        icon: 'success',
-        duration: 2000,
+        title: '抖音店铺链接已复制，请打开抖音查看',
+        icon: 'none',
+        duration: 3000,
       });
     },
     fail: () => {
@@ -777,10 +802,20 @@ function goToHistory() {
   line-height: 1.4;
 }
 
-.recommendation-action {
-  color: #ffd700;
-  font-size: 26rpx;
-  font-weight: 500;
+.shop-button {
+  width: 100%;
+  margin-top: 24rpx;
+  padding: 24rpx 32rpx;
+  background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%);
+  border: none;
+  border-radius: 50rpx;
+  box-shadow: 0 8rpx 20rpx rgba(255, 215, 0, 0.3);
+}
+
+.shop-button-text {
+  color: #333333;
+  font-size: 30rpx;
+  font-weight: 600;
 }
 
 .history-section {
