@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户表 (Users)
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  wechatOpenId  String   @unique @map("wechat_openid") @db.VarChar(128)
+  name          String?  @db.VarChar(255)
+  birthday      DateTime? @db.Date
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  bracelets     Bracelet[]
+  dailyFortunes DailyFortune[]
+
+  @@map("users")
+}
+
+// 手链表 (Bracelets)
+model Bracelet {
+  id        String    @id @default(uuid()) @db.Uuid
+  nfcId     String    @unique @map("nfc_id") @db.VarChar(255)
+  userId    String?   @map("user_id") @db.Uuid
+  boundAt   DateTime? @map("bound_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("bracelets")
+}
+
+// 每日运势表 (Daily Fortunes)
+model DailyFortune {
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @map("user_id") @db.Uuid
+  date                  DateTime @db.Date
+  score                 Int      @db.Integer
+  comment               String   @db.Text
+  careerScore           Int      @map("career_score") @db.Integer
+  wealthScore           Int      @map("wealth_score") @db.Integer
+  loveScore             Int      @map("love_score") @db.Integer
+  goodElement           String?  @map("good_element") @db.VarChar(50)
+  luckyColor            String?  @map("lucky_color") @db.VarChar(50)
+  goodFor               String?  @map("good_for") @db.VarChar(255)
+  recommendedProductId  String?  @map("recommended_product_id") @db.Uuid
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recommendedProduct Product? @relation(fields: [recommendedProductId], references: [id], onDelete: SetNull)
+
+  // Constraints
+  @@unique([userId, date])
+  @@map("daily_fortunes")
+}
+
+// 商品表 (Products)
+model Product {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(255)
+  description String   @db.Text
+  imageUrl    String   @map("image_url") @db.VarChar(1024)
+  douyinLink  String   @map("douyin_link") @db.VarChar(1024)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  dailyFortunesRecommendedOn DailyFortune[]
+
+  @@map("products")
+}
