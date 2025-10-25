@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小程序测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background: #07c160;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #06ad56;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 20px;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        .info {
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>小程序 API 测试</h1>
+        
+        <div class="form-group">
+            <h3>1. 模拟微信登录</h3>
+            <button id="loginBtn">微信登录</button>
+        </div>
+        
+        <div class="form-group">
+            <h3>2. 更新个人信息</h3>
+            <label for="name">姓名:</label>
+            <input type="text" id="name" value="测试用户" />
+            
+            <label for="birthday">生日:</label>
+            <input type="date" id="birthday" value="1990-01-01" />
+            
+            <button id="updateProfileBtn">更新个人信息</button>
+        </div>
+        
+        <div class="form-group">
+            <h3>3. 获取运势</h3>
+            <button id="getFortuneBtn">获取今日运势</button>
+        </div>
+        
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api/v1';
+        let authToken = '';
+        
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logElement.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        async function apiRequest(url, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+            
+            if (authToken) {
+                headers.Authorization = `Bearer ${authToken}`;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}${url}`, {
+                    ...options,
+                    headers
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${data.message || '请求失败'}`);
+                }
+                
+                return data;
+            } catch (error) {
+                log(`API 请求失败: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+        
+        // 模拟微信登录
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            log('开始微信登录...');
+            
+            try {
+                const response = await apiRequest('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        code: 'test_code_' + Date.now()
+                    })
+                });
+                
+                if (response.success) {
+                    authToken = response.data.token;
+                    log(`登录成功! Token: ${authToken.substring(0, 20)}...`, 'success');
+                    log(`用户状态: ${response.data.status}`, 'info');
+                } else {
+                    log(`登录失败: ${response.message}`, 'error');
+                }
+            } catch (error) {
+                log(`登录异常: ${error.message}`, 'error');
+            }
+        });
+        
+        // 更新个人信息
+        document.getElementById('updateProfileBtn').addEventListener('click', async () => {
+            if (!authToken) {
+                log('请先登录!', 'error');
+                return;
+            }
+            
+            const name = document.getElementById('name').value;
+            const birthday = document.getElementById('birthday').value;
+            
+            if (!name || !birthday) {
+                log('请填写完整信息!', 'error');
+                return;
+            }
+            
+            log('开始更新个人信息...');
+            
+            try {
+                const response = await apiRequest('/profile', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        name: name,
+                        birthday: birthday
+                    })
+                });
+                
+                if (response.success) {
+                    log('个人信息更新成功!', 'success');
+                    log(`更新后的用户信息: ${JSON.stringify(response.data, null, 2)}`, 'info');
+                } else {
+                    log(`更新失败: ${response.message}`, 'error');
+                }
+            } catch (error) {
+                log(`更新异常: ${error.message}`, 'error');
+            }
+        });
+        
+        // 获取运势
+        document.getElementById('getFortuneBtn').addEventListener('click', async () => {
+            if (!authToken) {
+                log('请先登录!', 'error');
+                return;
+            }
+            
+            log('开始获取今日运势...');
+            
+            try {
+                const response = await apiRequest('/fortune/today');
+                
+                if (response.success) {
+                    log('运势获取成功!', 'success');
+                    log(`今日运势: ${JSON.stringify(response.data, null, 2)}`, 'info');
+                } else {
+                    log(`获取失败: ${response.message}`, 'error');
+                }
+            } catch (error) {
+                log(`获取异常: ${error.message}`, 'error');
+            }
+        });
+        
+        log('测试页面已加载，请开始测试!');
+    </script>
+</body>
+</html>

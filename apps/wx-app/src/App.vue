@@ -1,52 +1,52 @@
 <script setup lang="ts">
-import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
-import { useAuthStore } from '@/stores/auth'
-import { useFortuneStore } from '@/stores/fortune'
-import { authService } from '@/api/auth'
+import { onLaunch, onShow, onHide } from '@dcloudio/uni-app';
+import { useAuthStore } from '@/stores/auth';
+import { useFortuneStore } from '@/stores/fortune';
+import { authService } from '@/api/auth';
 
-// 初始化stores
-const authStore = useAuthStore()
-const fortuneStore = useFortuneStore()
-
-onLaunch((options) => {
-  console.log('App Launch', options)
+onLaunch(options => {
+  console.log('App Launch', options);
 
   // 初始化应用状态
-  initializeApp()
+  initializeApp();
 
   // 处理应用启动（NFC启动或直接启动）
-  handleAppLaunch(options)
-})
+  handleAppLaunch(options);
+});
 
-onShow((options) => {
-  console.log('App Show', options)
+onShow(options => {
+  console.log('App Show', options);
 
   // 处理应用启动（从后台切换回来时）
-  handleAppLaunch(options)
-})
+  handleAppLaunch(options);
+});
 
 onHide(() => {
-  console.log('App Hide')
-})
+  console.log('App Hide');
+});
 
 /**
  * 初始化应用状态
  */
 function initializeApp() {
   try {
+    // 在函数内部初始化stores
+    const authStore = useAuthStore();
+    const fortuneStore = useFortuneStore();
+
     // 从本地存储恢复认证状态
-    authStore.initFromStorage()
+    authStore.initFromStorage();
 
     // 从本地存储恢复运势数据
-    fortuneStore.initFromStorage()
+    fortuneStore.initFromStorage();
 
     console.log('App initialized', {
       isAuthenticated: authStore.isAuthenticated,
       isProfileComplete: authStore.isProfileComplete,
-      hasTodayFortune: fortuneStore.hasTodayFortune
-    })
+      hasTodayFortune: fortuneStore.hasTodayFortune,
+    });
   } catch (error) {
-    console.error('Failed to initialize app:', error)
+    console.error('Failed to initialize app:', error);
   }
 }
 
@@ -54,6 +54,8 @@ function initializeApp() {
  * 处理应用启动逻辑（NFC启动或直接启动）
  */
 async function handleAppLaunch(options: any) {
+  const authStore = useAuthStore();
+
   // 检查是否通过NFC启动
   if (options.query && options.query.nfcId) {
     const nfcId = options.query.nfcId;
@@ -82,13 +84,14 @@ async function handleAppLaunch(options: any) {
  */
 async function handleDirectLaunch() {
   try {
+    const authStore = useAuthStore();
     console.log('开始处理直接启动');
 
     // 检查是否已有有效的登录状态
     if (authStore.isAuthenticated && authStore.isProfileComplete) {
       console.log('用户已登录且信息完整，直接跳转到运势页面');
       uni.redirectTo({
-        url: '/pages/fortune/index'
+        url: '/pages/fortune/index',
       });
       return;
     }
@@ -97,7 +100,7 @@ async function handleDirectLaunch() {
     if (authStore.isAuthenticated && !authStore.isProfileComplete) {
       console.log('用户已登录但信息不完整，跳转到个人信息补全页');
       uni.redirectTo({
-        url: '/pages/profile/index'
+        url: '/pages/profile/index',
       });
       return;
     }
@@ -105,13 +108,12 @@ async function handleDirectLaunch() {
     // 未登录，执行静默登录流程
     console.log('用户未登录，开始静默登录');
     await handleSilentLogin();
-
   } catch (error) {
     console.error('直接启动处理失败:', error);
 
     // 启动失败，跳转到绑定页面
     uni.redirectTo({
-      url: '/pages/bind/index'
+      url: '/pages/bind/index',
     });
   }
 }
@@ -120,29 +122,30 @@ async function handleDirectLaunch() {
  * 处理静默登录流程（仅使用微信code，无NFC）
  */
 async function handleSilentLogin() {
+  const authStore = useAuthStore();
   try {
     authStore.setLoading(true);
 
     // 设置超时时间为2秒，确保快速响应
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('静默登录超时')), 2000)
-    })
+      setTimeout(() => reject(new Error('静默登录超时')), 2000);
+    });
 
     // 获取微信登录code
     const loginPromise = new Promise<UniApp.LoginRes>((resolve, reject) => {
       uni.login({
         provider: 'weixin',
         success: resolve,
-        fail: reject
+        fail: reject,
       });
     });
 
-    const loginResult = await Promise.race([loginPromise, timeoutPromise]) as UniApp.LoginRes
+    const loginResult = (await Promise.race([loginPromise, timeoutPromise])) as UniApp.LoginRes;
     console.log('微信登录成功，code:', loginResult.code);
 
     // 调用后端登录接口（不带nfcId）
-    const apiPromise = authService.login(loginResult.code)
-    const response = await Promise.race([apiPromise, timeoutPromise]) as any
+    const apiPromise = authService.login(loginResult.code);
+    const response = (await Promise.race([apiPromise, timeoutPromise])) as any;
 
     if (response.success) {
       const { status, token, user } = response.data;
@@ -159,14 +162,14 @@ async function handleSilentLogin() {
         case 'AUTHENTICATED':
           // 已认证且信息完整，直接跳转到运势页面
           uni.redirectTo({
-            url: '/pages/fortune/index'
+            url: '/pages/fortune/index',
           });
           break;
 
         case 'PROFILE_INCOMPLETE':
           // 信息不完整，跳转到个人信息补全页
           uni.redirectTo({
-            url: '/pages/profile/index'
+            url: '/pages/profile/index',
           });
           break;
 
@@ -181,7 +184,7 @@ async function handleSilentLogin() {
 
     // 静默登录失败，跳转到绑定页面
     uni.redirectTo({
-      url: '/pages/bind/index'
+      url: '/pages/bind/index',
     });
   } finally {
     authStore.setLoading(false);
@@ -192,35 +195,41 @@ async function handleSilentLogin() {
  * 处理自动登录流程
  */
 async function handleAutoLogin(nfcId: string) {
+  const authStore = useAuthStore();
   try {
     console.log('开始自动登录流程');
     authStore.setLoading(true);
 
     // 设置超时时间为1秒，确保快速响应
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('登录超时')), 1000)
-    })
+      setTimeout(() => reject(new Error('登录超时')), 1000);
+    });
 
     // 获取微信登录code
     const loginPromise = new Promise<UniApp.LoginRes>((resolve, reject) => {
       uni.login({
         provider: 'weixin',
         success: resolve,
-        fail: reject
+        fail: reject,
       });
     });
 
-    const loginResult = await Promise.race([loginPromise, timeoutPromise]) as UniApp.LoginRes
+    const loginResult = (await Promise.race([loginPromise, timeoutPromise])) as UniApp.LoginRes;
     console.log('微信登录成功，code:', loginResult.code);
 
     // 调用后端登录接口（带超时）
-    const apiPromise = authService.login(loginResult.code, nfcId)
-    const response = await Promise.race([apiPromise, timeoutPromise]) as any
+    const apiPromise = authService.login(loginResult.code, nfcId);
+    const response = (await Promise.race([apiPromise, timeoutPromise])) as any;
 
     if (response.success) {
       const { status, token, user, previewScore, recommendation } = response.data;
 
-      console.log('登录响应:', { status, hasToken: !!token, hasUser: !!user, hasPreviewData: !!(previewScore && recommendation) });
+      console.log('登录响应:', {
+        status,
+        hasToken: !!token,
+        hasUser: !!user,
+        hasPreviewData: !!(previewScore && recommendation),
+      });
 
       if (token && user) {
         // 保存认证信息
@@ -232,14 +241,14 @@ async function handleAutoLogin(nfcId: string) {
         case 'AUTHENTICATED':
           // 已认证且信息完整，直接跳转到运势页面
           uni.redirectTo({
-            url: '/pages/fortune/index'
+            url: '/pages/fortune/index',
           });
           break;
 
         case 'PROFILE_INCOMPLETE':
           // 信息不完整，跳转到个人信息补全页
           uni.redirectTo({
-            url: '/pages/profile/index'
+            url: '/pages/profile/index',
           });
           break;
 
@@ -249,13 +258,13 @@ async function handleAutoLogin(nfcId: string) {
             // 保存预览数据到本地存储
             uni.setStorageSync('previewData', {
               score: previewScore,
-              recommendation: recommendation
+              recommendation: recommendation,
             });
             console.log('保存访客预览数据:', { previewScore, recommendation });
           }
 
           uni.redirectTo({
-            url: '/pages/fortune/index?mode=visitor&preview=true'
+            url: '/pages/fortune/index?mode=visitor&preview=true',
           });
           break;
 
@@ -270,7 +279,7 @@ async function handleAutoLogin(nfcId: string) {
 
     // 登录失败，跳转到绑定页面
     uni.redirectTo({
-      url: `/pages/bind/index?nfcId=${nfcId}`
+      url: `/pages/bind/index?nfcId=${nfcId}`,
     });
   } finally {
     authStore.setLoading(false);
@@ -292,12 +301,12 @@ async function handleAuthenticatedNFCAccess(nfcId: string) {
       if (status === 'OWNER') {
         // 是自己的手链，跳转到完整运势页面
         uni.redirectTo({
-          url: '/pages/fortune/index'
+          url: '/pages/fortune/index',
         });
       } else {
         // 不是自己的手链，跳转到访客预览
         uni.redirectTo({
-          url: '/pages/fortune/index?mode=visitor'
+          url: '/pages/fortune/index?mode=visitor',
         });
       }
     } else {
@@ -315,9 +324,10 @@ async function handleAuthenticatedNFCAccess(nfcId: string) {
       console.error('自动登录绑定失败:', loginError);
 
       // 如果自动登录也失败，清除认证状态并跳转到绑定页面
+      const authStore = useAuthStore();
       authStore.logout();
       uni.redirectTo({
-        url: `/pages/bind/index?nfcId=${nfcId}`
+        url: `/pages/bind/index?nfcId=${nfcId}`,
       });
     }
   }

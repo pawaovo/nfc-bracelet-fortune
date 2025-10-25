@@ -169,8 +169,12 @@
       <!-- 历史记录入口/返回按钮 -->
       <view v-if="!isVisitorMode" class="history-section">
         <button class="history-button" @click="handleHistoryNavigation">
-          <text class="history-icon"> {{ isHistoryMode ? '📋' : '📊' }} </text>
-          <text class="history-text"> {{ isHistoryMode ? '返回列表' : '查看历史运势' }} </text>
+          <text class="history-icon">
+            {{ isHistoryMode ? '📋' : '📊' }}
+          </text>
+          <text class="history-text">
+            {{ isHistoryMode ? '返回列表' : '查看历史运势' }}
+          </text>
         </button>
       </view>
     </view>
@@ -179,6 +183,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { onLoad } from '@dcloudio/uni-app';
 import { useAuthStore } from '@/stores/auth';
 import { useFortuneStore } from '@/stores/fortune';
 import { fortuneService } from '@/api/fortune';
@@ -200,7 +205,9 @@ const isPreviewMode = ref(false);
 // 计算属性
 const currentDate = computed(() => {
   // 历史模式显示历史日期，否则显示今天
-  const dateToShow = isHistoryMode.value ? historyDate.value : new Date().toISOString().split('T')[0];
+  const dateToShow = isHistoryMode.value
+    ? historyDate.value
+    : new Date().toISOString().split('T')[0];
 
   try {
     const dateObj = new Date(dateToShow);
@@ -586,8 +593,6 @@ function handleHistoryNavigation() {
     });
   }
 }
-
-
 </script>
 
 <style lang="scss" scoped>

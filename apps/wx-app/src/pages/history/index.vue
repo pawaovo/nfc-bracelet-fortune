@@ -35,9 +35,9 @@
         v-else
         class="history-scroll"
         scroll-y
-        @scrolltolower="loadMoreHistory"
         :refresher-enabled="true"
         :refresher-triggered="isRefreshing"
+        @scrolltolower="loadMoreHistory"
         @refresherrefresh="onRefresh"
         @refresherrestore="onRefreshRestore"
       >
@@ -49,16 +49,24 @@
             @click="handleItemClick(item)"
           >
             <view class="item-left">
-              <text class="item-date">{{ formatDate(item.date) }}</text>
-              <text class="item-weekday">{{ getWeekday(item.date) }}</text>
+              <text class="item-date">
+                {{ formatDate(item.date) }}
+              </text>
+              <text class="item-weekday">
+                {{ getWeekday(item.date) }}
+              </text>
             </view>
             <view class="item-center">
-              <text class="item-comment">{{ item.comment || '运势不错' }}</text>
+              <text class="item-comment">
+                {{ item.comment || '运势不错' }}
+              </text>
             </view>
             <view class="item-right">
               <view class="score-badge" :class="getScoreClass(item.overallScore)">
-                <text class="score-text">{{ item.overallScore }}</text>
-                <text class="score-label">分</text>
+                <text class="score-text">
+                  {{ item.overallScore }}
+                </text>
+                <text class="score-label"> 分 </text>
               </view>
             </view>
           </view>
@@ -81,6 +89,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { onLoad } from '@dcloudio/uni-app';
 import { fortuneService } from '@/api/fortune';
 import type { FortuneData } from '@/stores/fortune';
 
@@ -114,7 +123,7 @@ async function loadHistory(isRefresh = false) {
     } else {
       isLoadingMore.value = true;
     }
-    
+
     error.value = '';
 
     console.log(`加载历史记录 - 页码: ${page.value}, 每页: ${limit.value}`);
@@ -123,7 +132,7 @@ async function loadHistory(isRefresh = false) {
 
     if (response.success && response.data) {
       const { fortunes, total } = response.data;
-      
+
       if (isRefresh || page.value === 1) {
         historyList.value = fortunes;
       } else {
@@ -265,7 +274,8 @@ function getScoreClass(score: number): string {
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px);
   }
   50% {
