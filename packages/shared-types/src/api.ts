@@ -1,5 +1,5 @@
 // packages/shared-types/src/api.ts
-import { User, UserPartial } from './user';
+import { UserPartial } from './user';
 import { DailyFortune, DailyFortuneSummary } from './dailyFortune';
 import { Product } from './product';
 
@@ -34,7 +34,7 @@ export interface HistoryResponse {
 }
 
 // Common API response wrapper
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
