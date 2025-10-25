@@ -1,10 +1,9 @@
 // 认证相关API服务
 import apiRequest from './request'
-import type { 
-  LoginRequest, 
-  LoginResponse, 
-  ApiResponse,
-  UpdateProfileDto 
+import type {
+  LoginRequest,
+  LoginResponse,
+  ApiResponse
 } from '@shared/types'
 
 // 认证API服务类
@@ -64,14 +63,7 @@ export class AuthService {
     return apiRequest.get('auth/me')
   }
 
-  /**
-   * 更新用户资料
-   * @param profileData 用户资料数据
-   * @returns 更新响应
-   */
-  async updateProfile(profileData: UpdateProfileDto): Promise<ApiResponse<any>> {
-    return apiRequest.put('auth/profile', profileData)
-  }
+
 }
 
 // 创建认证服务实例

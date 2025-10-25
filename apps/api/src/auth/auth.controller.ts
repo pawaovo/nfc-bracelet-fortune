@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   HttpCode,
   HttpStatus,
@@ -104,7 +105,7 @@ export class AuthController {
    * @param request 请求对象（包含用户信息）
    * @returns 用户信息
    */
-  @Post('me')
+  @Get('me')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async getCurrentUser(@Request() request: any): Promise<ApiResponse<any>> {

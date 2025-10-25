@@ -68,7 +68,6 @@ model DailyFortune {
 
   // Constraints and Indexes
   @@unique([userId, date])
-  @@index([userId])
   @@index([date])
   @@index([userId, date])
   @@map("daily_fortunes")

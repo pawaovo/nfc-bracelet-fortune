@@ -82,29 +82,7 @@ export class UsersService {
     return user;
   }
 
-  /**
-   * 更新用户资料
-   * @param id 用户ID
-   * @param updateData 更新数据
-   * @returns 更新后的用户信息
-   */
-  async updateProfile(id: string, updateData: UpdateProfileDto): Promise<User> {
-    try {
-      const user = await this.prisma.user.update({
-        where: { id },
-        data: {
-          name: updateData.name,
-          birthday: new Date(updateData.birthday)
-        }
-      });
 
-      this.logger.log(`Updated user profile: ${user.id}`);
-      return user;
-    } catch (error) {
-      this.logger.error(`Failed to update user profile: ${id}`, error);
-      throw error;
-    }
-  }
 
   /**
    * 检查用户资料是否完整

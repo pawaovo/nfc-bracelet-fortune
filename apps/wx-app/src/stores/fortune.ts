@@ -86,21 +86,7 @@ export const useFortuneStore = defineStore('fortune', () => {
     }
   }
 
-  const getLuckLevel = (score: number): string => {
-    if (score >= 90) return '极佳'
-    if (score >= 80) return '很好'
-    if (score >= 70) return '良好'
-    if (score >= 60) return '一般'
-    if (score >= 50) return '较差'
-    return '不佳'
-  }
 
-  const getLuckColor = (score: number): string => {
-    if (score >= 80) return '#ff6b6b'  // 红色
-    if (score >= 60) return '#ffa726'  // 橙色
-    if (score >= 40) return '#ffeb3b'  // 黄色
-    return '#9e9e9e'  // 灰色
-  }
 
   return {
     // 状态
@@ -120,9 +106,6 @@ export const useFortuneStore = defineStore('fortune', () => {
     clearError,
     clearFortune,
     initFromStorage,
-    
-    // 工具函数
-    getLuckLevel,
-    getLuckColor
+
   }
 })
