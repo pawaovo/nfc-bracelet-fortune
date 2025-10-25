@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { BraceletsModule } from './bracelets/bracelets.module';
+import { ProfileModule } from './profile/profile.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { BraceletsModule } from './bracelets/bracelets.module';
     AuthModule,
     UsersModule,
     BraceletsModule,
+    ProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService],
