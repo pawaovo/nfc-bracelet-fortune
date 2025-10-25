@@ -56,7 +56,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { authService, setAuthToken } from '@/api/auth';
+import { authService } from '@/api/auth';
 import { useAuthStore } from '@/stores/auth';
 
 // 响应式数据
@@ -115,10 +115,7 @@ const handleBindClick = async () => {
       const { status, token, user } = response.data;
 
       if (token) {
-        // 存储token
-        setAuthToken(token);
-
-        // 更新 auth store
+        // 更新 auth store（会自动设置 token 到存储和 API 请求）
         const authStore = useAuthStore();
         authStore.login(token, user || {});
       }

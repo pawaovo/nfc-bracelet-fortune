@@ -72,7 +72,6 @@ import { ref, reactive } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { profileService, validateName, validateBirthday } from '@/api/profile';
 import { useAuthStore } from '@/stores/auth';
-import { apiRequest } from '@/api/request';
 
 // 表单数据
 const formData = reactive({
@@ -151,12 +150,10 @@ const handleSubmitClick = async () => {
   try {
     isLoading.value = true;
 
-    // 确保 token 正确设置
+    // 验证登录状态
     const authStore = useAuthStore();
-    const token = uni.getStorageSync('token');
-
-    if (!token) {
-      console.error('未找到 token，需要重新登录');
+    if (!authStore.isAuthenticated) {
+      console.error('用户未登录，需要重新登录');
       uni.showToast({
         title: '登录已过期，请重新登录',
         icon: 'none',
@@ -168,10 +165,6 @@ const handleSubmitClick = async () => {
       }, 2000);
       return;
     }
-
-    // 重新设置 API token
-    apiRequest.setAuthToken(token);
-    console.log('Token 已重新设置:', token.substring(0, 20) + '...');
 
     // 调用API更新用户信息
     console.log('提交表单数据:', formData);
@@ -223,17 +216,16 @@ const handleSubmitClick = async () => {
 onLoad(() => {
   console.log('个人信息补全页面加载');
 
-  // 初始化 auth store 和 token
+  // 初始化 auth store
   const authStore = useAuthStore();
   authStore.initFromStorage();
 
-  // 确保 API 请求有正确的 token
-  const token = uni.getStorageSync('token');
-  if (token) {
-    apiRequest.setAuthToken(token);
-    console.log('Token 已设置:', token.substring(0, 20) + '...');
-  } else {
-    console.warn('未找到 token，可能需要重新登录');
+  // 验证登录状态
+  if (!authStore.isAuthenticated) {
+    console.warn('用户未登录，跳转到绑定页面');
+    uni.redirectTo({
+      url: '/pages/bind/index',
+    });
   }
 });
 </script>
