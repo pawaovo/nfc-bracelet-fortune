@@ -49,70 +49,90 @@
         <text class="score-title"> 综合分数 </text>
       </view>
 
-      <!-- 运势点评 -->
-      <view class="comment-section">
-        <text class="comment-text">
-          {{ fortuneData?.comment || '正在为你生成专属运势...' }}
-        </text>
-      </view>
-
-      <!-- 分项运势 -->
-      <view class="luck-sections">
-        <view class="luck-item">
-          <view class="luck-header">
-            <text class="luck-icon"> 💼 </text>
-            <text class="luck-title"> 事业运 </text>
-          </view>
-          <view class="luck-stars">
-            <star-rating :score="fortuneData?.careerLuck || 0" />
-          </view>
-        </view>
-
-        <view class="luck-item">
-          <view class="luck-header">
-            <text class="luck-icon"> 💰 </text>
-            <text class="luck-title"> 财富运 </text>
-          </view>
-          <view class="luck-stars">
-            <star-rating :score="fortuneData?.wealthLuck || 0" />
-          </view>
-        </view>
-
-        <view class="luck-item">
-          <view class="luck-header">
-            <text class="luck-icon"> 💕 </text>
-            <text class="luck-title"> 爱情运 </text>
-          </view>
-          <view class="luck-stars">
-            <star-rating :score="fortuneData?.loveLuck || 0" />
-          </view>
-        </view>
-      </view>
-
-      <!-- 开运提示 -->
-      <view class="tips-section">
-        <view class="tips-header">
-          <text class="tips-icon"> ✨ </text>
-          <text class="tips-title"> 今日开运提示 </text>
-        </view>
-        <view class="tips-content">
-          <view class="tip-item">
-            <text class="tip-label"> 幸运色： </text>
-            <text class="tip-value">
-              {{ fortuneData?.luckyColor || '紫色' }}
+      <!-- 运势详情区域容器 -->
+      <view class="fortune-details-container">
+        <!-- 运势详情区域 -->
+        <view class="fortune-details" :class="{ 'visitor-blur': isVisitorMode }">
+          <!-- 运势点评 -->
+          <view class="comment-section">
+            <text class="comment-text">
+              {{ fortuneData?.comment || '正在为你生成专属运势...' }}
             </text>
           </view>
-          <view class="tip-item">
-            <text class="tip-label"> 幸运数字： </text>
-            <text class="tip-value">
-              {{ fortuneData?.luckyNumber || 8 }}
-            </text>
+
+          <!-- 分项运势 -->
+          <view class="luck-sections">
+            <view class="luck-item">
+              <view class="luck-header">
+                <text class="luck-icon"> 💼 </text>
+                <text class="luck-title"> 事业运 </text>
+              </view>
+              <view class="luck-stars">
+                <star-rating :score="fortuneData?.careerLuck || 0" />
+              </view>
+            </view>
+
+            <view class="luck-item">
+              <view class="luck-header">
+                <text class="luck-icon"> 💰 </text>
+                <text class="luck-title"> 财富运 </text>
+              </view>
+              <view class="luck-stars">
+                <star-rating :score="fortuneData?.wealthLuck || 0" />
+              </view>
+            </view>
+
+            <view class="luck-item">
+              <view class="luck-header">
+                <text class="luck-icon"> 💕 </text>
+                <text class="luck-title"> 爱情运 </text>
+              </view>
+              <view class="luck-stars">
+                <star-rating :score="fortuneData?.loveLuck || 0" />
+              </view>
+            </view>
           </view>
-          <view class="tip-item">
-            <text class="tip-label"> 建议： </text>
-            <text class="tip-value">
-              {{ fortuneData?.suggestion || '保持积极心态，好运自然来' }}
+
+          <!-- 开运提示 -->
+          <view class="tips-section">
+            <view class="tips-header">
+              <text class="tips-icon"> ✨ </text>
+              <text class="tips-title"> 今日开运提示 </text>
+            </view>
+            <view class="tips-content">
+              <view class="tip-item">
+                <text class="tip-label"> 幸运色： </text>
+                <text class="tip-value">
+                  {{ fortuneData?.luckyColor || '紫色' }}
+                </text>
+              </view>
+              <view class="tip-item">
+                <text class="tip-label"> 幸运数字： </text>
+                <text class="tip-value">
+                  {{ fortuneData?.luckyNumber || 8 }}
+                </text>
+              </view>
+              <view class="tip-item">
+                <text class="tip-label"> 建议： </text>
+                <text class="tip-value">
+                  {{ fortuneData?.suggestion || '保持积极心态，好运自然来' }}
+                </text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 访客解锁引导模块 -->
+        <view v-if="isVisitorMode" class="unlock-guide">
+          <view class="unlock-content">
+            <text class="unlock-icon"> 🔒 </text>
+            <text class="unlock-title"> 解锁完整运势 </text>
+            <text class="unlock-description">
+              购买专属NFC手链，即可解锁全部运势、历史记录和更多专属功能！
             </text>
+            <button class="unlock-button" @click="handleUnlockClick">
+              <text class="unlock-button-text"> 前往解锁 </text>
+            </button>
           </view>
         </view>
       </view>
@@ -184,7 +204,10 @@ const currentDate = computed(() => {
 
 const welcomeMessage = computed(() => {
   if (isVisitorMode.value) {
-    return '欢迎体验专属运势服务';
+    if (authStore.user?.name) {
+      return `${authStore.user.name}，这是你的运势预览`;
+    }
+    return '这是你的运势预览';
   }
 
   if (authStore.user?.name) {
@@ -263,6 +286,8 @@ function loadVisitorFortune() {
   const mockFortune: FortuneData = {
     date: new Date().toISOString().split('T')[0],
     overallScore: generateRandomScore(),
+    isAuth: false,
+    // 访客版只显示基本信息，详细信息用于模糊显示
     comment: '今日运势不错，适合尝试新事物。购买专属手链，获取完整运势解读和个性化建议。',
     careerLuck: generateRandomScore(),
     wealthLuck: generateRandomScore(),
@@ -363,18 +388,44 @@ async function loadAuthenticatedFortune() {
  */
 function handleRecommendationClick() {
   if (fortuneData.value?.recommendation?.douyinUrl) {
-    // 复制抖音链接到剪贴板
-    uni.setClipboardData({
-      data: fortuneData.value.recommendation.douyinUrl,
-      success: () => {
-        uni.showToast({
-          title: '抖音链接已复制',
-          icon: 'success',
-          duration: 2000,
-        });
-      },
-    });
+    copyDouyinLink(fortuneData.value.recommendation.douyinUrl);
   }
+}
+
+/**
+ * 处理解锁按钮点击
+ */
+function handleUnlockClick() {
+  const recommendation = fortuneData.value?.recommendation;
+  if (recommendation?.douyinUrl) {
+    copyDouyinLink(recommendation.douyinUrl);
+  } else {
+    // 如果没有推荐商品，使用默认链接
+    copyDouyinLink('https://example.com/douyin');
+  }
+}
+
+/**
+ * 复制抖音链接到剪贴板
+ */
+function copyDouyinLink(url: string) {
+  uni.setClipboardData({
+    data: url,
+    success: () => {
+      uni.showToast({
+        title: '链接已复制，请前往抖音查看',
+        icon: 'success',
+        duration: 2000,
+      });
+    },
+    fail: () => {
+      uni.showToast({
+        title: '复制失败，请重试',
+        icon: 'none',
+        duration: 2000,
+      });
+    },
+  });
 }
 
 /**
@@ -756,5 +807,75 @@ function goToHistory() {
   color: #ffffff;
   font-size: 30rpx;
   font-weight: 500;
+}
+
+/* 访客模式样式 */
+.fortune-details-container {
+  position: relative;
+}
+
+.fortune-details {
+  position: relative;
+}
+
+.visitor-blur {
+  filter: blur(8rpx);
+  pointer-events: none;
+  user-select: none;
+}
+
+.unlock-guide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  z-index: 10;
+}
+
+.unlock-content {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20rpx);
+  border-radius: 24rpx;
+  padding: 60rpx 40rpx;
+  text-align: center;
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.2);
+}
+
+.unlock-icon {
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+  display: block;
+}
+
+.unlock-title {
+  color: #333333;
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+  display: block;
+}
+
+.unlock-description {
+  color: #666666;
+  font-size: 28rpx;
+  line-height: 1.6;
+  margin-bottom: 40rpx;
+  display: block;
+}
+
+.unlock-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 50rpx;
+  padding: 24rpx 48rpx;
+  box-shadow: 0 8rpx 20rpx rgba(102, 126, 234, 0.3);
+}
+
+.unlock-button-text {
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: 600;
 }
 </style>
