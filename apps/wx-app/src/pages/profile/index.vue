@@ -2,28 +2,28 @@
   <view class="profile-container">
     <!-- 背景装饰 -->
     <view class="background-decoration">
-      <view class="decoration-circle decoration-circle-1"></view>
-      <view class="decoration-circle decoration-circle-2"></view>
-      <view class="decoration-circle decoration-circle-3"></view>
+      <view class="decoration-circle decoration-circle-1" />
+      <view class="decoration-circle decoration-circle-2" />
+      <view class="decoration-circle decoration-circle-3" />
     </view>
 
     <!-- 主要内容 -->
     <view class="content">
       <!-- 标题区域 -->
       <view class="header">
-        <view class="title">完善个人信息</view>
-        <view class="subtitle">让我们为你生成专属运势</view>
+        <view class="title"> 完善个人信息 </view>
+        <view class="subtitle"> 让我们为你生成专属运势 </view>
       </view>
 
       <!-- 表单区域 -->
       <view class="form-container">
         <!-- 称呼输入框 -->
         <view class="form-item">
-          <view class="form-label">称呼</view>
-          <input 
+          <view class="form-label"> 称呼 </view>
+          <input
+            v-model="formData.name"
             class="form-input"
             type="text"
-            v-model="formData.name"
             placeholder="请输入你的常用称呼"
             maxlength="20"
           />
@@ -31,61 +31,61 @@
 
         <!-- 生日选择器 -->
         <view class="form-item">
-          <view class="form-label">生日</view>
-          <picker 
+          <view class="form-label"> 生日 </view>
+          <picker
             mode="date"
             :value="formData.birthday"
-            @change="onBirthdayChange"
             class="birthday-picker"
+            @change="onBirthdayChange"
           >
             <view class="picker-display">
-              <text class="picker-text" :class="{ 'placeholder': !formData.birthday }">
+              <text class="picker-text" :class="{ placeholder: !formData.birthday }">
                 {{ formData.birthday || '请选择你的生日' }}
               </text>
-              <view class="calendar-icon">📅</view>
+              <view class="calendar-icon"> 📅 </view>
             </view>
           </picker>
         </view>
 
         <!-- 提交按钮 -->
-        <button 
+        <button
           class="submit-button"
-          :class="{ 'loading': isLoading }"
+          :class="{ loading: isLoading }"
           :disabled="isLoading"
           @click="handleSubmitClick"
         >
-          <text v-if="!isLoading">开启我的好运</text>
-          <text v-else>保存中...</text>
+          <text v-if="!isLoading"> 开启我的好运 </text>
+          <text v-else> 保存中... </text>
         </button>
       </view>
 
       <!-- 底部提示 -->
       <view class="footer-tip">
-        <text class="tip-text">你的信息将用于生成个性化运势，我们会严格保护你的隐私</text>
+        <text class="tip-text"> 你的信息将用于生成个性化运势，我们会严格保护你的隐私 </text>
       </view>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { profileService, validateName, validateBirthday } from '@/api/profile'
+import { ref, reactive } from 'vue';
+import { profileService, validateName, validateBirthday } from '@/api/profile';
 
 // 表单数据
 const formData = reactive({
   name: '',
-  birthday: ''
-})
+  birthday: '',
+});
 
 // 加载状态
-const isLoading = ref(false)
+const isLoading = ref(false);
 
 /**
  * 生日选择器变化事件
  */
 const onBirthdayChange = (event: any) => {
-  formData.birthday = event.detail.value
-}
+  formData.birthday = event.detail.value;
+};
 
 /**
  * 表单验证
@@ -97,22 +97,22 @@ const validateForm = (): boolean => {
       uni.showToast({
         title: '请输入你的称呼',
         icon: 'none',
-        duration: 2000
-      })
+        duration: 2000,
+      });
     } else if (formData.name.trim().length < 1 || formData.name.trim().length > 20) {
       uni.showToast({
         title: '称呼长度应在1-20个字符之间',
         icon: 'none',
-        duration: 2000
-      })
+        duration: 2000,
+      });
     } else {
       uni.showToast({
         title: '称呼格式不正确，请使用中文、英文或数字',
         icon: 'none',
-        duration: 2000
-      })
+        duration: 2000,
+      });
     }
-    return false
+    return false;
   }
 
   // 验证生日
@@ -121,20 +121,20 @@ const validateForm = (): boolean => {
       uni.showToast({
         title: '请选择你的生日',
         icon: 'none',
-        duration: 2000
-      })
+        duration: 2000,
+      });
     } else {
       uni.showToast({
         title: '生日格式不正确，请重新选择',
         icon: 'none',
-        duration: 2000
-      })
+        duration: 2000,
+      });
     }
-    return false
+    return false;
   }
 
-  return true
-}
+  return true;
+};
 
 /**
  * 提交按钮点击事件
@@ -142,62 +142,62 @@ const validateForm = (): boolean => {
 const handleSubmitClick = async () => {
   // 表单验证
   if (!validateForm()) {
-    return
+    return;
   }
 
   try {
-    isLoading.value = true
+    isLoading.value = true;
 
     // 调用API更新用户信息
-    console.log('提交表单数据:', formData)
+    console.log('提交表单数据:', formData);
 
     const response = await profileService.updateProfile({
       name: formData.name.trim(),
-      birthday: formData.birthday
-    })
+      birthday: formData.birthday,
+    });
 
     if (response.success) {
-      console.log('用户信息更新成功:', response.data)
+      console.log('用户信息更新成功:', response.data);
 
       // 显示成功提示
       uni.showToast({
         title: '信息保存成功',
         icon: 'success',
-        duration: 1500
-      })
+        duration: 1500,
+      });
 
       // 延迟跳转，让用户看到成功提示
       setTimeout(() => {
+        // 新访客（已补全信息但未绑定手链）跳转到访客版运势页
         uni.redirectTo({
-          url: '/pages/fortune/index'
-        })
-      }, 1500)
+          url: '/pages/fortune/index?mode=visitor',
+        });
+      }, 1500);
     } else {
-      throw new Error(response.message || '保存失败')
+      throw new Error(response.message || '保存失败');
     }
-
   } catch (error) {
-    console.error('提交失败:', error)
+    console.error('提交失败:', error);
 
-    let errorMessage = '保存失败，请重试'
+    let errorMessage = '保存失败，请重试';
     if (error instanceof Error) {
-      errorMessage = error.message
+      errorMessage = error.message;
     }
 
     uni.showToast({
       title: errorMessage,
       icon: 'none',
-      duration: 2000
-    })
+      duration: 2000,
+    });
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // 页面生命周期
 onLoad(() => {
-  console.log('个人信息补全页面加载')
-})
+  console.log('个人信息补全页面加载');
+});
 </script>
 
 <style lang="scss" scoped>
@@ -221,7 +221,7 @@ onLoad(() => {
   position: absolute;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
-  
+
   &.decoration-circle-1 {
     width: 200rpx;
     height: 200rpx;
@@ -229,7 +229,7 @@ onLoad(() => {
     right: -50rpx;
     animation: float 6s ease-in-out infinite;
   }
-  
+
   &.decoration-circle-2 {
     width: 150rpx;
     height: 150rpx;
@@ -237,7 +237,7 @@ onLoad(() => {
     left: -30rpx;
     animation: float 8s ease-in-out infinite reverse;
   }
-  
+
   &.decoration-circle-3 {
     width: 100rpx;
     height: 100rpx;
@@ -248,8 +248,13 @@ onLoad(() => {
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
 }
 
 .content {
@@ -286,7 +291,7 @@ onLoad(() => {
 
 .form-item {
   margin-bottom: 40rpx;
-  
+
   &:last-of-type {
     margin-bottom: 60rpx;
   }
@@ -309,7 +314,7 @@ onLoad(() => {
   font-size: 30rpx;
   color: #333333;
   box-sizing: border-box;
-  
+
   &:focus {
     border-color: #667eea;
     background: #ffffff;
@@ -335,7 +340,7 @@ onLoad(() => {
 .picker-text {
   font-size: 30rpx;
   color: #333333;
-  
+
   &.placeholder {
     color: #999999;
   }
@@ -360,17 +365,17 @@ onLoad(() => {
   justify-content: center;
   box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.4);
   transition: all 0.3s ease;
-  
+
   &:active {
     transform: translateY(2rpx);
     box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.4);
   }
-  
+
   &.loading {
     opacity: 0.7;
     transform: none;
   }
-  
+
   &[disabled] {
     opacity: 0.7;
   }

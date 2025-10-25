@@ -1,11 +1,15 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { BraceletsService } from '../bracelets/bracelets.service';
 
 @Injectable()
 export class FortunesService {
   private readonly logger = new Logger(FortunesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly braceletsService: BraceletsService,
+  ) {}
 
   /**
    * 获取今日运势
@@ -15,13 +19,17 @@ export class FortunesService {
   async getTodayFortune(userId: string) {
     const today = new Date().toISOString().split('T')[0];
 
+    // 检查用户是否绑定了手链
+    const userBracelets = await this.braceletsService.findByUserId(userId);
+    const isAuth = userBracelets.length > 0;
+
     // 使用唯一索引进行快速查找
-    let existingFortune = await this.prisma.dailyFortune.findUnique({
+    const existingFortune = await this.prisma.dailyFortune.findUnique({
       where: {
         userId_date: {
           userId,
-          date: today
-        }
+          date: today,
+        },
       },
       include: {
         recommendation: {
@@ -31,27 +39,27 @@ export class FortunesService {
             description: true,
             imageUrl: true,
             price: true,
-            douyinUrl: true
-          }
-        }
-      }
+            douyinUrl: true,
+          },
+        },
+      },
     });
 
     if (existingFortune) {
       this.logger.log(`Found existing fortune for user ${userId} on ${today}`);
-      return this.formatFortuneResponse(existingFortune);
+      return this.formatFortuneResponse(existingFortune, isAuth);
     }
 
     // 没有记录，生成新的运势
     this.logger.log(`Generating new fortune for user ${userId} on ${today}`);
-    
+
     // 获取用户信息用于运势计算（只获取必要字段）
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
-        birthday: true
-      }
+        birthday: true,
+      },
     });
 
     if (!user) {
@@ -60,9 +68,11 @@ export class FortunesService {
 
     // 计算运势
     const fortuneData = await this.calculateFortune(user, today);
-    
-    // 获取商品推荐
-    const recommendation = await this.getRecommendation(fortuneData.overallScore);
+
+    // 获取商品推荐（仅对已认证用户）
+    const recommendation = isAuth
+      ? await this.getRecommendation(fortuneData.overallScore)
+      : null;
 
     // 保存到数据库
     const newFortune = await this.prisma.dailyFortune.create({
@@ -77,14 +87,14 @@ export class FortunesService {
         luckyColor: fortuneData.luckyColor,
         luckyNumber: fortuneData.luckyNumber,
         suggestion: fortuneData.suggestion,
-        recommendationId: recommendation?.id
+        recommendationId: recommendation?.id,
       },
       include: {
-        recommendation: true
-      }
+        recommendation: true,
+      },
     });
 
-    return this.formatFortuneResponse(newFortune);
+    return this.formatFortuneResponse(newFortune, isAuth);
   }
 
   /**
@@ -97,24 +107,30 @@ export class FortunesService {
   async getHistoryFortunes(userId: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
 
+    // 检查用户是否绑定了手链
+    const userBracelets = await this.braceletsService.findByUserId(userId);
+    const isAuth = userBracelets.length > 0;
+
     const [fortunes, total] = await Promise.all([
       this.prisma.dailyFortune.findMany({
         where: { userId },
         include: { recommendation: true },
         orderBy: { date: 'desc' },
         skip,
-        take: limit
+        take: limit,
       }),
       this.prisma.dailyFortune.count({
-        where: { userId }
-      })
+        where: { userId },
+      }),
     ]);
 
     return {
-      fortunes: fortunes.map(fortune => this.formatFortuneResponse(fortune)),
+      fortunes: fortunes.map((fortune) =>
+        this.formatFortuneResponse(fortune, isAuth),
+      ),
       total,
       page,
-      limit
+      limit,
     };
   }
 
@@ -125,21 +141,25 @@ export class FortunesService {
    * @returns 运势数据
    */
   async getFortuneByDate(userId: string, date: string) {
+    // 检查用户是否绑定了手链
+    const userBracelets = await this.braceletsService.findByUserId(userId);
+    const isAuth = userBracelets.length > 0;
+
     const fortune = await this.prisma.dailyFortune.findFirst({
       where: {
         userId,
-        date
+        date,
       },
       include: {
-        recommendation: true
-      }
+        recommendation: true,
+      },
     });
 
     if (!fortune) {
       throw new NotFoundException('该日期没有运势记录');
     }
 
-    return this.formatFortuneResponse(fortune);
+    return this.formatFortuneResponse(fortune, isAuth);
   }
 
   /**
@@ -152,9 +172,9 @@ export class FortunesService {
       where: { userId },
       select: {
         overallScore: true,
-        date: true
+        date: true,
       },
-      orderBy: { date: 'desc' }
+      orderBy: { date: 'desc' },
     });
 
     if (fortunes.length === 0) {
@@ -163,25 +183,27 @@ export class FortunesService {
         averageScore: 0,
         bestScore: 0,
         worstScore: 0,
-        streakDays: 0
+        streakDays: 0,
       };
     }
 
-    const scores = fortunes.map(f => f.overallScore);
+    const scores = fortunes.map((f) => f.overallScore);
     const totalDays = fortunes.length;
-    const averageScore = Math.round(scores.reduce((sum, score) => sum + score, 0) / totalDays);
+    const averageScore = Math.round(
+      scores.reduce((sum, score) => sum + score, 0) / totalDays,
+    );
     const bestScore = Math.max(...scores);
     const worstScore = Math.min(...scores);
 
     // 计算连续天数（从今天开始往前算）
     const today = new Date().toISOString().split('T')[0];
     let streakDays = 0;
-    let currentDate = new Date(today);
-    
+    const currentDate = new Date(today);
+
     for (let i = 0; i < fortunes.length; i++) {
       const checkDate = currentDate.toISOString().split('T')[0];
-      const hasFortune = fortunes.some(f => f.date === checkDate);
-      
+      const hasFortune = fortunes.some((f) => f.date === checkDate);
+
       if (hasFortune) {
         streakDays++;
         currentDate.setDate(currentDate.getDate() - 1);
@@ -195,7 +217,7 @@ export class FortunesService {
       averageScore,
       bestScore,
       worstScore,
-      streakDays
+      streakDays,
     };
   }
 
@@ -209,19 +231,22 @@ export class FortunesService {
     // 基于用户生日和当前日期的运势算法
     const birthday = user.birthday ? new Date(user.birthday) : new Date();
     const currentDate = new Date(date);
-    
+
     // 获取生日的月日作为种子
     const birthMonth = birthday.getMonth() + 1;
     const birthDay = birthday.getDate();
-    
+
     // 获取当前日期信息
-    const currentMonth = currentDate.getMonth() + 1;
-    const currentDay = currentDate.getDate();
-    const dayOfYear = Math.floor((currentDate.getTime() - new Date(currentDate.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
-    
+
+    const dayOfYear = Math.floor(
+      (currentDate.getTime() -
+        new Date(currentDate.getFullYear(), 0, 0).getTime()) /
+        (1000 * 60 * 60 * 24),
+    );
+
     // 创建伪随机种子
     const seed = (birthMonth * 31 + birthDay) * 1000 + dayOfYear;
-    
+
     // 伪随机数生成器
     const random = (min: number, max: number) => {
       const x = Math.sin(seed * 9999) * 10000;
@@ -236,15 +261,35 @@ export class FortunesService {
     const loveLuck = random(55, 96);
 
     // 幸运色和数字
-    const colors = ['红色', '橙色', '黄色', '绿色', '蓝色', '紫色', '粉色', '金色', '银色', '白色'];
+    const colors = [
+      '红色',
+      '橙色',
+      '黄色',
+      '绿色',
+      '蓝色',
+      '紫色',
+      '粉色',
+      '金色',
+      '银色',
+      '白色',
+    ];
     const luckyColor = colors[random(0, colors.length)];
     const luckyNumber = random(1, 10);
 
     // 生成运势点评
-    const comment = this.generateComment(overallScore, careerLuck, wealthLuck, loveLuck);
-    
+    const comment = this.generateComment(
+      overallScore,
+      careerLuck,
+      wealthLuck,
+      loveLuck,
+    );
+
     // 生成建议
-    const suggestion = this.generateSuggestion(overallScore, luckyColor, luckyNumber);
+    const suggestion = this.generateSuggestion(
+      overallScore,
+      luckyColor,
+      luckyNumber,
+    );
 
     return {
       overallScore,
@@ -254,16 +299,21 @@ export class FortunesService {
       loveLuck,
       luckyColor,
       luckyNumber,
-      suggestion
+      suggestion,
     };
   }
 
   /**
    * 生成运势点评
    */
-  private generateComment(overall: number, career: number, wealth: number, love: number): string {
+  private generateComment(
+    overall: number,
+    career: number,
+    wealth: number,
+    love: number,
+  ): string {
     const comments: string[] = [];
-    
+
     if (overall >= 85) {
       comments.push('今日运势极佳！');
     } else if (overall >= 75) {
@@ -298,7 +348,11 @@ export class FortunesService {
   /**
    * 生成建议
    */
-  private generateSuggestion(score: number, color: string, number: number): string {
+  private generateSuggestion(
+    score: number,
+    color: string,
+    number: number,
+  ): string {
     const suggestions = [
       `今天适合穿${color}的衣服，会带来好运。`,
       `幸运数字${number}将为你带来意外惊喜。`,
@@ -344,12 +398,12 @@ export class FortunesService {
         description: true,
         imageUrl: true,
         price: true,
-        douyinUrl: true
+        douyinUrl: true,
       },
-      take: 3,  // 减少查询数量
+      take: 3, // 减少查询数量
       orderBy: {
-        createdAt: 'desc'  // 优先推荐新商品
-      }
+        createdAt: 'desc', // 优先推荐新商品
+      },
     });
 
     if (products.length === 0) {
@@ -364,25 +418,38 @@ export class FortunesService {
   /**
    * 格式化运势响应
    */
-  private formatFortuneResponse(fortune: any) {
-    return {
+  private formatFortuneResponse(fortune: any, isAuth: boolean = true) {
+    const response = {
       date: fortune.date,
       overallScore: fortune.overallScore,
-      comment: fortune.comment,
-      careerLuck: fortune.careerLuck,
-      wealthLuck: fortune.wealthLuck,
-      loveLuck: fortune.loveLuck,
-      luckyColor: fortune.luckyColor,
-      luckyNumber: fortune.luckyNumber,
-      suggestion: fortune.suggestion,
-      recommendation: fortune.recommendation ? {
-        id: fortune.recommendation.id,
-        name: fortune.recommendation.name,
-        description: fortune.recommendation.description,
-        imageUrl: fortune.recommendation.imageUrl,
-        price: fortune.recommendation.price,
-        douyinUrl: fortune.recommendation.douyinUrl
-      } : null
+      isAuth,
+      recommendation: fortune.recommendation
+        ? {
+            id: fortune.recommendation.id,
+            name: fortune.recommendation.name,
+            description: fortune.recommendation.description,
+            imageUrl: fortune.recommendation.imageUrl,
+            price: fortune.recommendation.price,
+            douyinUrl: fortune.recommendation.douyinUrl,
+          }
+        : null,
     };
+
+    // 对于已认证用户，返回完整的运势信息
+    if (isAuth) {
+      return {
+        ...response,
+        comment: fortune.comment,
+        careerLuck: fortune.careerLuck,
+        wealthLuck: fortune.wealthLuck,
+        loveLuck: fortune.loveLuck,
+        luckyColor: fortune.luckyColor,
+        luckyNumber: fortune.luckyNumber,
+        suggestion: fortune.suggestion,
+      };
+    }
+
+    // 对于访客用户，只返回基本信息（分数）
+    return response;
   }
 }

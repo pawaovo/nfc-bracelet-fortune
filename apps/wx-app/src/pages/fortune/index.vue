@@ -2,21 +2,23 @@
   <view class="fortune-container">
     <!-- 背景装饰 -->
     <view class="background-decoration">
-      <view class="decoration-circle decoration-circle-1"></view>
-      <view class="decoration-circle decoration-circle-2"></view>
-      <view class="decoration-circle decoration-circle-3"></view>
+      <view class="decoration-circle decoration-circle-1" />
+      <view class="decoration-circle decoration-circle-2" />
+      <view class="decoration-circle decoration-circle-3" />
     </view>
 
     <!-- 加载状态 -->
     <view v-if="isLoading" class="loading-container">
-      <view class="loading-spinner"></view>
-      <text class="loading-text">正在获取你的专属运势...</text>
+      <view class="loading-spinner" />
+      <text class="loading-text"> 正在获取你的专属运势... </text>
     </view>
 
     <!-- 错误状态 -->
     <view v-else-if="error" class="error-container">
-      <text class="error-icon">⚠️</text>
-      <text class="error-text">{{ error }}</text>
+      <text class="error-icon"> ⚠️ </text>
+      <text class="error-text">
+        {{ error }}
+      </text>
       <button class="retry-button" @click="loadFortune">重新获取</button>
     </view>
 
@@ -24,34 +26,42 @@
     <view v-else class="content">
       <!-- 顶部日期 -->
       <view class="date-header">
-        <text class="date-text">{{ currentDate }}</text>
+        <text class="date-text">
+          {{ currentDate }}
+        </text>
       </view>
 
       <!-- 欢迎语 -->
       <view class="welcome-section">
-        <text class="welcome-text">{{ welcomeMessage }}</text>
+        <text class="welcome-text">
+          {{ welcomeMessage }}
+        </text>
       </view>
 
       <!-- 综合分数 -->
       <view class="score-section">
         <view class="score-circle">
-          <text class="score-number">{{ fortuneData?.overallScore || 0 }}</text>
-          <text class="score-label">分</text>
+          <text class="score-number">
+            {{ fortuneData?.overallScore || 0 }}
+          </text>
+          <text class="score-label"> 分 </text>
         </view>
-        <text class="score-title">综合分数</text>
+        <text class="score-title"> 综合分数 </text>
       </view>
 
       <!-- 运势点评 -->
       <view class="comment-section">
-        <text class="comment-text">{{ fortuneData?.comment || '正在为你生成专属运势...' }}</text>
+        <text class="comment-text">
+          {{ fortuneData?.comment || '正在为你生成专属运势...' }}
+        </text>
       </view>
 
       <!-- 分项运势 -->
       <view class="luck-sections">
         <view class="luck-item">
           <view class="luck-header">
-            <text class="luck-icon">💼</text>
-            <text class="luck-title">事业运</text>
+            <text class="luck-icon"> 💼 </text>
+            <text class="luck-title"> 事业运 </text>
           </view>
           <view class="luck-stars">
             <star-rating :score="fortuneData?.careerLuck || 0" />
@@ -60,8 +70,8 @@
 
         <view class="luck-item">
           <view class="luck-header">
-            <text class="luck-icon">💰</text>
-            <text class="luck-title">财富运</text>
+            <text class="luck-icon"> 💰 </text>
+            <text class="luck-title"> 财富运 </text>
           </view>
           <view class="luck-stars">
             <star-rating :score="fortuneData?.wealthLuck || 0" />
@@ -70,8 +80,8 @@
 
         <view class="luck-item">
           <view class="luck-header">
-            <text class="luck-icon">💕</text>
-            <text class="luck-title">爱情运</text>
+            <text class="luck-icon"> 💕 </text>
+            <text class="luck-title"> 爱情运 </text>
           </view>
           <view class="luck-stars">
             <star-rating :score="fortuneData?.loveLuck || 0" />
@@ -82,21 +92,27 @@
       <!-- 开运提示 -->
       <view class="tips-section">
         <view class="tips-header">
-          <text class="tips-icon">✨</text>
-          <text class="tips-title">今日开运提示</text>
+          <text class="tips-icon"> ✨ </text>
+          <text class="tips-title"> 今日开运提示 </text>
         </view>
         <view class="tips-content">
           <view class="tip-item">
-            <text class="tip-label">幸运色：</text>
-            <text class="tip-value">{{ fortuneData?.luckyColor || '紫色' }}</text>
+            <text class="tip-label"> 幸运色： </text>
+            <text class="tip-value">
+              {{ fortuneData?.luckyColor || '紫色' }}
+            </text>
           </view>
           <view class="tip-item">
-            <text class="tip-label">幸运数字：</text>
-            <text class="tip-value">{{ fortuneData?.luckyNumber || 8 }}</text>
+            <text class="tip-label"> 幸运数字： </text>
+            <text class="tip-value">
+              {{ fortuneData?.luckyNumber || 8 }}
+            </text>
           </view>
           <view class="tip-item">
-            <text class="tip-label">建议：</text>
-            <text class="tip-value">{{ fortuneData?.suggestion || '保持积极心态，好运自然来' }}</text>
+            <text class="tip-label"> 建议： </text>
+            <text class="tip-value">
+              {{ fortuneData?.suggestion || '保持积极心态，好运自然来' }}
+            </text>
           </view>
         </view>
       </view>
@@ -104,7 +120,7 @@
       <!-- 商品推荐 -->
       <view v-if="fortuneData?.recommendation" class="recommendation-section">
         <view class="recommendation-header">
-          <text class="recommendation-title">今日开运手链推荐</text>
+          <text class="recommendation-title"> 今日开运手链推荐 </text>
         </view>
         <view class="recommendation-card" @click="handleRecommendationClick">
           <image
@@ -113,9 +129,13 @@
             mode="aspectFill"
           />
           <view class="recommendation-info">
-            <text class="recommendation-name">{{ fortuneData.recommendation.name }}</text>
-            <text class="recommendation-desc">{{ fortuneData.recommendation.description }}</text>
-            <text class="recommendation-action">点击查看详情 →</text>
+            <text class="recommendation-name">
+              {{ fortuneData.recommendation.name }}
+            </text>
+            <text class="recommendation-desc">
+              {{ fortuneData.recommendation.description }}
+            </text>
+            <text class="recommendation-action"> 点击查看详情 → </text>
           </view>
         </view>
       </view>
@@ -123,8 +143,8 @@
       <!-- 历史记录入口 -->
       <view v-if="!isVisitorMode" class="history-section">
         <button class="history-button" @click="goToHistory">
-          <text class="history-icon">📊</text>
-          <text class="history-text">查看历史运势</text>
+          <text class="history-icon"> 📊 </text>
+          <text class="history-text"> 查看历史运势 </text>
         </button>
       </view>
     </view>
@@ -132,79 +152,84 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { useFortuneStore } from '@/stores/fortune'
-import { fortuneService, generateRandomScore, generateRandomLuckyColor, generateRandomLuckyNumber } from '@/api/fortune'
-import type { FortuneData } from '@/stores/fortune'
-import StarRating from '@/components/StarRating.vue'
+import { ref, computed, onMounted } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+import { useFortuneStore } from '@/stores/fortune';
+import {
+  fortuneService,
+  generateRandomScore,
+  generateRandomLuckyColor,
+  generateRandomLuckyNumber,
+} from '@/api/fortune';
+import type { FortuneData } from '@/stores/fortune';
+import StarRating from '@/components/StarRating.vue';
 
 // Stores
-const authStore = useAuthStore()
-const fortuneStore = useFortuneStore()
+const authStore = useAuthStore();
+const fortuneStore = useFortuneStore();
 
 // 页面状态
-const isLoading = ref(false)
-const error = ref('')
-const isVisitorMode = ref(false)
+const isLoading = ref(false);
+const error = ref('');
+const isVisitorMode = ref(false);
 
 // 计算属性
 const currentDate = computed(() => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  return `${year}年${month}月${day}日`
-})
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}年${month}月${day}日`;
+});
 
 const welcomeMessage = computed(() => {
   if (isVisitorMode.value) {
-    return '欢迎体验专属运势服务'
+    return '欢迎体验专属运势服务';
   }
 
   if (authStore.user?.name) {
-    return `${authStore.user.name}，这是你的专属运势`
+    return `${authStore.user.name}，这是你的专属运势`;
   }
 
-  return '这是你的专属运势'
-})
+  return '这是你的专属运势';
+});
 
-const fortuneData = computed(() => fortuneStore.todayFortune)
+const fortuneData = computed(() => fortuneStore.todayFortune);
 
 // 页面生命周期
 onLoad((options: any) => {
-  console.log('运势页面加载', options)
+  console.log('运势页面加载', options);
 
   // 检查是否为访客模式
   if (options?.mode === 'visitor') {
-    isVisitorMode.value = true
+    isVisitorMode.value = true;
   }
 
   // 检查登录状态
-  checkAuthStatus()
+  checkAuthStatus();
 
   // 加载运势数据
-  loadFortune()
-})
+  loadFortune();
+});
 
 /**
  * 检查认证状态
  */
 function checkAuthStatus() {
   if (!isVisitorMode.value && !authStore.isAuthenticated) {
-    console.warn('用户未登录，跳转到绑定页面')
+    console.warn('用户未登录，跳转到绑定页面');
     uni.redirectTo({
-      url: '/pages/bind/index'
-    })
-    return
+      url: '/pages/bind/index',
+    });
+    return;
   }
 
   if (!isVisitorMode.value && !authStore.isProfileComplete) {
-    console.warn('用户信息不完整，跳转到个人信息补全页面')
+    console.warn('用户信息不完整，跳转到个人信息补全页面');
     uni.redirectTo({
-      url: '/pages/profile/index'
-    })
-    return
+      url: '/pages/profile/index',
+    });
+    return;
   }
 }
 
@@ -213,21 +238,21 @@ function checkAuthStatus() {
  */
 async function loadFortune() {
   try {
-    isLoading.value = true
-    error.value = ''
+    isLoading.value = true;
+    error.value = '';
 
     if (isVisitorMode.value) {
       // 访客模式，显示模拟数据（无需网络请求）
-      loadVisitorFortune()
-      isLoading.value = false
+      loadVisitorFortune();
+      isLoading.value = false;
     } else {
       // 已认证用户，加载真实数据
-      await loadAuthenticatedFortune()
+      await loadAuthenticatedFortune();
     }
   } catch (err) {
-    console.error('加载运势失败:', err)
-    error.value = err instanceof Error ? err.message : '加载运势失败，请重试'
-    isLoading.value = false
+    console.error('加载运势失败:', err);
+    error.value = err instanceof Error ? err.message : '加载运势失败，请重试';
+    isLoading.value = false;
   }
 }
 
@@ -251,11 +276,11 @@ function loadVisitorFortune() {
       description: '提升整体运势，增强直觉力',
       imageUrl: '/static/bracelet-sample.jpg',
       price: 299,
-      douyinUrl: 'https://example.com/douyin'
-    }
-  }
+      douyinUrl: 'https://example.com/douyin',
+    },
+  };
 
-  fortuneStore.setFortune(mockFortune)
+  fortuneStore.setFortune(mockFortune);
 }
 
 /**
@@ -264,32 +289,38 @@ function loadVisitorFortune() {
 async function loadAuthenticatedFortune() {
   // 检查是否已有今日运势缓存
   if (fortuneStore.hasTodayFortune && fortuneStore.isToday) {
-    console.log('使用缓存的今日运势')
-    isLoading.value = false
-    return
+    console.log('使用缓存的今日运势');
+    isLoading.value = false;
+    return;
   }
 
   try {
-    console.log('调用API获取今日运势')
+    console.log('调用API获取今日运势');
 
     // 设置超时时间为1.5秒，确保快速响应
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('请求超时')), 1500)
-    })
+      setTimeout(() => reject(new Error('请求超时')), 1500);
+    });
 
     // 调用后端API获取今日运势
-    const apiPromise = fortuneService.getTodayFortune()
+    const apiPromise = fortuneService.getTodayFortune();
 
-    const response = await Promise.race([apiPromise, timeoutPromise]) as any
+    const response = (await Promise.race([apiPromise, timeoutPromise])) as any;
 
     if (response.success && response.data) {
-      console.log('成功获取今日运势:', response.data)
-      fortuneStore.setFortune(response.data)
+      console.log('成功获取今日运势:', response.data);
+      fortuneStore.setFortune(response.data);
+
+      // 根据API返回的isAuth字段更新访客模式状态
+      if (response.data.isAuth === false) {
+        isVisitorMode.value = true;
+        console.log('API返回isAuth=false，切换到访客模式');
+      }
     } else {
-      throw new Error(response.message || '获取运势失败')
+      throw new Error(response.message || '获取运势失败');
     }
   } catch (error) {
-    console.error('API调用失败，使用模拟数据:', error)
+    console.error('API调用失败，使用模拟数据:', error);
 
     // API调用失败时使用模拟数据，确保用户体验
     const mockFortune: FortuneData = {
@@ -308,22 +339,22 @@ async function loadAuthenticatedFortune() {
         description: '招财进宝，事业有成',
         imageUrl: '/static/bracelet-gold.jpg',
         price: 599,
-        douyinUrl: 'https://example.com/douyin'
-      }
-    }
+        douyinUrl: 'https://example.com/douyin',
+      },
+    };
 
-    fortuneStore.setFortune(mockFortune)
+    fortuneStore.setFortune(mockFortune);
 
     // 显示友好的错误提示，但不阻断用户体验
     if (error instanceof Error && error.message === '请求超时') {
       uni.showToast({
         title: '网络较慢，已显示缓存数据',
         icon: 'none',
-        duration: 2000
-      })
+        duration: 2000,
+      });
     }
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
@@ -339,10 +370,10 @@ function handleRecommendationClick() {
         uni.showToast({
           title: '抖音链接已复制',
           icon: 'success',
-          duration: 2000
-        })
-      }
-    })
+          duration: 2000,
+        });
+      },
+    });
   }
 }
 
@@ -351,8 +382,8 @@ function handleRecommendationClick() {
  */
 function goToHistory() {
   uni.navigateTo({
-    url: '/pages/history/index'
-  })
+    url: '/pages/history/index',
+  });
 }
 </script>
 
@@ -404,11 +435,17 @@ function goToHistory() {
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
 }
 
-.loading-container, .error-container {
+.loading-container,
+.error-container {
   position: relative;
   z-index: 1;
   display: flex;
@@ -431,11 +468,16 @@ function goToHistory() {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
-.loading-text, .error-text {
+.loading-text,
+.error-text {
   color: #ffffff;
   font-size: 28rpx;
   line-height: 1.5;
