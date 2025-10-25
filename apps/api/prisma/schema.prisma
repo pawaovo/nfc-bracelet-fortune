@@ -45,21 +45,21 @@ model Bracelet {
 model DailyFortune {
   id                    String   @id @default(uuid()) @db.Uuid
   userId                String   @map("user_id") @db.Uuid
-  date                  DateTime @db.Date
-  score                 Int      @db.Integer
+  date                  String   @db.VarChar(10) // YYYY-MM-DD format
+  overallScore          Int      @map("overall_score") @db.Integer
   comment               String   @db.Text
-  careerScore           Int      @map("career_score") @db.Integer
-  wealthScore           Int      @map("wealth_score") @db.Integer
-  loveScore             Int      @map("love_score") @db.Integer
-  goodElement           String?  @map("good_element") @db.VarChar(50)
-  luckyColor            String?  @map("lucky_color") @db.VarChar(50)
-  goodFor               String?  @map("good_for") @db.VarChar(255)
-  recommendedProductId  String?  @map("recommended_product_id") @db.Uuid
+  careerLuck            Int      @map("career_luck") @db.Integer
+  wealthLuck            Int      @map("wealth_luck") @db.Integer
+  loveLuck              Int      @map("love_luck") @db.Integer
+  luckyColor            String   @map("lucky_color") @db.VarChar(50)
+  luckyNumber           Int      @map("lucky_number") @db.Integer
+  suggestion            String   @db.Text
+  recommendationId      String?  @map("recommendation_id") @db.Uuid
   createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   // Relations
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  recommendedProduct Product? @relation(fields: [recommendedProductId], references: [id], onDelete: SetNull)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recommendation Product? @relation(fields: [recommendationId], references: [id], onDelete: SetNull)
 
   // Constraints
   @@unique([userId, date])
@@ -72,7 +72,8 @@ model Product {
   name        String   @db.VarChar(255)
   description String   @db.Text
   imageUrl    String   @map("image_url") @db.VarChar(1024)
-  douyinLink  String   @map("douyin_link") @db.VarChar(1024)
+  price       Int      @db.Integer
+  douyinUrl   String   @map("douyin_url") @db.VarChar(1024)
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
 

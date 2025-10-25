@@ -66,8 +66,8 @@ export class AuthService {
 
       if (existingBracelet && existingBracelet.userId && existingBracelet.userId !== user.id) {
         // 手链已被其他用户绑定，返回访客预览状态
-        this.logger.log(`NFC ${nfcId} belongs to another user, returning visitor preview`);
-        
+        this.logger.log(`NFC ${nfcId} belongs to another user ${existingBracelet.userId}, current user ${user.id}, returning visitor preview`);
+
         return {
           status: 'VISITOR_PREVIEW',
           previewScore: this.generateRandomScore(),
@@ -75,9 +75,14 @@ export class AuthService {
         };
       }
 
-      // 绑定手链到当前用户
-      await this.braceletsService.bindToUser(nfcId, user.id);
-      this.logger.log(`Successfully bound NFC ${nfcId} to user ${user.id}`);
+      // 如果手链已绑定给当前用户，跳过绑定步骤
+      if (existingBracelet && existingBracelet.userId === user.id) {
+        this.logger.log(`NFC ${nfcId} already bound to current user ${user.id}`);
+      } else {
+        // 绑定手链到当前用户
+        await this.braceletsService.bindToUser(nfcId, user.id);
+        this.logger.log(`Successfully bound NFC ${nfcId} to user ${user.id}`);
+      }
 
       // 生成JWT token
       const token = this.jwtService.generateToken({
@@ -163,11 +168,11 @@ export class AuthService {
   async verifyNFCAccess(userId: string, nfcId: string): Promise<{ status: string }> {
     try {
       const belongsToUser = await this.braceletsService.belongsToUser(nfcId, userId);
-      
+
       if (belongsToUser) {
-        return { status: 'AUTHENTICATED' };
+        return { status: 'OWNER' };
       } else {
-        return { status: 'VISITOR_PREVIEW' };
+        return { status: 'VISITOR' };
       }
     } catch (error) {
       this.logger.error(`NFC access verification failed for user ${userId} and nfcId ${nfcId}`, error);
