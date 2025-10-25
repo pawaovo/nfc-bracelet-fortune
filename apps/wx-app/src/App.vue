@@ -14,15 +14,15 @@ onLaunch((options) => {
   // 初始化应用状态
   initializeApp()
 
-  // 处理NFC启动
-  handleNFCLaunch(options)
+  // 处理应用启动（NFC启动或直接启动）
+  handleAppLaunch(options)
 })
 
 onShow((options) => {
   console.log('App Show', options)
 
-  // 处理NFC启动（从后台切换回来时）
-  handleNFCLaunch(options)
+  // 处理应用启动（从后台切换回来时）
+  handleAppLaunch(options)
 })
 
 onHide(() => {
@@ -51,9 +51,9 @@ function initializeApp() {
 }
 
 /**
- * 处理NFC启动逻辑
+ * 处理应用启动逻辑（NFC启动或直接启动）
  */
-async function handleNFCLaunch(options: any) {
+async function handleAppLaunch(options: any) {
   // 检查是否通过NFC启动
   if (options.query && options.query.nfcId) {
     const nfcId = options.query.nfcId;
@@ -70,6 +70,121 @@ async function handleNFCLaunch(options: any) {
       // 已登录，验证NFC访问权限并跳转
       await handleAuthenticatedNFCAccess(nfcId);
     }
+  } else {
+    // 直接启动（无NFC参数）
+    console.log('直接启动小程序');
+    await handleDirectLaunch();
+  }
+}
+
+/**
+ * 处理直接启动逻辑（无NFC参数）
+ */
+async function handleDirectLaunch() {
+  try {
+    console.log('开始处理直接启动');
+
+    // 检查是否已有有效的登录状态
+    if (authStore.isAuthenticated && authStore.isProfileComplete) {
+      console.log('用户已登录且信息完整，直接跳转到运势页面');
+      uni.redirectTo({
+        url: '/pages/fortune/index'
+      });
+      return;
+    }
+
+    // 如果已登录但信息不完整，跳转到个人信息补全页
+    if (authStore.isAuthenticated && !authStore.isProfileComplete) {
+      console.log('用户已登录但信息不完整，跳转到个人信息补全页');
+      uni.redirectTo({
+        url: '/pages/profile/index'
+      });
+      return;
+    }
+
+    // 未登录，执行静默登录流程
+    console.log('用户未登录，开始静默登录');
+    await handleSilentLogin();
+
+  } catch (error) {
+    console.error('直接启动处理失败:', error);
+
+    // 启动失败，跳转到绑定页面
+    uni.redirectTo({
+      url: '/pages/bind/index'
+    });
+  }
+}
+
+/**
+ * 处理静默登录流程（仅使用微信code，无NFC）
+ */
+async function handleSilentLogin() {
+  try {
+    authStore.setLoading(true);
+
+    // 设置超时时间为2秒，确保快速响应
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('静默登录超时')), 2000)
+    })
+
+    // 获取微信登录code
+    const loginPromise = new Promise<UniApp.LoginRes>((resolve, reject) => {
+      uni.login({
+        provider: 'weixin',
+        success: resolve,
+        fail: reject
+      });
+    });
+
+    const loginResult = await Promise.race([loginPromise, timeoutPromise]) as UniApp.LoginRes
+    console.log('微信登录成功，code:', loginResult.code);
+
+    // 调用后端登录接口（不带nfcId）
+    const apiPromise = authService.login(loginResult.code)
+    const response = await Promise.race([apiPromise, timeoutPromise]) as any
+
+    if (response.success) {
+      const { status, token, user } = response.data;
+
+      console.log('静默登录响应:', { status, hasToken: !!token, hasUser: !!user });
+
+      if (token && user) {
+        // 保存认证信息
+        authStore.login(token, user);
+      }
+
+      // 根据状态跳转
+      switch (status) {
+        case 'AUTHENTICATED':
+          // 已认证且信息完整，直接跳转到运势页面
+          uni.redirectTo({
+            url: '/pages/fortune/index'
+          });
+          break;
+
+        case 'PROFILE_INCOMPLETE':
+          // 信息不完整，跳转到个人信息补全页
+          uni.redirectTo({
+            url: '/pages/profile/index'
+          });
+          break;
+
+        default:
+          throw new Error(`Unknown login status: ${status}`);
+      }
+    } else {
+      throw new Error(response.message || '静默登录失败');
+    }
+  } catch (error) {
+    console.error('静默登录失败:', error);
+
+    // 静默登录失败，跳转到绑定页面
+    uni.redirectTo({
+      url: '/pages/bind/index'
+    });
+  } finally {
+    authStore.setLoading(false);
   }
 }
 
