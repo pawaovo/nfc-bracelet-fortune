@@ -21,8 +21,8 @@ import { BraceletsService } from '../bracelets/bracelets.service';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { 
-          expiresIn: configService.get<string>('JWT_EXPIRES_IN', '7d') 
+        signOptions: {
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN', '7d'),
         },
       }),
       inject: [ConfigService],
@@ -38,6 +38,7 @@ import { BraceletsService } from '../bracelets/bracelets.service';
     CustomJwtService,
     UsersService,
     BraceletsService,
+    ConfigService,
   ],
   exports: [AuthService, JwtAuthGuard],
 })

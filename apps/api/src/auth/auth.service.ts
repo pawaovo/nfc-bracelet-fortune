@@ -1,4 +1,9 @@
-import { Injectable, Logger, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { WeChatService } from '../common/wechat.service';
 import { JwtService } from '../common/jwt.service';
 import { UsersService } from '../users/users.service';
@@ -43,14 +48,16 @@ export class AuthService {
 
       // 4. 普通登录（无NFC）
       return await this.handleNormalLogin(user);
-
     } catch (error) {
       this.logger.error('Login failed', error);
-      
-      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
-      
+
       throw new UnauthorizedException('Login failed');
     }
   }
@@ -61,25 +68,36 @@ export class AuthService {
    * @param nfcId NFC ID
    * @returns 登录响应
    */
-  private async handleNFCBinding(user: User, nfcId: string): Promise<LoginResponse> {
+  private async handleNFCBinding(
+    user: User,
+    nfcId: string,
+  ): Promise<LoginResponse> {
     try {
       // 检查手链是否已存在
       const existingBracelet = await this.braceletsService.findByNfcId(nfcId);
 
-      if (existingBracelet && existingBracelet.userId && existingBracelet.userId !== user.id) {
+      if (
+        existingBracelet &&
+        existingBracelet.userId &&
+        existingBracelet.userId !== user.id
+      ) {
         // 手链已被其他用户绑定，返回访客预览状态
-        this.logger.log(`NFC ${nfcId} belongs to another user ${existingBracelet.userId}, current user ${user.id}, returning visitor preview`);
+        this.logger.log(
+          `NFC ${nfcId} belongs to another user ${existingBracelet.userId}, current user ${user.id}, returning visitor preview`,
+        );
 
         return {
           status: 'VISITOR_PREVIEW',
           previewScore: this.generateRandomScore(),
-          recommendation: await this.getRandomRecommendation()
+          recommendation: await this.getRandomRecommendation(),
         };
       }
 
       // 如果手链已绑定给当前用户，跳过绑定步骤
       if (existingBracelet && existingBracelet.userId === user.id) {
-        this.logger.log(`NFC ${nfcId} already bound to current user ${user.id}`);
+        this.logger.log(
+          `NFC ${nfcId} already bound to current user ${user.id}`,
+        );
       } else {
         // 绑定手链到当前用户
         await this.braceletsService.bindToUser(nfcId, user.id);
@@ -89,7 +107,7 @@ export class AuthService {
       // 生成JWT token
       const token = this.jwtService.generateToken({
         sub: user.id,
-        openid: user.wechatOpenId
+        openid: user.wechatOpenId,
       });
 
       // 检查用户资料完整性
@@ -101,8 +119,8 @@ export class AuthService {
             id: user.id,
             wechatOpenId: user.wechatOpenId,
             name: user.name,
-            birthday: user.birthday
-          }
+            birthday: user.birthday,
+          },
         };
       }
 
@@ -113,12 +131,14 @@ export class AuthService {
           id: user.id,
           wechatOpenId: user.wechatOpenId,
           name: user.name,
-          birthday: user.birthday
-        }
+          birthday: user.birthday,
+        },
       };
-
     } catch (error) {
-      this.logger.error(`NFC binding failed for user ${user.id} and nfcId ${nfcId}`, error);
+      this.logger.error(
+        `NFC binding failed for user ${user.id} and nfcId ${nfcId}`,
+        error,
+      );
       throw new BadRequestException('Failed to bind NFC bracelet');
     }
   }
@@ -132,7 +152,7 @@ export class AuthService {
     // 生成JWT token
     const token = this.jwtService.generateToken({
       sub: user.id,
-      openid: user.wechatOpenId
+      openid: user.wechatOpenId,
     });
 
     // 检查用户资料完整性
@@ -144,8 +164,8 @@ export class AuthService {
           id: user.id,
           wechatOpenId: user.wechatOpenId,
           name: user.name,
-          birthday: user.birthday
-        }
+          birthday: user.birthday,
+        },
       };
     }
 
@@ -156,28 +176,51 @@ export class AuthService {
         id: user.id,
         wechatOpenId: user.wechatOpenId,
         name: user.name,
-        birthday: user.birthday
-      }
+        birthday: user.birthday,
+      },
     };
   }
 
   /**
    * 验证NFC访问权限
+   * 对于已认证用户：如果手链未绑定，自动绑定到该用户
    * @param userId 用户ID
    * @param nfcId NFC ID
    * @returns 验证结果
    */
-  async verifyNFCAccess(userId: string, nfcId: string): Promise<{ status: string }> {
+  async verifyNFCAccess(
+    userId: string,
+    nfcId: string,
+  ): Promise<{ status: string }> {
     try {
-      const belongsToUser = await this.braceletsService.belongsToUser(nfcId, userId);
+      // 一次查询获取手链信息，避免重复数据库调用
+      const existingBracelet = await this.braceletsService.findByNfcId(nfcId);
 
-      if (belongsToUser) {
-        return { status: 'OWNER' };
-      } else {
-        return { status: 'VISITOR' };
+      if (existingBracelet && existingBracelet.userId) {
+        if (existingBracelet.userId === userId) {
+          // 手链已属于当前用户
+          this.logger.log(`NFC ${nfcId} already belongs to user ${userId}`);
+          return { status: 'OWNER' };
+        } else {
+          // 手链已被其他用户绑定，返回访客状态
+          this.logger.log(
+            `NFC ${nfcId} belongs to another user ${existingBracelet.userId}, current user ${userId}`,
+          );
+          return { status: 'VISITOR' };
+        }
       }
+
+      // 手链未绑定或不存在，自动绑定到当前用户
+      this.logger.log(`NFC ${nfcId} is unbound, binding to user ${userId}`);
+      await this.braceletsService.bindToUser(nfcId, userId);
+      this.logger.log(`Successfully bound NFC ${nfcId} to user ${userId}`);
+
+      return { status: 'OWNER' };
     } catch (error) {
-      this.logger.error(`NFC access verification failed for user ${userId} and nfcId ${nfcId}`, error);
+      this.logger.error(
+        `NFC access verification failed for user ${userId} and nfcId ${nfcId}`,
+        error,
+      );
       throw new BadRequestException('Failed to verify NFC access');
     }
   }
@@ -218,7 +261,10 @@ export class AuthService {
         return products[randomIndex];
       }
     } catch (error) {
-      this.logger.warn('Failed to get random recommendation from database, using fallback', error);
+      this.logger.warn(
+        'Failed to get random recommendation from database, using fallback',
+        error,
+      );
     }
 
     // 如果数据库查询失败或没有商品，返回默认推荐
@@ -228,7 +274,7 @@ export class AuthService {
       description: '提升整体运势，带来好运',
       imageUrl: '/static/sample-product.jpg',
       price: 299,
-      douyinUrl: 'https://v.douyin.com/sample'
+      douyinUrl: 'https://v.douyin.com/sample',
     };
   }
 }

@@ -62,38 +62,97 @@ async function main() {
 
   console.log(`✅ 创建了 ${products.length} 个商品记录`);
 
-  // 创建示例用户（用于测试）
-  const testUser = await prisma.user.create({
-    data: {
-      wechatOpenId: 'test_openid_12345',
-      name: '测试用户',
-      birthday: new Date('1990-05-15'),
+  // 创建开发场景测试用户
+  const users = await Promise.all([
+    // 用户1：已认证用户（信息完整）
+    prisma.user.create({
+      data: {
+        wechatOpenId: 'dev_user_123',
+        name: '测试用户',
+        birthday: new Date('1990-01-01'),
+      },
+    }),
+    // 用户2：信息不完整用户
+    prisma.user.create({
+      data: {
+        wechatOpenId: 'dev_user_456',
+        name: null,
+        birthday: null,
+      },
+    }),
+    // 用户3：其他用户（用于测试"他人手链"场景）
+    prisma.user.create({
+      data: {
+        wechatOpenId: 'dev_other_user_789',
+        name: '其他用户',
+        birthday: new Date('1985-06-15'),
+      },
+    }),
+  ]);
+
+  console.log(`✅ 创建了 ${users.length} 个测试用户`);
+
+  // 创建开发场景测试手链
+  const braceletConfigs = [
+    // 已绑定手链
+    {
+      nfcId: 'NFC_OWNED_BY_USER_123',
+      userId: users[0].id,
+      comment: '已被用户1绑定（用于测试"已认证用户触碰自己手链"）',
     },
-  });
-
-  console.log(`✅ 创建了测试用户: ${testUser.name}`);
-
-  // 创建示例手链
-  const testBracelet = await prisma.bracelet.create({
-    data: {
-      nfcId: 'NFC_TEST_001',
-      userId: testUser.id,
-      boundAt: new Date(),
+    {
+      nfcId: 'NFC_BOUND_TO_OTHER_001',
+      userId: users[2].id,
+      comment: '已被其他用户绑定（用于测试"触碰他人手链"场景）',
     },
-  });
+    {
+      nfcId: 'NFC_BOUND_TO_OTHER_002',
+      userId: users[2].id,
+      comment: '已被其他用户绑定（用于测试"触碰他人手链"场景）',
+    },
+    // 未绑定手链
+    {
+      nfcId: 'NFC_FRESH_2025_001',
+      userId: null,
+      comment: '未绑定手链（用于测试"触碰未绑定手链"场景）',
+    },
+    {
+      nfcId: 'NFC_FRESH_2025_002',
+      userId: null,
+      comment: '未绑定手链（用于测试"触碰未绑定手链"场景）',
+    },
+    {
+      nfcId: 'NFC_FRESH_2025_003',
+      userId: null,
+      comment: '未绑定手链（用于测试"触碰未绑定手链"场景）',
+    },
+  ];
 
-  console.log(`✅ 创建了测试手链: ${testBracelet.nfcId}`);
+  const bracelets = await Promise.all(
+    braceletConfigs.map((config) =>
+      prisma.bracelet.create({
+        data: {
+          nfcId: config.nfcId,
+          userId: config.userId,
+          boundAt: config.userId ? new Date() : null,
+        },
+      }),
+    ),
+  );
 
-  // 创建示例运势记录
+  console.log(`✅ 创建了 ${bracelets.length} 个测试手链`);
+
+  // 创建开发场景运势记录
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = yesterday.toISOString().split('T')[0];
 
   const fortunes = await Promise.all([
+    // 为已认证用户（用户1）创建今日运势
     prisma.dailyFortune.create({
       data: {
-        userId: testUser.id,
+        userId: users[0].id,
         date: today,
         overallScore: 88,
         comment: '今日运势极佳，适合开展新项目',
@@ -106,9 +165,10 @@ async function main() {
         recommendationId: products[0].id,
       },
     }),
+    // 为已认证用户（用户1）创建昨日运势
     prisma.dailyFortune.create({
       data: {
-        userId: testUser.id,
+        userId: users[0].id,
         date: yesterdayStr,
         overallScore: 72,
         comment: '运势平稳，宜静不宜动',
@@ -119,6 +179,22 @@ async function main() {
         luckyNumber: 3,
         suggestion: '今天适合学习思考，不宜冒险',
         recommendationId: products[2].id,
+      },
+    }),
+    // 为其他用户（用户3）创建今日运势（用于访客预览）
+    prisma.dailyFortune.create({
+      data: {
+        userId: users[2].id,
+        date: today,
+        overallScore: 85,
+        comment: '今日运势不错，适合尝试新事物',
+        careerLuck: 80,
+        wealthLuck: 85,
+        loveLuck: 88,
+        luckyColor: '红色',
+        luckyNumber: 6,
+        suggestion: '今天适合社交活动，多与朋友交流',
+        recommendationId: products[1].id,
       },
     }),
   ]);

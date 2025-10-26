@@ -112,7 +112,7 @@ const handleBindClick = async () => {
 
     // 处理后端响应
     if (response.success) {
-      const { status, token, user } = response.data;
+      const { status, token, user, previewScore, recommendation } = response.data;
 
       if (token) {
         // 更新 auth store（会自动设置 token 到存储和 API 请求）
@@ -131,12 +131,31 @@ const handleBindClick = async () => {
           url: '/pages/fortune/index',
         });
       } else if (status === 'VISITOR_PREVIEW') {
-        // 这种情况不应该在绑定页面出现，但做容错处理
+        // 手链已被其他用户绑定，进入访客预览模式
+        console.log('手链已被绑定，进入访客预览模式');
+
+        // 保存预览数据到本地存储
+        if (previewScore && recommendation) {
+          uni.setStorageSync('previewData', {
+            score: previewScore,
+            recommendation: recommendation,
+          });
+          console.log('保存访客预览数据:', { previewScore, recommendation });
+        }
+
+        // 显示友好提示
         uni.showToast({
-          title: '此手链已被其他用户绑定',
+          title: '此手链已被绑定，为您展示访客预览',
           icon: 'none',
           duration: 2000,
         });
+
+        // 延迟跳转到访客预览页面
+        setTimeout(() => {
+          uni.redirectTo({
+            url: '/pages/fortune/index?mode=visitor&preview=true',
+          });
+        }, 2000);
       }
     } else {
       throw new Error(response.message || '绑定失败');
@@ -145,19 +164,45 @@ const handleBindClick = async () => {
     console.error('绑定失败:', error);
 
     let errorMessage = '绑定失败，请重试';
+    let showModal = false;
+
     if (error instanceof Error) {
       if (error.message.includes('授权')) {
-        errorMessage = '微信授权失败，请重试';
-      } else if (error.message.includes('网络')) {
-        errorMessage = '网络连接失败，请检查网络';
+        errorMessage = '微信授权失败，请重新点击绑定按钮';
+      } else if (error.message.includes('网络') || error.message.includes('超时')) {
+        errorMessage = '网络连接失败，请检查网络后重试';
+      } else if (error.message.includes('已被绑定') || error.message.includes('已绑定')) {
+        errorMessage = '此手链已被其他用户绑定';
+        showModal = true;
+      } else if (error.message.includes('服务器')) {
+        errorMessage = '服务暂时不可用，请稍后重试';
       }
     }
 
-    uni.showToast({
-      title: errorMessage,
-      icon: 'none',
-      duration: 2000,
-    });
+    if (showModal) {
+      // 对于手链已被绑定的情况，显示模态框提供更多信息
+      uni.showModal({
+        title: '手链已被绑定',
+        content: '此手链已被其他用户绑定。您可以尝试触碰其他未绑定的手链，或直接体验访客预览模式。',
+        showCancel: true,
+        cancelText: '返回',
+        confirmText: '访客预览',
+        success: res => {
+          if (res.confirm) {
+            // 跳转到访客预览页面
+            uni.redirectTo({
+              url: '/pages/fortune/index?mode=visitor',
+            });
+          }
+        },
+      });
+    } else {
+      uni.showToast({
+        title: errorMessage,
+        icon: 'none',
+        duration: 3000,
+      });
+    }
   } finally {
     isBinding.value = false;
   }

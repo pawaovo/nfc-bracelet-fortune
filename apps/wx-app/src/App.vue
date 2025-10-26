@@ -3,6 +3,7 @@ import { onLaunch, onShow, onHide } from '@dcloudio/uni-app';
 import { useAuthStore } from '@/stores/auth';
 import { useFortuneStore } from '@/stores/fortune';
 import { authService } from '@/api/auth';
+import { DEV_CONFIG, applyDevScenario } from '@/config/dev-scenarios';
 
 onLaunch(options => {
   console.log('App Launch', options);
@@ -56,24 +57,10 @@ function initializeApp() {
 async function handleAppLaunch(options: any) {
   const authStore = useAuthStore();
 
-  // 🧪 开发测试：模拟NFC首次绑定流程
-  const isDevelopmentNFCTest = true; // 开发测试开关
-  const testNfcId = 'NFC_FRESH_2025_001'; // 全新的测试NFC ID
-
-  if (isDevelopmentNFCTest) {
-    console.log('🧪 开发模式：模拟NFC首次绑定流程');
-
-    // 清除现有认证状态，模拟新用户
-    authStore.logout();
-    uni.removeStorageSync('currentNfcId');
-
-    // 确保options.query存在
-    if (!options.query) {
-      options.query = {};
-    }
-
-    // 强制模拟NFC启动
-    options.query.nfcId = testNfcId;
+  // 应用开发场景（替换原有的开发测试代码）
+  if (DEV_CONFIG.enabled) {
+    console.log('🧪 开发场景系统已启用');
+    options = applyDevScenario(DEV_CONFIG.currentScenario, options);
   }
 
   // 检查是否通过NFC启动
@@ -81,16 +68,16 @@ async function handleAppLaunch(options: any) {
     const nfcId = options.query.nfcId;
     console.log('NFC启动，nfcId:', nfcId);
 
-    // 存储当前NFC ID
-    uni.setStorageSync('currentNfcId', nfcId);
+    // 存储当前NFC ID（如果开发场景没有设置的话）
+    if (!uni.getStorageSync('currentNfcId')) {
+      uni.setStorageSync('currentNfcId', nfcId);
+    }
 
     // 检查用户是否已登录
     if (!authStore.isAuthenticated) {
-      // 🧪 开发模式：对于新的NFC ID，直接跳转到绑定页面（符合首次绑定流程）
-      console.log('🧪 未登录用户触碰NFC，跳转到绑定页面');
-      uni.redirectTo({
-        url: `/pages/bind/index?nfcId=${nfcId}`,
-      });
+      // 未登录用户触碰NFC，先尝试自动登录判断手链状态
+      console.log('未登录用户触碰NFC，尝试自动登录判断手链状态');
+      await handleUnauthorizedNFCAccess(nfcId);
     } else {
       // 已登录，验证NFC访问权限并跳转
       await handleAuthenticatedNFCAccess(nfcId);
@@ -310,6 +297,25 @@ async function handleAutoLogin(nfcId: string) {
 }
 
 /**
+ * 处理未认证用户的NFC访问
+ */
+async function handleUnauthorizedNFCAccess(nfcId: string) {
+  try {
+    console.log('未认证用户触碰NFC，尝试自动登录判断手链状态');
+
+    // 尝试通过自动登录流程判断手链状态
+    await handleAutoLogin(nfcId);
+  } catch (error) {
+    console.error('未认证用户NFC访问处理失败:', error);
+
+    // 如果自动登录失败，跳转到绑定页面
+    uni.redirectTo({
+      url: `/pages/bind/index?nfcId=${nfcId}`,
+    });
+  }
+}
+
+/**
  * 处理已认证用户的NFC访问
  */
 async function handleAuthenticatedNFCAccess(nfcId: string) {
@@ -318,7 +324,7 @@ async function handleAuthenticatedNFCAccess(nfcId: string) {
 
     const response = await authService.verifyNFC(nfcId);
 
-    if (response.success) {
+    if (response.success && response.data) {
       const { status } = response.data;
 
       if (status === 'OWNER') {
@@ -338,21 +344,12 @@ async function handleAuthenticatedNFCAccess(nfcId: string) {
   } catch (error) {
     console.error('NFC访问验证失败:', error);
 
-    // 验证失败可能是因为手链未绑定，尝试通过自动登录流程绑定
-    console.log('尝试通过自动登录流程绑定未绑定的手链');
-
-    try {
-      await handleAutoLogin(nfcId);
-    } catch (loginError) {
-      console.error('自动登录绑定失败:', loginError);
-
-      // 如果自动登录也失败，清除认证状态并跳转到绑定页面
-      const authStore = useAuthStore();
-      authStore.logout();
-      uni.redirectTo({
-        url: `/pages/bind/index?nfcId=${nfcId}`,
-      });
-    }
+    // 验证失败，清除认证状态并跳转到绑定页面
+    const authStore = useAuthStore();
+    authStore.logout();
+    uni.redirectTo({
+      url: `/pages/bind/index?nfcId=${nfcId}`,
+    });
   }
 }
 </script>
