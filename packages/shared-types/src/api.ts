@@ -33,6 +33,58 @@ export interface HistoryResponse {
   hasMore: boolean;
 }
 
+// Fortune data interface for API responses
+export interface FortuneData {
+  date: string;
+  overallScore: number;
+  isAuth?: boolean;
+  comment?: string;
+  careerLuck?: number;
+  wealthLuck?: number;
+  loveLuck?: number;
+  luckyColor?: string;
+  luckyNumber?: number;
+  suggestion?: string;
+  recommendation?: Product;
+}
+
+// History response with FortuneData
+export interface FortuneHistoryResponse {
+  fortunes: FortuneData[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+// Fortune stats response
+export interface FortuneStatsResponse {
+  totalDays: number;
+  averageScore: number;
+  bestScore: number;
+  worstScore: number;
+  streakDays: number;
+}
+
+// JWT Request interface
+export interface JwtRequest {
+  user: {
+    sub: string;
+    iat?: number;
+    exp?: number;
+  };
+}
+
+// AI Response interface
+export interface AIFortuneResponse {
+  overallScore?: number;
+  comment?: string;
+  careerLuck?: number;
+  wealthLuck?: number;
+  loveLuck?: number;
+  suggestion?: string;
+}
+
 // Common API response wrapper
 export interface ApiResponse<T = unknown> {
   success: boolean;

@@ -1,6 +1,12 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { BraceletsService } from '../bracelets/bracelets.service';
+import { AIService } from '../common/ai.service';
+import type {
+  UserForFortune,
+  FortuneData,
+  AIFortuneResponse,
+} from '@shared/types';
 
 @Injectable()
 export class FortunesService {
@@ -9,6 +15,7 @@ export class FortunesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly braceletsService: BraceletsService,
+    private readonly aiService: AIService,
   ) {}
 
   /**
@@ -65,8 +72,8 @@ export class FortunesService {
       throw new NotFoundException('用户不存在');
     }
 
-    // 计算运势
-    const fortuneData = await this.calculateFortune(user, today);
+    // 生成运势数据
+    const fortuneData = await this.generateFortuneData(user, today, isAuth);
 
     // 获取商品推荐（访客版和完整版都需要显示）
     const recommendation = await this.getRecommendation(
@@ -94,6 +101,76 @@ export class FortunesService {
     });
 
     return this.formatFortuneResponse(newFortune, isAuth);
+  }
+
+  /**
+   * 重新生成今日运势
+   * @param userId 用户ID
+   * @returns 重新生成的运势数据
+   */
+  async regenerateTodayFortune(userId: string) {
+    const today = new Date().toISOString().split('T')[0];
+    const isAuth = await this.checkUserAuth(userId);
+
+    if (!isAuth) {
+      // 预览版用户不支持重新生成
+      throw new Error('预览版用户不支持重新生成运势');
+    }
+
+    // 获取用户信息
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        birthday: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+
+    // 重新生成运势数据
+    const fortuneData = await this.generateFortuneData(user, today, isAuth);
+
+    // 更新或创建运势记录
+    const fortune = await this.prisma.dailyFortune.upsert({
+      where: {
+        userId_date: {
+          userId,
+          date: today,
+        },
+      },
+      update: {
+        overallScore: fortuneData.overallScore,
+        comment: fortuneData.comment,
+        careerLuck: fortuneData.careerLuck,
+        wealthLuck: fortuneData.wealthLuck,
+        loveLuck: fortuneData.loveLuck,
+        luckyColor: fortuneData.luckyColor,
+        luckyNumber: fortuneData.luckyNumber,
+        suggestion: fortuneData.suggestion,
+      },
+      create: {
+        userId,
+        date: today,
+        overallScore: fortuneData.overallScore,
+        comment: fortuneData.comment,
+        careerLuck: fortuneData.careerLuck,
+        wealthLuck: fortuneData.wealthLuck,
+        loveLuck: fortuneData.loveLuck,
+        luckyColor: fortuneData.luckyColor,
+        luckyNumber: fortuneData.luckyNumber,
+        suggestion: fortuneData.suggestion,
+      },
+      include: {
+        recommendation: true,
+      },
+    });
+
+    this.logger.log(`Regenerated fortune for user ${userId} on ${today}`);
+    return this.formatFortuneResponse(fortune, isAuth);
   }
 
   /**
@@ -224,12 +301,248 @@ export class FortunesService {
   }
 
   /**
-   * 计算运势
+   * 生成运势数据（AI优先，失败时抛出错误）
+   * @param user 用户信息
+   * @param date 日期
+   * @param isAuth 是否已认证
+   * @returns 运势数据
+   */
+  private async generateFortuneData(
+    user: UserForFortune,
+    date: string,
+    isAuth: boolean,
+  ): Promise<Omit<FortuneData, 'isAuth' | 'recommendation'>> {
+    if (!isAuth) {
+      // 预览版：使用固定模板
+      const previewData = this.generatePreviewFortune();
+      return {
+        date,
+        ...previewData,
+      };
+    }
+
+    // 完整版：尝试AI生成
+    const aiResult = await this.tryAIGeneration(user, date);
+    if (aiResult) {
+      this.logger.log('Using AI-generated fortune');
+      return {
+        date,
+        ...aiResult,
+      };
+    }
+
+    // AI失败：抛出特定错误，让前端处理重试
+    throw new Error('AI_GENERATION_FAILED');
+  }
+
+  /**
+   * 尝试AI生成运势（6秒超时）
+   * @param user 用户信息
+   * @param date 日期
+   * @returns AI生成的运势数据或null
+   */
+  private async tryAIGeneration(
+    user: UserForFortune,
+    date: string,
+  ): Promise<Omit<FortuneData, 'date' | 'isAuth' | 'recommendation'> | null> {
+    if (!this.aiService.isEnabled()) {
+      this.logger.log('AI service disabled');
+      return null;
+    }
+
+    try {
+      // 构建AI输入数据
+      const promptData = {
+        birthday: user.birthday,
+        date: date,
+        userName: user.name,
+      };
+
+      // 设置6秒超时
+      const aiResult = (await Promise.race([
+        this.aiService.generateFortune(promptData),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('AI timeout after 6s')), 6000),
+        ),
+      ])) as { content?: string; duration?: number } | null;
+
+      if (aiResult?.content) {
+        const parsedResult = this.parseAIResponse(aiResult.content);
+        if (parsedResult) {
+          this.logger.log(
+            `AI generation successful: ${aiResult.duration || 'unknown'}ms`,
+          );
+          return this.enrichFortuneData(parsedResult);
+        }
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.warn(`AI generation failed: ${errorMessage}`);
+    }
+
+    return null;
+  }
+
+  /**
+   * 解析AI响应内容
+   * @param content AI返回的内容
+   * @returns 解析后的运势数据或null
+   */
+  private parseAIResponse(content: string): AIFortuneResponse | null {
+    try {
+      // 尝试解析JSON格式
+      const parsed = JSON.parse(content);
+
+      // 验证必要字段
+      if (this.validateAIResponse(parsed)) {
+        return parsed;
+      }
+    } catch (error) {
+      // JSON解析失败，尝试文本解析
+      return this.parseTextResponse(content);
+    }
+
+    return null;
+  }
+
+  /**
+   * 验证AI响应数据
+   * @param data AI响应数据
+   * @returns 是否有效
+   */
+  private validateAIResponse(data: unknown): data is AIFortuneResponse {
+    return (
+      data !== null &&
+      typeof data === 'object' &&
+      typeof (data as any).overallScore === 'number' &&
+      (data as any).overallScore >= 60 &&
+      (data as any).overallScore <= 95 &&
+      typeof (data as any).comment === 'string' &&
+      (data as any).comment.length <= 150 &&
+      typeof (data as any).careerLuck === 'number' &&
+      typeof (data as any).wealthLuck === 'number' &&
+      typeof (data as any).loveLuck === 'number'
+    );
+  }
+
+  /**
+   * 解析文本格式的AI响应
+   * @param content 文本内容
+   * @returns 解析后的数据或null
+   */
+  private parseTextResponse(content: string): AIFortuneResponse | null {
+    try {
+      const lines = content.split('\n');
+      const result: AIFortuneResponse = {
+        overallScore: 75,
+        comment: '',
+        careerLuck: 75,
+        wealthLuck: 75,
+        loveLuck: 75,
+        suggestion: '',
+      };
+
+      for (const line of lines) {
+        if (line.includes('总体运势：') || line.includes('综合运势：')) {
+          const match = line.match(/(\d+)分/);
+          if (match) {
+            result.overallScore = parseInt(match[1]);
+          }
+        } else if (line.includes('事业运势：')) {
+          result.comment += line.replace('事业运势：', '').trim() + ' ';
+        } else if (line.includes('财运状况：') || line.includes('财运：')) {
+          result.comment += line.replace(/财运状况：|财运：/, '').trim() + ' ';
+        } else if (line.includes('爱情运势：') || line.includes('爱情：')) {
+          result.comment += line.replace(/爱情运势：|爱情：/, '').trim() + ' ';
+        } else if (line.includes('运势点评：') || line.includes('建议：')) {
+          result.suggestion = line.replace(/运势点评：|建议：/, '').trim();
+        }
+      }
+
+      // 如果解析出了有效内容，返回结果
+      if (result.comment.trim() || result.suggestion.trim()) {
+        return result;
+      }
+    } catch (error) {
+      this.logger.warn('Failed to parse text response:', error);
+    }
+
+    return null;
+  }
+
+  /**
+   * 丰富运势数据（添加幸运色、数字等）
+   * @param aiData AI生成的基础数据
+   * @returns 完整的运势数据
+   */
+  private enrichFortuneData(
+    aiData: AIFortuneResponse,
+  ): Omit<FortuneData, 'date' | 'isAuth' | 'recommendation'> {
+    // 生成幸运色和数字
+    const colors = [
+      '红色',
+      '橙色',
+      '黄色',
+      '绿色',
+      '蓝色',
+      '紫色',
+      '粉色',
+      '金色',
+      '银色',
+      '白色',
+    ];
+    const luckyColor = colors[Math.floor(Math.random() * colors.length)];
+    const luckyNumber = Math.floor(Math.random() * 9) + 1;
+
+    return {
+      overallScore: aiData.overallScore || 75,
+      comment: aiData.comment || '今日运势平稳，适合稳步推进各项计划。',
+      careerLuck: aiData.careerLuck || Math.floor(Math.random() * 36) + 60,
+      wealthLuck: aiData.wealthLuck || Math.floor(Math.random() * 36) + 60,
+      loveLuck: aiData.loveLuck || Math.floor(Math.random() * 36) + 60,
+      luckyColor,
+      luckyNumber,
+      suggestion:
+        aiData.suggestion ||
+        `今天适合穿${luckyColor}的衣服，数字${luckyNumber}将为你带来好运。`,
+    };
+  }
+
+  /**
+   * 生成预览版运势（访客模式）
+   * @returns 预览运势数据
+   */
+  private generatePreviewFortune(): Omit<
+    FortuneData,
+    'date' | 'isAuth' | 'recommendation'
+  > {
+    const score = Math.floor(Math.random() * 26) + 70; // 70-95分
+
+    return {
+      overallScore: score,
+      comment:
+        '今日运势不错，适合尝试新事物。购买专属手链，获取完整运势解读和个性化建议。',
+      careerLuck: Math.floor(Math.random() * 26) + 70,
+      wealthLuck: Math.floor(Math.random() * 26) + 70,
+      loveLuck: Math.floor(Math.random() * 26) + 70,
+      luckyColor: '金色',
+      luckyNumber: 8,
+      suggestion:
+        '保持积极心态，好运自然来。想要获得更准确的运势分析，请购买专属手链。',
+    };
+  }
+
+  /**
+   * 计算运势（传统算法，保留作为备用）
    * @param user 用户信息
    * @param date 日期
    * @returns 运势数据
    */
-  private async calculateFortune(user: any, date: string) {
+  private async calculateFortune(
+    user: UserForFortune,
+    date: string,
+  ): Promise<Omit<FortuneData, 'date' | 'isAuth' | 'recommendation'>> {
     // 基于用户生日和当前日期的运势算法
     const birthday = user.birthday ? new Date(user.birthday) : new Date();
     const currentDate = new Date(date);
@@ -287,7 +600,7 @@ export class FortunesService {
     );
 
     // 生成建议
-    const suggestion = this.generateSuggestion(
+    const suggestion = this.generateFallbackSuggestion(
       overallScore,
       luckyColor,
       luckyNumber,
@@ -348,9 +661,9 @@ export class FortunesService {
   }
 
   /**
-   * 生成建议
+   * 生成降级建议（传统算法）
    */
-  private generateSuggestion(
+  private generateFallbackSuggestion(
     score: number,
     color: string,
     number: number,
@@ -430,7 +743,10 @@ export class FortunesService {
   /**
    * 格式化运势响应
    */
-  private formatFortuneResponse(fortune: any, isAuth: boolean = true) {
+  private formatFortuneResponse(
+    fortune: any,
+    isAuth: boolean = true,
+  ): FortuneData {
     const response = {
       date: fortune.date,
       overallScore: fortune.overallScore,

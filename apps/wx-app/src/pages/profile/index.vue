@@ -85,7 +85,7 @@ const isLoading = ref(false);
 /**
  * 生日选择器变化事件
  */
-const onBirthdayChange = (event: any) => {
+const onBirthdayChange = (event: { detail: { value: string } }) => {
   formData.birthday = event.detail.value;
 };
 

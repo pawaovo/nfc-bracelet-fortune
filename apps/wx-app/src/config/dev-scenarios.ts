@@ -110,13 +110,14 @@ export const DEV_SCENARIOS: Record<string, DevScenario> = {
 // 开发配置 - 只需要修改这里切换场景！
 export const DEV_CONFIG = {
   enabled: true, // 开发模式总开关
-  currentScenario: 'INCOMPLETE_PROFILE' as keyof typeof DEV_SCENARIOS, // 👈 修改这里切换场景
+  currentScenario: 'AUTH_USER_DIRECT' as keyof typeof DEV_SCENARIOS, // 👈 修改这里切换场景
 };
 
 /**
  * 应用开发场景配置
  */
 export function applyDevScenario(scenarioKey: keyof typeof DEV_SCENARIOS, options: any): any {
+  // eslint-disable-line @typescript-eslint/no-explicit-any
   if (!DEV_CONFIG.enabled) {
     return options;
   }
@@ -168,6 +169,7 @@ export function applyDevScenario(scenarioKey: keyof typeof DEV_SCENARIOS, option
  * @param authStore 认证store
  */
 function applyAuthenticatedUserScenario(mockUserData: any, authStore: any) {
+  // eslint-disable-line @typescript-eslint/no-explicit-any
   const openid = mockUserData.id; // 使用dev_user_123作为openid
   const realToken = generateDevJWT('placeholder', openid); // sub会被后端替换为真实UUID
   const userWithOpenId = {

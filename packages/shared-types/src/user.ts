@@ -24,3 +24,10 @@ export interface UpdateProfileDto {
   name: string;
   birthday: string; // YYYY-MM-DD format
 }
+
+// User data for fortune generation
+export interface UserForFortune {
+  id: string;
+  name?: string | null;
+  birthday?: Date | null;
+}

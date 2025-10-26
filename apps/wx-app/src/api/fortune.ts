@@ -15,6 +15,14 @@ export class FortuneService {
   }
 
   /**
+   * 重新生成今日运势
+   * @returns 重新生成的运势数据
+   */
+  async regenerateTodayFortune(): Promise<ApiResponse<FortuneData>> {
+    return apiRequest.post('fortune/today/regenerate');
+  }
+
+  /**
    * 获取历史运势
    * @param page 页码
    * @param limit 每页数量

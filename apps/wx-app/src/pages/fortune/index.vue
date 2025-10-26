@@ -10,7 +10,44 @@
     <!-- 加载状态 -->
     <view v-if="isLoading" class="loading-container">
       <view class="loading-spinner" />
-      <text class="loading-text"> 正在获取你的专属运势... </text>
+      <text class="loading-text">
+        {{ loadingText }}
+      </text>
+    </view>
+
+    <!-- AI重试界面 -->
+    <view v-else-if="aiRetryState.showRetry" class="ai-retry-container">
+      <view class="retry-content">
+        <view class="retry-icon"> 🔮 </view>
+        <text class="retry-title"> 运势分析遇到问题 </text>
+        <text class="retry-desc"> AI分析服务暂时不稳定，请重新分析获取更准确的运势 </text>
+
+        <view class="retry-info">
+          <text class="retry-count">
+            已重试 {{ aiRetryState.retryCount }}/{{ aiRetryState.maxRetries }} 次
+          </text>
+        </view>
+
+        <view class="retry-buttons">
+          <button
+            class="retry-btn primary"
+            :disabled="
+              aiRetryState.retryCount >= aiRetryState.maxRetries || aiRetryState.isRetrying
+            "
+            @click="handleAIRetry"
+          >
+            {{ aiRetryState.retryCount >= aiRetryState.maxRetries ? '使用基础运势' : '重新分析' }}
+          </button>
+
+          <button
+            v-if="aiRetryState.retryCount < aiRetryState.maxRetries"
+            class="retry-btn secondary"
+            @click="handleUseFallback"
+          >
+            直接查看基础运势
+          </button>
+        </view>
+      </view>
     </view>
 
     <!-- 错误状态 -->
@@ -203,6 +240,23 @@ const historyDate = ref('');
 const isPreviewMode = ref(false);
 const fromProfile = ref(false); // 标识是否从个人信息页面跳转过来
 
+// AI重试相关状态
+const aiRetryState = ref({
+  showRetry: false,
+  retryCount: 0,
+  maxRetries: 3,
+  isRetrying: false,
+});
+
+// 加载文案
+const loadingMessages = [
+  '正在分析您的星象运势...',
+  '结合生辰八字计算中...',
+  '生成个性化建议...',
+  '运势分析即将完成...',
+];
+const loadingText = ref(loadingMessages[0]);
+
 // 计算属性
 const currentDate = computed(() => {
   // 历史模式显示历史日期，否则显示今天
@@ -255,7 +309,7 @@ const welcomeMessage = computed(() => {
 const fortuneData = computed(() => fortuneStore.todayFortune);
 
 // 页面生命周期
-onLoad((options: any) => {
+onLoad((options: Record<string, unknown>) => {
   console.log('运势页面加载', options);
 
   // 检查是否为访客模式
@@ -463,15 +517,11 @@ async function loadAuthenticatedFortune() {
   try {
     console.log('调用API获取今日运势');
 
-    // 设置超时时间为1.5秒，确保快速响应
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('请求超时')), 1500);
-    });
+    // 启动加载动画
+    startLoadingAnimation();
 
-    // 调用后端API获取今日运势
-    const apiPromise = fortuneService.getTodayFortune();
-
-    const response = (await Promise.race([apiPromise, timeoutPromise])) as any;
+    // 调用后端API获取今日运势（移除前端超时，让后端AI处理）
+    const response = await fortuneService.getTodayFortune();
 
     if (response.success && response.data) {
       console.log('成功获取今日运势:', response.data);
@@ -486,43 +536,168 @@ async function loadAuthenticatedFortune() {
       throw new Error(response.message || '获取运势失败');
     }
   } catch (error) {
-    console.error('API调用失败，使用模拟数据:', error);
+    console.error('API调用失败:', error);
+    handleFortuneError(error);
+  } finally {
+    stopLoadingAnimation();
+    isLoading.value = false;
+  }
+}
 
-    // API调用失败时使用模拟数据，确保用户体验
-    const mockFortune: FortuneData = {
-      date: new Date().toISOString().split('T')[0],
-      overallScore: 88,
-      comment: '今日运势极佳！事业上有突破机会，财运亨通，爱情甜蜜。',
-      careerLuck: 90,
-      wealthLuck: 85,
-      loveLuck: 88,
-      luckyColor: '金色',
-      luckyNumber: 6,
-      suggestion: '把握机会，勇敢行动，今天是你的幸运日',
-      recommendation: {
-        id: '2',
-        name: '黄金转运手链',
-        description: '招财进宝，事业有成',
-        imageUrl: '/static/bracelet-gold.jpg',
-        price: 599,
-        douyinUrl: 'https://example.com/douyin',
-      },
-    };
+/**
+ * 处理运势获取错误
+ */
+function handleFortuneError(error: unknown) {
+  if (
+    error?.response?.data?.code === 'AI_FAILED' ||
+    (error instanceof Error && error.message.includes('AI生成失败'))
+  ) {
+    // AI生成失败，显示重试界面
+    aiRetryState.value.showRetry = true;
+    console.log('AI生成失败，显示重试界面');
+  } else {
+    // 其他错误，使用降级方案
+    loadFallbackFortune();
+  }
+}
 
-    fortuneStore.setFortune(mockFortune);
+/**
+ * 处理AI重试
+ */
+async function handleAIRetry() {
+  if (aiRetryState.value.retryCount >= aiRetryState.value.maxRetries) {
+    // 达到最大重试次数，使用降级方案
+    handleUseFallback();
+    return;
+  }
 
-    // 显示友好的错误提示，但不阻断用户体验
-    if (error instanceof Error && error.message === '请求超时') {
+  try {
+    aiRetryState.value.retryCount++;
+    aiRetryState.value.isRetrying = true;
+    aiRetryState.value.showRetry = false;
+    isLoading.value = true;
+
+    console.log(`AI重试第${aiRetryState.value.retryCount}次`);
+
+    // 启动加载动画
+    startLoadingAnimation();
+
+    // 调用重新生成API
+    const response = await fortuneService.regenerateTodayFortune();
+
+    if (response.success && response.data) {
+      console.log('AI重试成功:', response.data);
+      fortuneStore.setFortune(response.data);
+
+      // 重置重试状态
+      aiRetryState.value.showRetry = false;
+      aiRetryState.value.retryCount = 0;
+
       uni.showToast({
-        title: '网络较慢，已显示缓存数据',
+        title: '运势分析成功！',
+        icon: 'success',
+        duration: 2000,
+      });
+    } else {
+      throw new Error(response.message || '重新生成失败');
+    }
+  } catch (error) {
+    console.error('AI重试失败:', error);
+
+    if (aiRetryState.value.retryCount >= aiRetryState.value.maxRetries) {
+      // 达到最大重试次数，自动降级
+      handleUseFallback();
+      uni.showToast({
+        title: '已为您提供基础运势',
+        icon: 'none',
+        duration: 2000,
+      });
+    } else {
+      // 还可以继续重试
+      aiRetryState.value.showRetry = true;
+      uni.showToast({
+        title: `重试失败，还可重试${aiRetryState.value.maxRetries - aiRetryState.value.retryCount}次`,
         icon: 'none',
         duration: 2000,
       });
     }
   } finally {
+    stopLoadingAnimation();
+    aiRetryState.value.isRetrying = false;
     isLoading.value = false;
   }
 }
+
+/**
+ * 使用降级方案
+ */
+function handleUseFallback() {
+  aiRetryState.value.showRetry = false;
+  loadFallbackFortune();
+}
+
+/**
+ * 加载降级运势
+ */
+function loadFallbackFortune() {
+  const fallbackFortune: FortuneData = {
+    date: new Date().toISOString().split('T')[0],
+    overallScore: 78,
+    comment: '今日运势平稳向上，适合稳步推进各项计划。保持积极心态，好运自然来。',
+    careerLuck: 75,
+    wealthLuck: 80,
+    loveLuck: 76,
+    luckyColor: '蓝色',
+    luckyNumber: 7,
+    suggestion: '今天适合穿蓝色系服装，数字7将为你带来好运。保持耐心，机会就在前方。',
+    recommendation: {
+      id: 'fallback',
+      name: '智慧运势手链',
+      description: '提升洞察力，把握机遇',
+      imageUrl: '/static/bracelet-wisdom.jpg',
+      price: 299,
+      douyinUrl: 'https://example.com/douyin',
+    },
+  };
+
+  fortuneStore.setFortune(fallbackFortune);
+
+  // 显示友好提示
+  uni.showToast({
+    title: '已为您提供基础运势分析',
+    icon: 'none',
+    duration: 3000,
+  });
+}
+
+/**
+ * 启动加载动画
+ */
+function startLoadingAnimation() {
+  let messageIndex = 0;
+
+  const messageInterval = setInterval(() => {
+    messageIndex = (messageIndex + 1) % loadingMessages.length;
+    loadingText.value = loadingMessages[messageIndex];
+  }, 1500);
+
+  // 保存定时器引用以便清理
+  loadingTimer.value = messageInterval;
+}
+
+/**
+ * 停止加载动画
+ */
+function stopLoadingAnimation() {
+  if (loadingTimer.value) {
+    clearInterval(loadingTimer.value);
+    loadingTimer.value = null;
+  }
+  loadingText.value = loadingMessages[0];
+}
+
+// 加载定时器引用
+const loadingTimer = ref<number | null>(null);
 
 /**
  * 处理抖音店铺按钮点击
@@ -1003,5 +1178,90 @@ function handleHistoryNavigation() {
   color: #ffffff;
   font-size: 32rpx;
   font-weight: 600;
+}
+
+/* AI重试界面样式 */
+.ai-retry-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 60rpx 40rpx;
+}
+
+.retry-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 600rpx;
+}
+
+.retry-icon {
+  font-size: 120rpx;
+  margin-bottom: 40rpx;
+  opacity: 0.8;
+}
+
+.retry-title {
+  color: #ffffff;
+  font-size: 36rpx;
+  font-weight: 600;
+  margin-bottom: 20rpx;
+}
+
+.retry-desc {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 28rpx;
+  line-height: 1.6;
+  margin-bottom: 40rpx;
+}
+
+.retry-info {
+  margin-bottom: 50rpx;
+}
+
+.retry-count {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 24rpx;
+}
+
+.retry-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  width: 100%;
+}
+
+.retry-btn {
+  border: none;
+  border-radius: 50rpx;
+  padding: 28rpx 60rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.retry-btn.primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  box-shadow: 0 8rpx 20rpx rgba(102, 126, 234, 0.3);
+}
+
+.retry-btn.primary:disabled {
+  background: #cccccc;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+.retry-btn.secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+
+.retry-btn:active {
+  transform: translateY(2rpx);
 }
 </style>

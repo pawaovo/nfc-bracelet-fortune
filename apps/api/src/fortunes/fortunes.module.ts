@@ -6,6 +6,7 @@ import { FortunesService } from './fortunes.service';
 import { PrismaService } from '../common/prisma.service';
 import { JwtService } from '../common/jwt.service';
 import { BraceletsService } from '../bracelets/bracelets.service';
+import { AIService } from '../common/ai.service';
 
 @Module({
   imports: [
@@ -21,7 +22,13 @@ import { BraceletsService } from '../bracelets/bracelets.service';
     }),
   ],
   controllers: [FortunesController],
-  providers: [FortunesService, PrismaService, JwtService, BraceletsService],
+  providers: [
+    FortunesService,
+    PrismaService,
+    JwtService,
+    BraceletsService,
+    AIService,
+  ],
   exports: [FortunesService],
 })
 export class FortunesModule {}

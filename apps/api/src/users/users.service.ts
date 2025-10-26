@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
-import type { User, UpdateProfileDto } from '@shared/types';
+import type { User } from '@shared/types';
 
 @Injectable()
 export class UsersService {
@@ -16,12 +16,15 @@ export class UsersService {
   async findByWechatOpenId(wechatOpenId: string): Promise<User | null> {
     try {
       const user = await this.prisma.user.findUnique({
-        where: { wechatOpenId }
+        where: { wechatOpenId },
       });
 
       return user;
     } catch (error) {
-      this.logger.error(`Failed to find user by wechatOpenId: ${wechatOpenId}`, error);
+      this.logger.error(
+        `Failed to find user by wechatOpenId: ${wechatOpenId}`,
+        error,
+      );
       throw error;
     }
   }
@@ -34,7 +37,7 @@ export class UsersService {
   async findById(id: string): Promise<User | null> {
     try {
       const user = await this.prisma.user.findUnique({
-        where: { id }
+        where: { id },
       });
 
       return user;
@@ -55,14 +58,17 @@ export class UsersService {
         data: {
           wechatOpenId,
           name: null,
-          birthday: null
-        }
+          birthday: null,
+        },
       });
 
       this.logger.log(`Created new user: ${user.id}`);
       return user;
     } catch (error) {
-      this.logger.error(`Failed to create user with wechatOpenId: ${wechatOpenId}`, error);
+      this.logger.error(
+        `Failed to create user with wechatOpenId: ${wechatOpenId}`,
+        error,
+      );
       throw error;
     }
   }
@@ -74,15 +80,13 @@ export class UsersService {
    */
   async findOrCreate(wechatOpenId: string): Promise<User> {
     let user = await this.findByWechatOpenId(wechatOpenId);
-    
+
     if (!user) {
       user = await this.create(wechatOpenId);
     }
 
     return user;
   }
-
-
 
   /**
    * 检查用户资料是否完整
@@ -101,7 +105,7 @@ export class UsersService {
   async delete(id: string): Promise<void> {
     try {
       await this.prisma.user.delete({
-        where: { id }
+        where: { id },
       });
 
       this.logger.log(`Deleted user: ${id}`);

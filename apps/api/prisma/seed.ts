@@ -149,23 +149,11 @@ async function main() {
   const yesterdayStr = yesterday.toISOString().split('T')[0];
 
   const fortunes = await Promise.all([
-    // 为已认证用户（用户1）创建今日运势
-    prisma.dailyFortune.create({
-      data: {
-        userId: users[0].id,
-        date: today,
-        overallScore: 88,
-        comment: '今日运势极佳，适合开展新项目',
-        careerLuck: 85,
-        wealthLuck: 80,
-        loveLuck: 90,
-        luckyColor: '蓝色',
-        luckyNumber: 8,
-        suggestion: '今天适合开展新项目，把握合作机会',
-        recommendationId: products[0].id,
-      },
-    }),
-    // 为已认证用户（用户1）创建昨日运势
+    // 🚫 注意：故意不为用户1创建今日运势，以便测试AI生成功能
+    // 这样场景6（已认证用户触碰自己手链）和场景2（新访客触碰未绑定手链后绑定）
+    // 都会因为没有今日运势而触发AI生成流程
+
+    // 为已认证用户（用户1）创建昨日运势（保留历史数据功能测试）
     prisma.dailyFortune.create({
       data: {
         userId: users[0].id,
@@ -181,7 +169,7 @@ async function main() {
         recommendationId: products[2].id,
       },
     }),
-    // 为其他用户（用户3）创建今日运势（用于访客预览）
+    // 为其他用户（用户3）创建今日运势（用于访客预览场景1和场景4）
     prisma.dailyFortune.create({
       data: {
         userId: users[2].id,
@@ -200,8 +188,23 @@ async function main() {
   ]);
 
   console.log(`✅ 创建了 ${fortunes.length} 条运势记录`);
+  console.log(
+    '🤖 注意：用户1（dev_user_123）没有今日运势记录，将触发AI生成功能',
+  );
 
-  console.log('🎉 种子数据填充完成！');
+  // 输出AI测试场景说明
+  console.log('\n🧪 AI生成测试场景配置:');
+  console.log('   场景2: 新访客触碰未绑定手链 (NFC_FRESH_2025_001)');
+  console.log('   → 用户登录并绑定手链后，因无今日运势记录，将调用AI生成');
+  console.log('   场景6: 已认证用户触碰自己手链 (NFC_OWNED_BY_USER_123)');
+  console.log('   → 用户1因无今日运势记录，将调用AI生成');
+  console.log('   场景5: 已认证用户触碰未绑定手链 (NFC_FRESH_2025_002)');
+  console.log('   → 用户1绑定新手链后，因无今日运势记录，将调用AI生成');
+  console.log('   场景7: 已认证用户直接进入');
+  console.log('   → 用户1因无今日运势记录，将调用AI生成');
+  console.log('\n💡 其他场景将使用预览模式或现有运势记录');
+
+  console.log('\n🎉 种子数据填充完成！');
 }
 
 main()

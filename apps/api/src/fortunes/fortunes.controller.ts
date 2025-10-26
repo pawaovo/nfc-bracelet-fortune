@@ -1,16 +1,23 @@
-import { 
-  Controller, 
-  Get, 
-  UseGuards, 
-  Request, 
+import {
+  Controller,
+  Get,
+  Post,
+  UseGuards,
+  Request,
   Query,
   Param,
   Logger,
-  BadRequestException 
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { FortunesService } from './fortunes.service';
-import type { ApiResponse } from '@shared/types';
+import type {
+  ApiResponse,
+  FortuneData,
+  FortuneHistoryResponse,
+  FortuneStatsResponse,
+  JwtRequest,
+} from '@shared/types';
 
 @Controller('fortune')
 @UseGuards(JwtAuthGuard)
@@ -25,7 +32,9 @@ export class FortunesController {
    * @returns 今日运势数据
    */
   @Get('today')
-  async getTodayFortune(@Request() req: any): Promise<ApiResponse<any>> {
+  async getTodayFortune(
+    @Request() req: JwtRequest,
+  ): Promise<ApiResponse<FortuneData>> {
     try {
       const userId = req.user.sub;
       this.logger.log(`Getting today's fortune for user ${userId}`);
@@ -36,15 +45,74 @@ export class FortunesController {
         success: true,
         data: fortune,
         message: '获取今日运势成功',
-        code: '200'
+        code: '200',
       };
     } catch (error) {
-      this.logger.error(`Failed to get today's fortune: ${error instanceof Error ? error.message : 'Unknown error'}`, error instanceof Error ? error.stack : '');
+      this.logger.error(
+        `Failed to get today's fortune: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : '',
+      );
+
+      // 检查是否是AI生成失败
+      if (error instanceof Error && error.message === 'AI_GENERATION_FAILED') {
+        return {
+          success: false,
+          data: null,
+          message: 'AI生成失败，请重试',
+          code: 'AI_FAILED',
+        };
+      }
+
       return {
         success: false,
         data: null,
         message: error instanceof Error ? error.message : '获取今日运势失败',
-        code: '500'
+        code: '500',
+      };
+    }
+  }
+
+  /**
+   * 重新生成今日运势
+   * @param req 请求对象（包含用户信息）
+   * @returns 重新生成的运势数据
+   */
+  @Post('today/regenerate')
+  async regenerateTodayFortune(
+    @Request() req: JwtRequest,
+  ): Promise<ApiResponse<FortuneData>> {
+    try {
+      const userId = req.user.sub;
+      this.logger.log(`Regenerating today's fortune for user ${userId}`);
+
+      const fortune = await this.fortunesService.regenerateTodayFortune(userId);
+
+      return {
+        success: true,
+        data: fortune,
+        message: '重新生成运势成功',
+        code: '200',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to regenerate fortune: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : '',
+      );
+
+      if (error instanceof Error && error.message === 'AI_GENERATION_FAILED') {
+        return {
+          success: false,
+          data: null,
+          message: 'AI生成失败，请重试',
+          code: 'AI_FAILED',
+        };
+      }
+
+      return {
+        success: false,
+        data: null,
+        message: '重新生成运势失败',
+        code: '500',
       };
     }
   }
@@ -58,10 +126,10 @@ export class FortunesController {
    */
   @Get('history')
   async getHistoryFortunes(
-    @Request() req: any,
+    @Request() req: JwtRequest,
     @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10'
-  ): Promise<ApiResponse<any>> {
+    @Query('limit') limit: string = '10',
+  ): Promise<ApiResponse<FortuneHistoryResponse>> {
     try {
       const userId = req.user.sub;
       const pageNum = parseInt(page, 10);
@@ -75,23 +143,32 @@ export class FortunesController {
         throw new BadRequestException('每页数量必须是1-100之间的整数');
       }
 
-      this.logger.log(`Getting fortune history for user ${userId}, page ${pageNum}, limit ${limitNum}`);
+      this.logger.log(
+        `Getting fortune history for user ${userId}, page ${pageNum}, limit ${limitNum}`,
+      );
 
-      const result = await this.fortunesService.getHistoryFortunes(userId, pageNum, limitNum);
+      const result = await this.fortunesService.getHistoryFortunes(
+        userId,
+        pageNum,
+        limitNum,
+      );
 
       return {
         success: true,
         data: result,
         message: '获取历史运势成功',
-        code: '200'
+        code: '200',
       };
     } catch (error) {
-      this.logger.error(`Failed to get fortune history: ${error instanceof Error ? error.message : 'Unknown error'}`, error instanceof Error ? error.stack : '');
+      this.logger.error(
+        `Failed to get fortune history: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : '',
+      );
       return {
         success: false,
         data: null,
         message: error instanceof Error ? error.message : '获取历史运势失败',
-        code: '500'
+        code: '500',
       };
     }
   }
@@ -104,9 +181,9 @@ export class FortunesController {
    */
   @Get('date/:date')
   async getFortuneByDate(
-    @Request() req: any,
-    @Param('date') date: string
-  ): Promise<ApiResponse<any>> {
+    @Request() req: JwtRequest,
+    @Param('date') date: string,
+  ): Promise<ApiResponse<FortuneData>> {
     try {
       const userId = req.user.sub;
 
@@ -128,15 +205,18 @@ export class FortunesController {
         success: true,
         data: fortune,
         message: '获取运势成功',
-        code: '200'
+        code: '200',
       };
     } catch (error) {
-      this.logger.error(`Failed to get fortune by date: ${error instanceof Error ? error.message : 'Unknown error'}`, error instanceof Error ? error.stack : '');
+      this.logger.error(
+        `Failed to get fortune by date: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : '',
+      );
       return {
         success: false,
         data: null,
         message: error instanceof Error ? error.message : '获取运势失败',
-        code: '500'
+        code: '500',
       };
     }
   }
@@ -147,7 +227,9 @@ export class FortunesController {
    * @returns 运势统计数据
    */
   @Get('stats')
-  async getFortuneStats(@Request() req: any): Promise<ApiResponse<any>> {
+  async getFortuneStats(
+    @Request() req: JwtRequest,
+  ): Promise<ApiResponse<FortuneStatsResponse>> {
     try {
       const userId = req.user.sub;
       this.logger.log(`Getting fortune stats for user ${userId}`);
@@ -158,15 +240,18 @@ export class FortunesController {
         success: true,
         data: stats,
         message: '获取运势统计成功',
-        code: '200'
+        code: '200',
       };
     } catch (error) {
-      this.logger.error(`Failed to get fortune stats: ${error instanceof Error ? error.message : 'Unknown error'}`, error instanceof Error ? error.stack : '');
+      this.logger.error(
+        `Failed to get fortune stats: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : '',
+      );
       return {
         success: false,
         data: null,
         message: error instanceof Error ? error.message : '获取运势统计失败',
-        code: '500'
+        code: '500',
       };
     }
   }

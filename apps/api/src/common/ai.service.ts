@@ -73,44 +73,6 @@ export class AIService {
   }
 
   /**
-   * 生成运势建议
-   * @param score 运势分数
-   * @param luckyColor 幸运色
-   * @param luckyNumber 幸运数字
-   * @returns AI生成的建议
-   */
-  async generateSuggestion(
-    score: number,
-    luckyColor: string,
-    luckyNumber: number,
-  ): Promise<AIResponse | null> {
-    if (!this.enabled) {
-      return null;
-    }
-
-    const prompt = `请根据以下信息生成简短的运势建议：
-运势分数：${score}分
-幸运色：${luckyColor}
-幸运数字：${luckyNumber}
-
-要求：
-1. 建议要积极正面
-2. 控制在50字以内
-3. 结合幸运色和数字给出具体建议`;
-
-    try {
-      return await this.callAI(prompt, {
-        maxTokens: 100,
-        temperature: 0.7,
-        timeout: 10000,
-      });
-    } catch (error) {
-      this.logger.error('Failed to generate suggestion with AI', error);
-      return null;
-    }
-  }
-
-  /**
    * 构建运势生成的提示词
    */
   private buildFortunePrompt(data: FortunePromptData): string {
@@ -210,11 +172,16 @@ export class AIService {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      this.logger.error(`AI call failed after ${duration}ms: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`AI call failed after ${duration}ms: ${errorMessage}`);
 
-      if (error.response) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        const httpError = error as {
+          response?: { status?: number; data?: unknown };
+        };
         this.logger.error(
-          `HTTP ${error.response.status}: ${JSON.stringify(error.response.data)}`,
+          `HTTP ${httpError.response?.status}: ${JSON.stringify(httpError.response?.data)}`,
         );
       }
 
