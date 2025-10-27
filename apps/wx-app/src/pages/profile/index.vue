@@ -1,77 +1,114 @@
 <template>
   <view class="profile-container">
-    <!-- 背景装饰 -->
-    <view class="background-decoration">
-      <view class="decoration-circle decoration-circle-1" />
-      <view class="decoration-circle decoration-circle-2" />
-      <view class="decoration-circle decoration-circle-3" />
+    <!-- 主背景容器 -->
+    <view class="main-background">
+      <!-- 主背景图片 -->
+      <image class="bg-main" :src="config.images.mainBackground" mode="scaleToFill" />
+
+      <!-- 星空背景图片 -->
+      <image class="bg-stars" :src="config.images.starsBackground" mode="scaleToFill" />
     </view>
 
-    <!-- 主要内容 -->
-    <view class="content">
-      <!-- 标题区域 -->
-      <view class="header">
-        <view class="title"> 完善个人信息 </view>
-        <view class="subtitle"> 让我们为你生成专属运势 </view>
+    <!-- 状态栏区域（日期时间显示） -->
+    <view class="status-bar">
+      <!-- 状态栏图标 -->
+      <image class="status-icon" :src="config.images.calendarIcon" mode="aspectFit" />
+      <!-- 时间显示 -->
+      <view class="time-display">
+        <text class="date-text">
+          {{ currentDate }}
+        </text>
+        <text class="weekday-text">
+          {{ currentWeekday }}
+        </text>
       </view>
+    </view>
 
-      <!-- 表单区域 -->
-      <view class="form-container">
-        <!-- 称呼输入框 -->
-        <view class="form-item">
-          <view class="form-label"> 称呼 </view>
-          <input
-            v-model="formData.name"
-            class="form-input"
-            type="text"
-            placeholder="请输入你的常用称呼"
-            maxlength="20"
-          />
-        </view>
+    <!-- 头像占位图 -->
+    <image class="avatar-placeholder" :src="config.images.avatarPlaceholder" mode="aspectFill" />
 
-        <!-- 生日选择器 -->
-        <view class="form-item">
-          <view class="form-label"> 生日 </view>
-          <picker
-            mode="date"
-            :value="formData.birthday"
-            class="birthday-picker"
-            @change="onBirthdayChange"
-          >
-            <view class="picker-display">
-              <text class="picker-text" :class="{ placeholder: !formData.birthday }">
-                {{ formData.birthday || '请选择你的生日' }}
-              </text>
-              <view class="calendar-icon"> 📅 </view>
-            </view>
-          </picker>
-        </view>
+    <!-- 引导文字区域 -->
+    <view class="guide-text-container">
+      <text class="guide-title">
+        {{ config.texts.mainTitle }}
+      </text>
+      <text class="guide-subtitle">
+        {{ config.texts.subtitle }}
+      </text>
+    </view>
 
-        <!-- 提交按钮 -->
-        <button
-          class="submit-button"
-          :class="{ loading: isLoading }"
-          :disabled="isLoading"
-          @click="handleSubmitClick"
-        >
-          <text v-if="!isLoading"> 开启我的好运 </text>
-          <text v-else> 保存中... </text>
-        </button>
-      </view>
+    <!-- 用户名显示区域 -->
+    <view class="username-container">
+      <!-- 头像图标 -->
+      <image class="avatar-icon" :src="config.images.avatarIcon" mode="aspectFit" />
+      <!-- 用户名文字 -->
+      <text class="username-text">
+        {{ displayUsername }}
+      </text>
+    </view>
 
-      <!-- 底部提示 -->
-      <view class="footer-tip">
-        <text class="tip-text"> 你的信息将用于生成个性化运势，我们会严格保护你的隐私 </text>
-      </view>
+    <!-- 称呼标签 -->
+    <text class="name-label">
+      {{ config.texts.nameLabel }}
+    </text>
+
+    <!-- 称呼输入框 -->
+    <view class="name-input-container">
+      <image class="input-bg" :src="config.images.inputNameBackground" mode="scaleToFill" />
+      <input
+        v-model="formData.name"
+        class="name-input"
+        type="text"
+        :placeholder="config.texts.namePlaceholder"
+        maxlength="20"
+      />
+    </view>
+
+    <!-- 生日标签 -->
+    <text class="birthday-label">
+      {{ config.texts.birthdayLabel }}
+    </text>
+
+    <!-- 生日输入框 -->
+    <view class="birthday-input-container">
+      <image class="input-bg" :src="config.images.inputBirthdayBackground" mode="scaleToFill" />
+      <picker
+        mode="date"
+        :value="formData.birthday"
+        class="birthday-picker"
+        @change="onBirthdayChange"
+      >
+        <text class="birthday-input" :class="{ placeholder: !formData.birthday }">
+          {{ formData.birthday || config.texts.birthdayPlaceholder }}
+        </text>
+      </picker>
+    </view>
+
+    <!-- 提交按钮 -->
+    <view class="submit-button-container" @click="handleSubmitClick">
+      <image class="button-bg" :src="config.images.buttonBackground" mode="scaleToFill" />
+      <text v-if="!isLoading" class="button-text">
+        {{ config.texts.submitButton }}
+      </text>
+      <text v-else class="button-text"> 保存中... </text>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { profileService, validateName, validateBirthday } from '@/api/profile';
 import { useAuthStore } from '@/stores/auth';
+import { getTheme, getCurrentDate, getCurrentWeekday } from './config';
+import type { ProfilePageTheme } from './config';
+
+// 页面配置
+const config = ref<ProfilePageTheme>(getTheme('default'));
+
+// 当前日期和星期
+const currentDate = ref<string>(getCurrentDate());
+const currentWeekday = ref<string>(getCurrentWeekday());
 
 // 表单数据
 const formData = reactive({
@@ -81,6 +118,12 @@ const formData = reactive({
 
 // 加载状态
 const isLoading = ref(false);
+
+// 显示的用户名（如果已有用户信息则显示，否则显示配置的默认值）
+const displayUsername = computed(() => {
+  const authStore = useAuthStore();
+  return authStore.user?.name || config.value.texts.username;
+});
 
 /**
  * 生日选择器变化事件
@@ -242,197 +285,293 @@ onLoad(() => {
     });
   }
 });
+
+// 组件挂载时更新日期和星期
+onMounted(() => {
+  currentDate.value = getCurrentDate();
+  currentWeekday.value = getCurrentWeekday();
+});
 </script>
 
 <style lang="scss" scoped>
+/**
+ * 个人信息页面样式
+ * 设计图基准尺寸: 402.118px × 874.026px
+ * 转换比例: 750 / 402.118 ≈ 1.865
+ */
+
 .profile-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   position: relative;
+  min-height: 100vh;
+  height: 1627rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   overflow: hidden;
 }
 
-.background-decoration {
+/* 主背景容器 */
+.main-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+
+  .bg-main {
+    position: absolute;
+    top: -5.69%;
+    left: -52.38%;
+    width: 159.69%;
+    height: 107.94%;
+    z-index: 1;
+  }
+
+  .bg-stars {
+    position: absolute;
+    top: 120rpx;
+    left: 20rpx;
+    width: 720rpx;
+    height: 1280rpx;
+    z-index: 100;
+  }
+}
+
+/* 状态栏区域 */
+.status-bar {
+  position: absolute;
+  top: 120rpx;
+  left: 200rpx;
+  width: 322rpx;
+  height: 48rpx;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+
+  .status-icon {
+    width: 322rpx;
+    height: 48rpx;
+  }
+
+  .time-display {
+    position: absolute;
+    left: 70rpx;
+    top: 6rpx;
+    display: flex;
+    gap: 35rpx;
+
+    .date-text {
+      font-family: 'ABeeZee', sans-serif;
+      font-size: 22rpx;
+      color: #ffffff;
+      font-weight: 400;
+    }
+
+    .weekday-text {
+      font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
+      font-size: 22rpx;
+      color: #ffffff;
+      font-weight: 400;
+    }
+  }
+}
+
+/* 头像占位图 */
+.avatar-placeholder {
+  position: absolute;
+  top: 480rpx;
+  left: 77rpx;
+  width: 588rpx;
+  height: 796rpx;
+  z-index: 150;
+}
+
+/* 引导文字容器 - 复用绑定页面的欢迎文案样式 */
+.guide-text-container {
+  position: absolute;
+  top: 279rpx;
+  left: 151rpx;
+  width: 420rpx;
+  z-index: 200;
+}
+
+/* 引导标题 - 对应绑定页面的 welcome-title */
+.guide-title {
+  display: block;
+  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
+  font-size: 35rpx;
+  color: #ffffff;
+  font-weight: 400;
+  line-height: 51rpx;
+  margin-bottom: 17rpx;
+}
+
+/* 引导副标题 - 对应绑定页面的 welcome-subtitle */
+.guide-subtitle {
+  display: block;
+  font-family: 'ABeeZee', 'Noto Sans JP', 'Noto Sans SC', sans-serif;
+  font-size: 35rpx;
+  color: #ffffff;
+  font-weight: 400;
+  line-height: 51rpx;
+  margin-bottom: 70rpx;
+}
+
+/* 用户名容器 */
+.username-container {
+  position: absolute;
+  top: 560rpx;
+  left: 185rpx;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+}
+
+/* 头像图标 */
+.avatar-icon {
+  width: 77rpx;
+  height: 77rpx;
+  margin-right: 22rpx;
+}
+
+/* 用户名文字 */
+.username-text {
+  font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
+  font-size: 37rpx;
+  color: #ffffff;
+  line-height: 99rpx;
+}
+
+/* 称呼标签 */
+.name-label {
+  position: absolute;
+  top: 700rpx;
+  left: 157rpx;
+  font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
+  font-size: 37rpx;
+  color: #ffffff;
+  line-height: 95rpx;
+  z-index: 200;
+}
+
+/* 称呼输入框容器 */
+.name-input-container {
+  position: absolute;
+  top: 772rpx;
+  left: 143rpx;
+  width: 458rpx;
+  height: 81rpx;
+  z-index: 200;
+}
+
+/* 输入框背景图片 */
+.input-bg {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  opacity: 0.4;
 }
 
-.decoration-circle {
+/* 称呼输入框 */
+.name-input {
   position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-
-  &.decoration-circle-1 {
-    width: 200rpx;
-    height: 200rpx;
-    top: 10%;
-    right: -50rpx;
-    animation: float 6s ease-in-out infinite;
-  }
-
-  &.decoration-circle-2 {
-    width: 150rpx;
-    height: 150rpx;
-    top: 60%;
-    left: -30rpx;
-    animation: float 8s ease-in-out infinite reverse;
-  }
-
-  &.decoration-circle-3 {
-    width: 100rpx;
-    height: 100rpx;
-    top: 30%;
-    left: 20%;
-    animation: float 10s ease-in-out infinite;
-  }
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-20px);
-  }
-}
-
-.content {
-  position: relative;
-  z-index: 1;
-  padding: 120rpx 60rpx 60rpx;
-}
-
-.header {
-  text-align: center;
-  margin-bottom: 80rpx;
-}
-
-.title {
-  font-size: 48rpx;
-  font-weight: bold;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0 19rpx; // 10 × 1.865
+  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
+  font-size: 28rpx; // 15 × 1.865
   color: #ffffff;
-  margin-bottom: 20rpx;
-}
-
-.subtitle {
-  font-size: 28rpx;
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.5;
-}
-
-.form-container {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 24rpx;
-  padding: 60rpx 40rpx;
-  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-}
-
-.form-item {
-  margin-bottom: 40rpx;
-
-  &:last-of-type {
-    margin-bottom: 60rpx;
-  }
-}
-
-.form-label {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333333;
-  margin-bottom: 16rpx;
-}
-
-.form-input {
-  width: 100%;
-  height: 88rpx;
-  background: #f8f9fa;
-  border: 2rpx solid #e9ecef;
-  border-radius: 12rpx;
-  padding: 0 24rpx;
-  font-size: 30rpx;
-  color: #333333;
+  background: transparent;
   box-sizing: border-box;
-
-  &:focus {
-    border-color: #667eea;
-    background: #ffffff;
-  }
 }
 
+/* 生日标签 */
+.birthday-label {
+  position: absolute;
+  top: 903rpx;
+  left: 157rpx;
+  font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
+  font-size: 37rpx;
+  color: #ffffff;
+  line-height: 95rpx;
+  z-index: 200;
+}
+
+/* 生日输入框容器 */
+.birthday-input-container {
+  position: absolute;
+  top: 975rpx;
+  left: 143rpx;
+  width: 458rpx;
+  height: 81rpx;
+  z-index: 200;
+}
+
+/* 生日选择器 */
 .birthday-picker {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
+  height: 100%;
 }
 
-.picker-display {
+/* 生日输入框 */
+.birthday-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0 19rpx;
+  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
+  font-size: 28rpx;
+  color: #ffffff;
+  line-height: 81rpx;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  height: 88rpx;
-  background: #f8f9fa;
-  border: 2rpx solid #e9ecef;
-  border-radius: 12rpx;
-  padding: 0 24rpx;
-  box-sizing: border-box;
-}
-
-.picker-text {
-  font-size: 30rpx;
-  color: #333333;
 
   &.placeholder {
-    color: #999999;
+    opacity: 0.7;
   }
 }
 
-.calendar-icon {
-  font-size: 32rpx;
-  color: #667eea;
+/* 提交按钮容器 */
+.submit-button-container {
+  position: absolute;
+  top: 1140rpx;
+  left: 195rpx;
+  width: 360rpx;
+  height: 68rpx;
+  z-index: 200;
+  cursor: pointer;
 }
 
-.submit-button {
+/* 按钮背景图片 */
+.button-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 96rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  border-radius: 48rpx;
-  color: #ffffff;
-  font-size: 32rpx;
-  font-weight: 600;
+  height: 100%;
+}
+
+/* 按钮文字 */
+.button-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.4);
-  transition: all 0.3s ease;
-
-  &:active {
-    transform: translateY(2rpx);
-    box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.4);
-  }
-
-  &.loading {
-    opacity: 0.7;
-    transform: none;
-  }
-
-  &[disabled] {
-    opacity: 0.7;
-  }
-}
-
-.footer-tip {
-  margin-top: 60rpx;
-  text-align: center;
-}
-
-.tip-text {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.7);
-  line-height: 1.6;
+  font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
+  font-size: 28rpx;
+  color: #ffffff;
+  line-height: 84rpx;
 }
 </style>

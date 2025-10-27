@@ -40,11 +40,22 @@ apps/wx-app/src/static/
 
 ---
 
-### **2. 个人信息页面 (profile)** - 预留
+### **2. 个人信息页面 (profile)**
 
 **路径**: `apps/wx-app/src/static/pages/profile/`
 
-_待添加资源文件_
+| 文件名                   | 用途           | 格式 | 配置键                           |
+| ------------------------ | -------------- | ---- | -------------------------------- |
+| `bg-main.png`            | 主背景图片     | PNG  | `images.mainBackground`          |
+| `bg-stars.png`           | 星空背景图片   | PNG  | `images.starsBackground`         |
+| `avatar-placeholder.png` | 头像占位图     | PNG  | `images.avatarPlaceholder`       |
+| `input-bg-name.png`      | 称呼输入框背景 | PNG  | `images.inputNameBackground`     |
+| `input-bg-birthday.png`  | 生日输入框背景 | PNG  | `images.inputBirthdayBackground` |
+| `button-bg.png`          | 提交按钮背景   | PNG  | `images.buttonBackground`        |
+| `icon-calendar.svg`      | 日历图标       | SVG  | `images.calendarIcon`            |
+| `icon-avatar.svg`        | 头像图标       | SVG  | `images.avatarIcon`              |
+
+**配置文件**: `apps/wx-app/src/pages/profile/config.ts`
 
 ---
 
