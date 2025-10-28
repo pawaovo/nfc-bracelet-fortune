@@ -9,21 +9,6 @@
       <image class="bg-stars" :src="config.images.starsBackground" mode="scaleToFill" />
     </view>
 
-    <!-- 状态栏区域（日期时间显示） -->
-    <view class="status-bar">
-      <!-- 状态栏图标 -->
-      <image class="status-icon" :src="config.images.calendarIcon" mode="aspectFit" />
-      <!-- 时间显示 -->
-      <view class="time-display">
-        <text class="date-text">
-          {{ currentDate }}
-        </text>
-        <text class="weekday-text">
-          {{ currentWeekday }}
-        </text>
-      </view>
-    </view>
-
     <!-- 头像占位图 -->
     <image class="avatar-placeholder" :src="config.images.avatarPlaceholder" mode="aspectFill" />
 
@@ -96,19 +81,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { profileService, validateName, validateBirthday } from '@/api/profile';
 import { useAuthStore } from '@/stores/auth';
-import { getTheme, getCurrentDate, getCurrentWeekday } from './config';
+import { getTheme } from './config';
 import type { ProfilePageTheme } from './config';
 
 // 页面配置
 const config = ref<ProfilePageTheme>(getTheme('default'));
-
-// 当前日期和星期
-const currentDate = ref<string>(getCurrentDate());
-const currentWeekday = ref<string>(getCurrentWeekday());
 
 // 表单数据
 const formData = reactive({
@@ -285,12 +266,6 @@ onLoad(() => {
     });
   }
 });
-
-// 组件挂载时更新日期和星期
-onMounted(() => {
-  currentDate.value = getCurrentDate();
-  currentWeekday.value = getCurrentWeekday();
-});
 </script>
 
 <style lang="scss" scoped>
@@ -333,45 +308,6 @@ onMounted(() => {
     width: 720rpx;
     height: 1280rpx;
     z-index: 100;
-  }
-}
-
-/* 状态栏区域 */
-.status-bar {
-  position: absolute;
-  top: 120rpx;
-  left: 200rpx;
-  width: 322rpx;
-  height: 48rpx;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-
-  .status-icon {
-    width: 322rpx;
-    height: 48rpx;
-  }
-
-  .time-display {
-    position: absolute;
-    left: 70rpx;
-    top: 6rpx;
-    display: flex;
-    gap: 35rpx;
-
-    .date-text {
-      font-family: 'ABeeZee', sans-serif;
-      font-size: 22rpx;
-      color: #ffffff;
-      font-weight: 400;
-    }
-
-    .weekday-text {
-      font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
-      font-size: 22rpx;
-      color: #ffffff;
-      font-weight: 400;
-    }
   }
 }
 

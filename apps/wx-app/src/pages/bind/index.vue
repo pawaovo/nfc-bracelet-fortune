@@ -9,21 +9,6 @@
       <image class="bg-stars" :src="themeConfig.images.starsBackground" mode="scaleToFill" />
     </view>
 
-    <!-- 状态栏区域 -->
-    <view class="status-bar">
-      <!-- 状态栏图标 -->
-      <image class="status-icon" :src="themeConfig.images.statusIcon" mode="aspectFit" />
-      <!-- 时间显示 -->
-      <view class="time-display">
-        <text class="date-text">
-          {{ currentDate }}
-        </text>
-        <text class="weekday-text">
-          {{ currentWeekday }}
-        </text>
-      </view>
-    </view>
-
     <!-- 欢迎文案区域 -->
     <view class="welcome-section">
       <text class="welcome-title">
@@ -98,27 +83,9 @@ const themeConfig = ref<BindPageTheme>(getTheme('default'));
 // 响应式数据
 const isBinding = ref(false);
 const nfcId = ref('');
-const currentDate = ref('');
-const currentWeekday = ref('');
 
-// 更新时间显示
-const updateTime = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-
-  currentDate.value = `${year}.${month}.${day}`;
-
-  const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-  currentWeekday.value = weekdays[now.getDay()];
-};
-
-// 页面加载时获取NFC ID和初始化时间
+// 页面加载时获取NFC ID
 onMounted(() => {
-  // 初始化时间显示
-  updateTime();
-
   // 从页面参数或全局状态获取nfcId和主题配置
   const pages = getCurrentPages();
   const currentPage = pages[pages.length - 1];
@@ -303,45 +270,6 @@ const handleBindClick = async () => {
     width: 720rpx;
     height: 1280rpx;
     z-index: 100;
-  }
-}
-
-/* 状态栏区域 */
-.status-bar {
-  position: absolute;
-  top: 120rpx;
-  left: 200rpx;
-  width: 322rpx;
-  height: 48rpx;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-
-  .status-icon {
-    width: 322rpx;
-    height: 48rpx;
-  }
-
-  .time-display {
-    position: absolute;
-    left: 70rpx;
-    top: 6rpx;
-    display: flex;
-    gap: 35rpx;
-
-    .date-text {
-      font-family: 'ABeeZee', sans-serif;
-      font-size: 22rpx;
-      color: #ffffff;
-      font-weight: 400;
-    }
-
-    .weekday-text {
-      font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
-      font-size: 22rpx;
-      color: #ffffff;
-      font-weight: 400;
-    }
   }
 }
 

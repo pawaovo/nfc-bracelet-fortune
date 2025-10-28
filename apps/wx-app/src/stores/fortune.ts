@@ -7,6 +7,7 @@ export interface FortuneData {
   overallScore: number;
   isAuth?: boolean;
   comment?: string;
+  time?: string; // 运势时间，如 "AM 8:30"
   careerLuck?: number;
   wealthLuck?: number;
   loveLuck?: number;

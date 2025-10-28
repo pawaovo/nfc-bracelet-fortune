@@ -59,11 +59,53 @@ apps/wx-app/src/static/
 
 ---
 
-### **3. 运势页面 (fortune)** - 预留
+### **3. 运势页面 (fortune)**
 
 **路径**: `apps/wx-app/src/static/pages/fortune/`
 
-_待添加资源文件_
+| 文件名                        | 用途               | 格式 | 配置键                         |
+| ----------------------------- | ------------------ | ---- | ------------------------------ |
+| `bg-main.png`                 | 主背景图片（复用） | PNG  | `images.mainBackground`        |
+| `bg-stars.png`                | 星空背景（复用）   | PNG  | `images.starsBackground`       |
+| `bg-bottom-decoration.png`    | 底部装饰图片       | PNG  | `images.bottomDecoration`      |
+| `card-main-bg.svg`            | 运势卡片主背景     | SVG  | `images.cardMainBg`            |
+| `decoration-phone.png`        | 手机装饰图片       | PNG  | `images.decorationPhone`       |
+| `decoration-element-1.png`    | 装饰元素1          | PNG  | `images.decorationElement1`    |
+| `decoration-element-2.png`    | 装饰元素2          | PNG  | `images.decorationElement2`    |
+| `decoration-element-3.png`    | 装饰元素3          | PNG  | `images.decorationElement3`    |
+| `icon-career-mask.svg`        | 事业运遮罩         | SVG  | `images.iconCareerMask`        |
+| `icon-career.svg`             | 事业运图标         | SVG  | `images.iconCareer`            |
+| `icon-career-detail.svg`      | 事业运详情图标     | SVG  | `images.iconCareerDetail`      |
+| `icon-wealth.svg`             | 财富运图标         | SVG  | `images.iconWealth`            |
+| `icon-love.svg`               | 爱情运图标         | SVG  | `images.iconLove`              |
+| `icon-health.svg`             | 健康运图标         | SVG  | `images.iconHealth`            |
+| `icon-study.svg`              | 学业运图标         | SVG  | `images.iconStudy`             |
+| `icon-star-group.svg`         | 星级组合图标       | SVG  | `images.iconStarGroup`         |
+| `icon-star-1.svg`             | 星星图标1          | SVG  | `images.iconStar1`             |
+| `icon-star-2.svg`             | 星星图标2          | SVG  | `images.iconStar2`             |
+| `icon-star-3.svg`             | 星星图标3          | SVG  | `images.iconStar3`             |
+| `icon-lucky-element.svg`      | 幸运元素图标       | SVG  | `images.iconLuckyElement`      |
+| `icon-lucky-color.svg`        | 幸运色图标         | SVG  | `images.iconLuckyColor`        |
+| `icon-suitable.svg`           | 宜图标             | SVG  | `images.iconSuitable`          |
+| `detail-image-1.png`          | 详情图片1          | PNG  | `images.detailImage1`          |
+| `detail-image-2.png`          | 详情图片2          | PNG  | `images.detailImage2`          |
+| `detail-image-3.png`          | 详情图片3          | PNG  | `images.detailImage3`          |
+| `detail-image-4.png`          | 详情图片4          | PNG  | `images.detailImage4`          |
+| `detail-image-5.png`          | 详情图片5          | PNG  | `images.detailImage5`          |
+| `detail-image-6.png`          | 详情图片6          | PNG  | `images.detailImage6`          |
+| `detail-image-7.png`          | 详情图片7          | PNG  | `images.detailImage7`          |
+| `detail-image-8.png`          | 详情图片8          | PNG  | `images.detailImage8`          |
+| `shop-icon.png`               | 店铺图标           | PNG  | `images.shopIcon`              |
+| `decoration-phone-detail.png` | 手机详情装饰       | PNG  | `images.decorationPhoneDetail` |
+| `decoration-bottom-line.svg`  | 底部装饰线         | SVG  | `images.decorationBottomLine`  |
+
+**配置文件**: `apps/wx-app/src/pages/fortune/config.ts`
+
+**说明**：
+
+- 背景图片复用了 bind 页面的资源，保持视觉一致性
+- 包含大量装饰性图标和详情图片
+- 支持多种运势类型的图标展示
 
 ---
 
@@ -155,12 +197,12 @@ _待添加资源文件_
 
 ## 📊 资源统计
 
-| 页面    | 资源数量 | 总大小 | 状态      |
-| ------- | -------- | ------ | --------- |
-| bind    | 8 个文件 | -      | ✅ 已整理 |
-| profile | 0 个文件 | -      | ⏳ 待添加 |
-| fortune | 0 个文件 | -      | ⏳ 待添加 |
-| history | 0 个文件 | -      | ⏳ 待添加 |
+| 页面    | 资源数量  | 总大小 | 状态      |
+| ------- | --------- | ------ | --------- |
+| bind    | 8 个文件  | -      | ✅ 已整理 |
+| profile | 8 个文件  | -      | ✅ 已整理 |
+| fortune | 33 个文件 | -      | ✅ 已整理 |
+| history | 0 个文件  | -      | ⏳ 待添加 |
 
 ---
 

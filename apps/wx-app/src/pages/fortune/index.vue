@@ -1,10 +1,9 @@
 <template>
   <view class="fortune-container">
-    <!-- 背景装饰 -->
-    <view class="background-decoration">
-      <view class="decoration-circle decoration-circle-1" />
-      <view class="decoration-circle decoration-circle-2" />
-      <view class="decoration-circle decoration-circle-3" />
+    <!-- 主背景容器 -->
+    <view class="main-background">
+      <!-- 主背景图片 -->
+      <image class="bg-main" :src="config.images.mainBackground" mode="scaleToFill" />
     </view>
 
     <!-- 加载状态 -->
@@ -59,160 +58,182 @@
       <button class="retry-button" @click="loadFortune">重新获取</button>
     </view>
 
-    <!-- 运势内容 -->
-    <view v-else class="content">
-      <!-- 顶部日期 -->
-      <view class="date-header">
-        <text class="date-text">
-          {{ currentDate }}
+    <!-- 运势内容 - 使用绝对定位精确还原设计图 -->
+    <view v-else class="fortune-content">
+      <!-- 运势卡片背景图 - 对应Figma node 1:307-310 -->
+      <image
+        class="card-bg-image"
+        src="../../static/pages/fortune/card-main-bg.svg"
+        mode="scaleToFill"
+      />
+
+      <!-- 底部装饰图 - 对应Figma node 1:311 -->
+      <image
+        class="bottom-decoration"
+        src="../../static/pages/fortune/decoration-bottom-new.png"
+        mode="aspectFill"
+      />
+
+      <!-- 顶部装饰图片 - 根据模式显示不同图片 -->
+      <!-- 访客模式：显示解锁图标 -->
+      <image
+        v-if="isVisitorMode"
+        class="top-lock-icon"
+        src="../../static/pages/fortune/unlock.png"
+        mode="aspectFit"
+      />
+      <!-- 完整版模式：显示呼吸动态装饰图 -->
+      <image
+        v-else
+        class="phone-decoration-detail"
+        src="../../static/pages/fortune/decoration-phone-detail.png"
+        mode="aspectFit"
+      />
+
+      <!-- 内容区域 - 使用绝对定位 -->
+      <view class="content-wrapper">
+        <!-- 用户头像 - 对应Figma node 1:325 - 保持清晰可见 -->
+        <view class="user-avatar" />
+
+        <!-- 用户名字 - 对应Figma node 1:326 - 保持清晰可见 -->
+        <text class="user-name-text"> {{ authStore.user?.name || 'YANG' }}阳有点痩 </text>
+
+        <!-- 今日点评标题 - 对应Figma node 1:327 - 保持清晰可见 -->
+        <text class="comment-title-text"> 今日点评 </text>
+
+        <!-- 今日点评内容 - 静态文字，保持清晰可见 -->
+        <text class="comment-content-text"> 绑定生辰信息，查看专属运势分析 </text>
+
+        <!-- 综合分数标签 - 保持清晰可见 -->
+        <text class="score-label-text"> 综合分数 </text>
+
+        <!-- 综合分数数字 - 保持清晰可见 -->
+        <text class="score-number-text">
+          {{ fortuneData?.overallScore || 88 }}
         </text>
+
+        <!-- 运势详情区域 - 访客模式下此区域会被模糊 -->
+        <view class="fortune-details-area" :class="{ 'visitor-blur': isVisitorMode }">
+          <!-- 三项运势容器 - 对应Figma设计图 -->
+          <view class="luck-sections-container">
+            <!-- 事业运区域 -->
+            <view class="luck-section">
+              <text class="luck-name-text"> 事业运 </text>
+              <view class="luck-stars-row">
+                <star-rating :score="fortuneData?.careerLuck || 4" size="small" color="#4CAF50" />
+              </view>
+            </view>
+
+            <!-- 财富运区域 -->
+            <view class="luck-section">
+              <text class="luck-name-text"> 财富运 </text>
+              <view class="luck-stars-row">
+                <star-rating :score="fortuneData?.wealthLuck || 5" size="small" color="#FFD700" />
+              </view>
+            </view>
+
+            <!-- 爱情运区域 -->
+            <view class="luck-section">
+              <text class="luck-name-text"> 爱情运 </text>
+              <view class="luck-stars-row">
+                <star-rating :score="fortuneData?.loveLuck || 2" size="small" color="#FF69B4" />
+              </view>
+            </view>
+          </view>
+
+          <!-- 建议和避免区域 - 共用一个透明外框 -->
+          <view class="advice-container">
+            <!-- 建议 -->
+            <view class="advice-item">
+              <text class="advice-label-text"> 建议 </text>
+              <text class="advice-content-text">
+                {{ fortuneData?.suggestion || '喜用金水通过增强或减弱...' }}
+              </text>
+            </view>
+
+            <!-- 避免 -->
+            <view class="advice-item">
+              <text class="advice-label-text"> 避免 </text>
+              <text class="advice-content-text">
+                {{ fortuneData?.avoid || '今日避免与穿着搭...' }}
+              </text>
+            </view>
+          </view>
+
+          <!-- 幸运卡片容器 - 水平居中 -->
+          <view class="lucky-cards-container">
+            <!-- 幸运元素卡片 -->
+            <view class="lucky-card">
+              <text class="lucky-label-text"> 幸运元素 </text>
+              <text class="lucky-value-text">
+                {{ fortuneData?.luckyElement || '金、水' }}
+              </text>
+            </view>
+
+            <!-- 幸运色卡片 -->
+            <view class="lucky-card">
+              <text class="lucky-label-text"> 幸运色 </text>
+              <text class="lucky-value-text">
+                {{ fortuneData?.luckyColor || '蓝色' }}
+              </text>
+            </view>
+
+            <!-- 宜卡片 -->
+            <view class="lucky-card">
+              <text class="lucky-label-text"> 宜 </text>
+              <text class="lucky-value-text">
+                {{ fortuneData?.suitable || '合作' }}
+              </text>
+            </view>
+          </view>
+        </view>
       </view>
 
-      <!-- 欢迎语 -->
-      <view class="welcome-section">
-        <text class="welcome-text">
-          {{ welcomeMessage }}
+      <!-- 历史记录区域 - 带外框效果，访客模式下模糊 -->
+      <view
+        class="history-container"
+        :class="{ 'visitor-blur': isVisitorMode }"
+        @click="handleHistoryNavigation"
+      >
+        <image
+          class="history-bg-image"
+          src="../../static/pages/fortune/detail-image-1.png"
+          mode="scaleToFill"
+        />
+        <text class="history-text"> 快来查看你的历史记录吧！ </text>
+      </view>
+
+      <!-- 商品推荐文字区域 -->
+      <view class="recommendation-text-container">
+        <!-- 手链标题 -->
+        <text class="recommendation-card-title">
+          {{ config.texts.recommendation.cardTitle }}
         </text>
-      </view>
 
-      <!-- 综合分数 -->
-      <view class="score-section">
-        <view class="score-circle">
-          <text class="score-number">
-            {{ fortuneData?.overallScore || 0 }}
+        <!-- 手链信息 -->
+        <view class="recommendation-bracelet-info">
+          <text class="recommendation-bracelet-name">
+            {{ config.texts.bracelet.name }}
           </text>
-          <text class="score-label"> 分 </text>
-        </view>
-        <text class="score-title"> 综合分数 </text>
-      </view>
-
-      <!-- 运势详情区域容器 -->
-      <view class="fortune-details-container">
-        <!-- 运势详情区域 -->
-        <view class="fortune-details" :class="{ 'visitor-blur': isVisitorMode }">
-          <!-- 运势点评 -->
-          <view class="comment-section">
-            <text class="comment-text">
-              {{ fortuneData?.comment || '正在为你生成专属运势...' }}
-            </text>
-          </view>
-
-          <!-- 分项运势 -->
-          <view class="luck-sections">
-            <view class="luck-item">
-              <view class="luck-header">
-                <text class="luck-icon"> 💼 </text>
-                <text class="luck-title"> 事业运 </text>
-              </view>
-              <view class="luck-stars">
-                <star-rating :score="fortuneData?.careerLuck || 0" />
-              </view>
-            </view>
-
-            <view class="luck-item">
-              <view class="luck-header">
-                <text class="luck-icon"> 💰 </text>
-                <text class="luck-title"> 财富运 </text>
-              </view>
-              <view class="luck-stars">
-                <star-rating :score="fortuneData?.wealthLuck || 0" />
-              </view>
-            </view>
-
-            <view class="luck-item">
-              <view class="luck-header">
-                <text class="luck-icon"> 💕 </text>
-                <text class="luck-title"> 爱情运 </text>
-              </view>
-              <view class="luck-stars">
-                <star-rating :score="fortuneData?.loveLuck || 0" />
-              </view>
-            </view>
-          </view>
-
-          <!-- 开运提示 -->
-          <view class="tips-section">
-            <view class="tips-header">
-              <text class="tips-icon"> ✨ </text>
-              <text class="tips-title"> 今日开运提示 </text>
-            </view>
-            <view class="tips-content">
-              <view class="tip-item">
-                <text class="tip-label"> 幸运色： </text>
-                <text class="tip-value">
-                  {{ fortuneData?.luckyColor || '紫色' }}
-                </text>
-              </view>
-              <view class="tip-item">
-                <text class="tip-label"> 幸运数字： </text>
-                <text class="tip-value">
-                  {{ fortuneData?.luckyNumber || 8 }}
-                </text>
-              </view>
-              <view class="tip-item">
-                <text class="tip-label"> 建议： </text>
-                <text class="tip-value">
-                  {{ fortuneData?.suggestion || '保持积极心态，好运自然来' }}
-                </text>
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <!-- 访客解锁引导模块 -->
-        <view v-if="isVisitorMode" class="unlock-guide">
-          <view class="unlock-content">
-            <text class="unlock-icon"> 🔒 </text>
-            <text class="unlock-title"> 解锁完整运势 </text>
-            <text class="unlock-description">
-              购买专属NFC手链，即可解锁全部运势、历史记录和更多专属功能！
-            </text>
-            <button class="unlock-button" @click="handleUnlockClick">
-              <text class="unlock-button-text"> 前往解锁 </text>
-            </button>
-          </view>
+          <text class="recommendation-bracelet-desc">
+            {{ config.texts.bracelet.description }}
+          </text>
         </view>
       </view>
 
-      <!-- 商品推荐 -->
-      <view v-if="fortuneData?.recommendation" class="recommendation-section">
-        <view class="recommendation-header">
-          <text class="recommendation-title"> 今日开运手链推荐 </text>
-        </view>
-        <view class="recommendation-card">
-          <image
-            class="recommendation-image"
-            :src="fortuneData.recommendation.imageUrl"
-            mode="aspectFill"
-            @error="onImageError"
-          />
-          <view class="recommendation-info">
-            <text class="recommendation-name">
-              {{ fortuneData.recommendation.name }}
-            </text>
-            <text class="recommendation-desc">
-              {{ fortuneData.recommendation.description }}
-            </text>
-          </view>
-        </view>
-        <!-- 抖音店铺按钮 -->
-        <button class="shop-button" @click="handleShopClick">
-          <text class="shop-button-text">
-            {{ isVisitorMode ? '购买手链，解锁完整运势' : '去抖音店铺看看' }}
-          </text>
-        </button>
-      </view>
+      <!-- 右下角手链图片 - 大图展示 -->
+      <image
+        class="bottom-right-bracelet-image"
+        src="../../static/pages/fortune/detail-image-2.png"
+        mode="aspectFill"
+      />
 
-      <!-- 历史记录入口/返回按钮 -->
-      <view v-if="!isVisitorMode" class="history-section">
-        <button class="history-button" @click="handleHistoryNavigation">
-          <text class="history-icon">
-            {{ isHistoryMode ? '📋' : '📊' }}
-          </text>
-          <text class="history-text">
-            {{ isHistoryMode ? '返回列表' : '查看历史运势' }}
-          </text>
-        </button>
+      <!-- 抖音店铺按钮 - 对应Figma node 1:421-422 -->
+      <view class="shop-button-wrapper" @click="handleShopClick">
+        <view class="shop-button-border-wrapper">
+          <image class="shop-icon-img" :src="config.images.shopIcon" mode="aspectFit" />
+          <text class="shop-button-text"> 去抖音店铺看看 </text>
+        </view>
       </view>
     </view>
   </view>
@@ -226,6 +247,10 @@ import { useFortuneStore } from '@/stores/fortune';
 import { fortuneService } from '@/api/fortune';
 import type { FortuneData } from '@/stores/fortune';
 import StarRating from '@/components/StarRating.vue';
+import { getTheme, type FortunePageTheme } from './config';
+
+// 页面配置
+const config = ref<FortunePageTheme>(getTheme('default'));
 
 // Stores
 const authStore = useAuthStore();
@@ -249,63 +274,18 @@ const aiRetryState = ref({
 });
 
 // 加载文案
-const loadingMessages = [
-  '正在分析您的星象运势...',
-  '结合生辰八字计算中...',
-  '生成个性化建议...',
-  '运势分析即将完成...',
-];
-const loadingText = ref(loadingMessages[0]);
+const loadingText = ref(config.value.texts.loading.fortune);
+
+// 加载消息数组（用于轮播显示）
+const loadingMessages = ref([
+  '正在连接星象...',
+  '正在分析你的运势...',
+  '正在计算幸运指数...',
+  '正在生成专属建议...',
+  '马上就好...',
+]);
 
 // 计算属性
-const currentDate = computed(() => {
-  // 历史模式显示历史日期，否则显示今天
-  const dateToShow = isHistoryMode.value
-    ? historyDate.value
-    : new Date().toISOString().split('T')[0];
-
-  try {
-    const dateObj = new Date(dateToShow);
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    return `${year}年${month}月${day}日`;
-  } catch (error) {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}年${month}月${day}日`;
-  }
-});
-
-const welcomeMessage = computed(() => {
-  if (isPreviewMode.value) {
-    // 访客预览模式，显示通用欢迎语（不显示用户名）
-    return '这是运势预览';
-  }
-
-  if (isVisitorMode.value) {
-    if (authStore.user?.name) {
-      return `${authStore.user.name}，这是你的运势预览`;
-    }
-    return '这是你的运势预览';
-  }
-
-  if (isHistoryMode.value) {
-    if (authStore.user?.name) {
-      return `${authStore.user.name}，这是你的历史运势`;
-    }
-    return '这是你的历史运势';
-  }
-
-  if (authStore.user?.name) {
-    return `${authStore.user.name}，这是你的专属运势`;
-  }
-
-  return '这是你的专属运势';
-});
-
 const fortuneData = computed(() => fortuneStore.todayFortune);
 
 // 页面生命周期
@@ -677,8 +657,8 @@ function startLoadingAnimation() {
   let messageIndex = 0;
 
   const messageInterval = setInterval(() => {
-    messageIndex = (messageIndex + 1) % loadingMessages.length;
-    loadingText.value = loadingMessages[messageIndex];
+    messageIndex = (messageIndex + 1) % loadingMessages.value.length;
+    loadingText.value = loadingMessages.value[messageIndex];
   }, 1500);
 
   // 保存定时器引用以便清理
@@ -693,7 +673,7 @@ function stopLoadingAnimation() {
     clearInterval(loadingTimer.value);
     loadingTimer.value = null;
   }
-  loadingText.value = loadingMessages[0];
+  loadingText.value = loadingMessages.value[0];
 }
 
 // 加载定时器引用
@@ -712,26 +692,6 @@ function handleShopClick() {
       icon: 'none',
       duration: 2000,
     });
-  }
-}
-
-/**
- * 处理图片加载失败
- */
-function onImageError() {
-  console.warn('商品推荐图片加载失败');
-}
-
-/**
- * 处理解锁按钮点击
- */
-function handleUnlockClick() {
-  const recommendation = fortuneData.value?.recommendation;
-  if (recommendation?.douyinUrl) {
-    copyDouyinLink(recommendation.douyinUrl);
-  } else {
-    // 如果没有推荐商品，使用默认链接
-    copyDouyinLink('https://example.com/douyin');
   }
 }
 
@@ -778,37 +738,45 @@ function handleHistoryNavigation() {
 
 <style lang="scss" scoped>
 @import '@/styles/common.scss';
+
 .fortune-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   position: relative;
-  overflow: hidden;
+  height: 100vh; /* 固定高度为一屏 */
+  overflow: hidden; /* 禁止滚动 */
 }
 
-.background-decoration {
-  position: absolute;
+/* 主背景容器 - 与其他页面保持一致 */
+.main-background {
+  position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-}
+  width: 100%;
+  height: 100%;
+  z-index: 0;
 
-/* 运势页面特有的装饰圆圈 */
-.decoration-circle {
-  &.decoration-circle-3 {
-    width: 100rpx;
-    height: 100rpx;
-    top: 30%;
-    left: 20%;
-    animation: float 10s ease-in-out infinite;
+  .bg-main {
+    position: absolute;
+    top: -5.69%;
+    left: -52.38%;
+    width: 159.69%;
+    height: 107.94%;
+    z-index: 1;
+  }
+
+  .bg-stars {
+    position: absolute;
+    top: -3.75%;
+    left: -50%;
+    width: 160%;
+    height: 105%;
+    z-index: 2;
   }
 }
 
 .loading-container,
 .error-container {
   position: relative;
-  z-index: 1;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -840,344 +808,401 @@ function handleHistoryNavigation() {
   font-size: 28rpx;
 }
 
-.content {
+/* 运势内容容器 - 固定高度，使用绝对定位 */
+.fortune-content {
   position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100vh; /* 固定高度为一屏 */
+  overflow: hidden; /* 禁止滚动 */
+}
+
+/* 运势卡片背景图 - 对应Figma node 1:307-310 */
+.card-bg-image {
+  position: absolute;
+  left: 23rpx; /* 12px * 1.953 */
+  top: 420rpx; /* 调整到合适位置 */
+  width: 701rpx; /* 359px * 1.953 */
+  height: 787rpx; /* 403px * 1.953 */
   z-index: 1;
-  padding: 60rpx 40rpx;
+  opacity: 0.9;
 }
 
-.date-header {
-  text-align: center;
-  margin-bottom: 30rpx;
+/* 底部装饰图 - 对应Figma node 1:311 */
+.bottom-decoration {
+  position: absolute;
+  left: 16rpx; /* 8px * 1.953 */
+  bottom: 20rpx;
+  width: 718rpx; /* 367.925px * 1.953 */
+  height: 330rpx; /* 168.956px * 1.953 */
+  z-index: 2;
 }
 
-.date-text {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 32rpx;
-  font-weight: 500;
+/* 完整版顶部呼吸动态装饰图 */
+.phone-decoration-detail {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 100rpx; /* 下移，让底部嵌入卡片顶部 */
+  width: 400rpx;
+  height: 400rpx;
+  z-index: 3;
+  opacity: 0.6;
+  animation: breathe 3s ease-in-out infinite;
 }
 
-.welcome-section {
-  text-align: center;
-  margin-bottom: 50rpx;
-}
-
-.welcome-text {
-  color: #ffffff;
-  font-size: 36rpx;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.score-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 50rpx;
-}
-
-.score-circle {
-  width: 200rpx;
-  height: 200rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 20rpx;
-  border: 3rpx solid rgba(255, 255, 255, 0.3);
-}
-
-.score-number {
-  color: #ffffff;
-  font-size: 72rpx;
-  font-weight: bold;
-  line-height: 1;
-}
-
-.score-label {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 24rpx;
-  margin-top: 8rpx;
-}
-
-.score-title {
-  color: #ffffff;
-  font-size: 32rpx;
-  font-weight: 500;
-}
-
-.comment-section {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border-radius: 20rpx;
-  padding: 40rpx 30rpx;
-  margin-bottom: 50rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.2);
-}
-
-.comment-text {
-  color: #ffffff;
-  font-size: 30rpx;
-  line-height: 1.6;
-  text-align: center;
-}
-
-.luck-sections {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border-radius: 20rpx;
-  padding: 40rpx 30rpx;
-  margin-bottom: 50rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.2);
-}
-
-.luck-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20rpx 0;
-
-  &:not(:last-child) {
-    border-bottom: 1rpx solid rgba(255, 255, 255, 0.1);
+/* 呼吸动画效果 */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateX(-50%) scale(1.05);
   }
 }
 
-.luck-header {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
+/* 访客模式顶部锁图标 */
+.top-lock-icon {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 60rpx; /* 稍微下移以适应更大的图标 */
+  width: 380rpx; /* 放大图标宽度 */
+  height: 380rpx; /* 放大图标高度 */
+  z-index: 3;
+  opacity: 0.4; /* 半透明效果 */
+  filter: drop-shadow(0 0 30rpx rgba(255, 255, 255, 0.6)); /* 增强阴影 */
 }
 
-.luck-icon {
-  font-size: 32rpx;
+/* 内容包装器 */
+.content-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
 }
 
-.luck-title {
+/* 用户头像 - 对应Figma node 1:325 */
+.user-avatar {
+  position: absolute;
+  left: 86rpx; /* 44px * 1.953 */
+  top: 480rpx; /* 246px * 1.953 */
+  width: 100rpx; /* 51px * 1.953 */
+  height: 100rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+  z-index: 11;
+}
+
+/* 用户名字 - 对应Figma node 1:326 */
+.user-name-text {
+  position: absolute;
+  left: 200rpx; /* 102px * 1.953 */
+  top: 510rpx; /* 261px * 1.953 */
   color: #ffffff;
-  font-size: 30rpx;
-  font-weight: 500;
-}
-
-.tips-section {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border-radius: 20rpx;
-  padding: 40rpx 30rpx;
-  margin-bottom: 50rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.2);
-}
-
-.tips-header {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  margin-bottom: 30rpx;
-}
-
-.tips-icon {
-  font-size: 32rpx;
-}
-
-.tips-title {
-  color: #ffffff;
-  font-size: 32rpx;
+  font-size: 32rpx; /* 16px * 1.953 */
   font-weight: 600;
+  z-index: 11;
 }
 
-.tips-content {
+/* 今日点评标题 - 对应Figma node 1:327 */
+.comment-title-text {
+  position: absolute;
+  left: 86rpx; /* 44px * 1.953 */
+  top: 630rpx;
+  color: #ffffff;
+  font-size: 28rpx; /* 14px * 1.953 */
+  font-weight: 600;
+  z-index: 11;
+}
+
+/* 今日点评内容 - 对应Figma node 1:328 */
+.comment-content-text {
+  position: absolute;
+  left: 86rpx; /* 44px * 1.953 */
+  top: 680rpx;
+  width: 450rpx;
+  color: rgba(187, 187, 187, 1);
+  font-size: 24rpx; /* 12px * 1.953 */
+  line-height: 1.6;
+  z-index: 11;
+}
+
+/* 综合分数标签 - 对应Figma node 1:323-324 */
+.score-label-text {
+  position: absolute;
+  left: 560rpx;
+  top: 650rpx;
+  color: #d8d1fa;
+  font-size: 24rpx; /* 12px * 1.953 */
+  text-align: center;
+  z-index: 11;
+}
+
+/* 综合分数数字 - 对应Figma node 1:329-330 */
+.score-number-text {
+  position: absolute;
+  left: 578rpx;
+  top: 570rpx;
+  color: #ffffff;
+  font-size: 45rpx;
+  font-weight: bold;
+  font-family: 'ABeeZee', sans-serif;
+  text-align: center;
+  z-index: 11;
+}
+
+/* 三项运势容器 - 根据Figma设计图 */
+.luck-sections-container {
+  position: absolute;
+  left: 86rpx; /* 44px * 1.953 */
+  top: 840rpx;
+  display: flex;
+  gap: 90rpx;
+  z-index: 11;
+  width: 580rpx;
+}
+
+/* 分项运势区域 */
+.luck-section {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
-}
-
-.tip-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12rpx;
-}
-
-.tip-label {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 28rpx;
-  min-width: 120rpx;
-}
-
-.tip-value {
-  color: #ffffff;
-  font-size: 28rpx;
-  flex: 1;
-  line-height: 1.4;
-}
-
-.recommendation-section {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border-radius: 20rpx;
-  padding: 40rpx 30rpx;
-  margin-bottom: 50rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.2);
-}
-
-.recommendation-header {
-  margin-bottom: 30rpx;
-}
-
-.recommendation-title {
-  color: #ffffff;
-  font-size: 32rpx;
-  font-weight: 600;
-  text-align: center;
-}
-
-.recommendation-card {
-  display: flex;
-  gap: 24rpx;
   align-items: center;
-  background: rgba(255, 255, 255, 0.1);
+  gap: 10rpx;
+  flex: 1; /* 平均分配空间 */
+}
+
+.luck-name-text {
+  color: #ffffff;
+  font-size: 24rpx; /* 12px * 1.953 */
+  font-weight: 500;
+  margin-bottom: 8rpx;
+}
+
+.luck-stars-row {
+  display: flex;
+  gap: 4rpx;
+}
+
+/* 建议和避免区域 - 共用一个透明外框 */
+.advice-container {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%);
+  top: 960rpx;
+  width: 580rpx;
+  padding: 16rpx 20rpx;
+  background: rgba(139, 92, 246, 0.15);
+  border: 2rpx solid rgba(255, 255, 255, 0.25);
   border-radius: 16rpx;
-  padding: 24rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.2);
-}
-
-.recommendation-image {
-  width: 120rpx;
-  height: 120rpx;
-  border-radius: 12rpx;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.recommendation-info {
-  flex: 1;
+  backdrop-filter: blur(10rpx);
+  z-index: 11;
   display: flex;
   flex-direction: column;
   gap: 8rpx;
 }
 
-.recommendation-name {
-  color: #ffffff;
-  font-size: 30rpx;
-  font-weight: 600;
+.advice-item {
+  display: flex;
+  gap: 12rpx;
+  align-items: flex-start;
 }
 
-.recommendation-desc {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 26rpx;
+.advice-label-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 24rpx;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.advice-content-text {
+  color: rgba(187, 187, 187, 1);
+  font-size: 20rpx;
   line-height: 1.4;
+  flex: 1;
 }
 
-.shop-button {
-  width: 100%;
-  margin-top: 24rpx;
-  padding: 24rpx 32rpx;
-  background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%);
-  border: none;
-  border-radius: 50rpx;
-  box-shadow: 0 8rpx 20rpx rgba(255, 215, 0, 0.3);
+/* 幸运卡片容器 - 水平居中 */
+.lucky-cards-container {
+  position: absolute;
+  left: 86rpx;
+  top: 1080rpx;
+  width: 580rpx;
+  display: flex;
+  justify-content: center;
+  gap: 30rpx;
+  z-index: 11;
 }
 
-.shop-button-text {
-  color: #333333;
-  font-size: 30rpx;
-  font-weight: 600;
-}
-
-.history-section {
+/* 幸运卡片 - 横向三项 */
+.lucky-card {
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 20rpx;
+  padding: 15rpx 10rpx;
   text-align: center;
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10rpx);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+  width: 150rpx;
+  flex-shrink: 0;
 }
 
-.history-button {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border: 2rpx solid rgba(255, 255, 255, 0.3);
-  border-radius: 50rpx;
-  padding: 24rpx 48rpx;
+.lucky-label-text {
+  color: rgba(255, 255, 255, 1);
+  font-size: 32rpx;
+  font-weight: 400;
+}
+
+.lucky-value-text {
+  color: #0a0c18;
+  font-size: 22rpx;
+  font-weight: 400;
+}
+
+/* 历史记录区域 - 带外框效果 */
+.history-container {
+  position: absolute;
+  left: 23rpx;
+  top: 1212rpx;
+  width: 701rpx;
+  height: 60rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16rpx;
+  z-index: 12;
+  cursor: pointer;
 }
 
-.history-icon {
-  font-size: 32rpx;
+.history-bg-image {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 }
 
 .history-text {
+  position: relative;
   color: #ffffff;
-  font-size: 30rpx;
-  font-weight: 500;
+  font-size: 24rpx;
+  font-weight: 400;
+  z-index: 2;
 }
 
-/* 访客模式样式 */
-.fortune-details-container {
-  position: relative;
-}
-
-.fortune-details {
-  position: relative;
-}
-
-.visitor-blur {
-  filter: blur(8rpx);
-  pointer-events: none;
-  user-select: none;
-}
-
-.unlock-guide {
+/* 商品推荐文字区域 */
+.recommendation-text-container {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 90%;
-  z-index: 10;
+  left: 60rpx;
+  bottom: 200rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  z-index: 11;
 }
 
-.unlock-content {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20rpx);
-  border-radius: 24rpx;
-  padding: 60rpx 40rpx;
-  text-align: center;
-  border: 2rpx solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.2);
-}
-
-.unlock-icon {
-  font-size: 80rpx;
-  margin-bottom: 20rpx;
+.recommendation-card-title {
   display: block;
-}
-
-.unlock-title {
-  color: #333333;
-  font-size: 36rpx;
-  font-weight: bold;
-  margin-bottom: 20rpx;
-  display: block;
-}
-
-.unlock-description {
-  color: #666666;
+  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
   font-size: 28rpx;
-  line-height: 1.6;
-  margin-bottom: 40rpx;
-  display: block;
+  color: #a78bfa;
+  font-weight: 400;
+  line-height: 40rpx;
 }
 
-.unlock-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  border-radius: 50rpx;
-  padding: 24rpx 48rpx;
-  box-shadow: 0 8rpx 20rpx rgba(102, 126, 234, 0.3);
+.recommendation-bracelet-info {
+  .recommendation-bracelet-name {
+    display: block;
+    font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
+    font-size: 28rpx;
+    color: #ffffff;
+    font-weight: 400;
+    line-height: 40rpx;
+    margin-bottom: 2rpx;
+  }
+
+  .recommendation-bracelet-desc {
+    display: block;
+    font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
+    font-size: 20rpx;
+    color: #bbbbbb;
+    font-weight: 400;
+    line-height: 28rpx;
+  }
 }
 
-.unlock-button-text {
-  color: #ffffff;
-  font-size: 32rpx;
-  font-weight: 600;
+/* 右下角手链图片 - 大图展示，占据右下角主要空间 */
+.bottom-right-bracelet-image {
+  position: absolute;
+  right: 30rpx;
+  bottom: 25rpx;
+  width: 320rpx;
+  height: 320rpx;
+  z-index: 50;
+}
+
+/* 抖音店铺按钮 - 对应Figma node 1:421-422 */
+.shop-button-wrapper {
+  position: absolute;
+  left: 40rpx;
+  bottom: 50rpx;
+  display: flex;
+  align-items: center;
+  z-index: 11;
+}
+
+.shop-button-border-wrapper {
+  background: #000000;
+  border: 2rpx solid rgba(0, 229, 250, 0.2);
+  border-radius: 40rpx;
+  padding: 4rpx 16rpx 4rpx 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  height: 30rpx;
+  box-shadow:
+    0 0 12rpx rgba(0, 229, 250, 0.3),
+    inset 0 0 8rpx rgba(0, 229, 250, 0.15);
+}
+
+.shop-icon-img {
+  width: 60rpx; /* 33.583px * 1.953 */
+  height: 60rpx; /* 33.869px * 1.953 */
+  flex-shrink: 0;
+  z-index: 12;
+  margin-top: -20rpx;
+  margin-left: -8rpx;
+}
+
+.shop-button-text {
+  color: #00e5fa;
+  font-size: 24rpx; /* 12px * 1.953 */
+  font-weight: 400;
+  text-shadow: 0 0 8rpx rgba(0, 229, 250, 0.6);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+/* 运势详情区域 - 作为模糊容器 */
+.fortune-details-area {
+  position: relative;
+  width: 100%;
+  height: auto;
+}
+
+/* 访客模式模糊效果 - 应用于运势详情区域和历史记录区域 */
+.fortune-details-area.visitor-blur,
+.history-container.visitor-blur {
+  filter: blur(10rpx);
+  pointer-events: none;
 }
 
 /* AI重试界面样式 */

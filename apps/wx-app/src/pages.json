@@ -32,8 +32,7 @@
       "path": "pages/history/index",
       "style": {
         "navigationBarTitleText": "我的运势足迹",
-        "navigationBarBackgroundColor": "#667eea",
-        "navigationBarTextStyle": "white"
+        "navigationStyle": "custom"
       }
     }
   ],
