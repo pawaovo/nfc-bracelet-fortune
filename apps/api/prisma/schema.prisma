@@ -62,6 +62,19 @@ model DailyFortune {
   recommendationId      String?  @map("recommendation_id") @db.Uuid
   createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz
 
+  // 新增详细运势字段
+  summary               String?  @db.Text // 今日简要总结
+  astroAnalysis         String?  @map("astro_analysis") @db.Text // 星盘分析
+  careerAnalysis        String?  @map("career_analysis") @db.Text // 事业运分析
+  wealthAnalysis        String?  @map("wealth_analysis") @db.Text // 财富运分析
+  loveAnalysis          String?  @map("love_analysis") @db.Text // 爱情运分析
+  careerStars           Float?   @map("career_stars") @db.DoublePrecision // 事业运星数(0-5)
+  wealthStars           Float?   @map("wealth_stars") @db.DoublePrecision // 财富运星数(0-5)
+  loveStars             Float?   @map("love_stars") @db.DoublePrecision // 爱情运星数(0-5)
+  avoidance             String?  @db.Text // 避免事项
+  suitable              String?  @db.VarChar(50) // 今日宜
+  unsuitable            String?  @db.VarChar(50) // 今日忌
+
   // Relations
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   recommendation Product? @relation(fields: [recommendationId], references: [id], onDelete: SetNull)

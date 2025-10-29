@@ -57,7 +57,7 @@ export class FortunesController {
       if (error instanceof Error && error.message === 'AI_GENERATION_FAILED') {
         return {
           success: false,
-          data: null,
+          data: undefined,
           message: 'AI生成失败，请重试',
           code: 'AI_FAILED',
         };
@@ -65,7 +65,7 @@ export class FortunesController {
 
       return {
         success: false,
-        data: null,
+        data: undefined,
         message: error instanceof Error ? error.message : '获取今日运势失败',
         code: '500',
       };
@@ -102,7 +102,7 @@ export class FortunesController {
       if (error instanceof Error && error.message === 'AI_GENERATION_FAILED') {
         return {
           success: false,
-          data: null,
+          data: undefined,
           message: 'AI生成失败，请重试',
           code: 'AI_FAILED',
         };
@@ -110,7 +110,7 @@ export class FortunesController {
 
       return {
         success: false,
-        data: null,
+        data: undefined,
         message: '重新生成运势失败',
         code: '500',
       };
@@ -166,7 +166,7 @@ export class FortunesController {
       );
       return {
         success: false,
-        data: null,
+        data: undefined,
         message: error instanceof Error ? error.message : '获取历史运势失败',
         code: '500',
       };
@@ -214,7 +214,7 @@ export class FortunesController {
       );
       return {
         success: false,
-        data: null,
+        data: undefined,
         message: error instanceof Error ? error.message : '获取运势失败',
         code: '500',
       };
@@ -249,7 +249,7 @@ export class FortunesController {
       );
       return {
         success: false,
-        data: null,
+        data: undefined,
         message: error instanceof Error ? error.message : '获取运势统计失败',
         code: '500',
       };

@@ -3,7 +3,7 @@
     <!-- 主背景容器 -->
     <view class="main-background">
       <!-- 主背景图片 -->
-      <image class="bg-main" :src="config.images.mainBackground" mode="scaleToFill" />
+      <image class="bg-main" :src="config.images.mainBackground" mode="aspectFill" />
     </view>
 
     <!-- 加载状态 -->
@@ -67,6 +67,13 @@
         mode="scaleToFill"
       />
 
+      <!-- 数字装饰图 - 位于卡片右上角 -->
+      <image
+        class="card-number-decoration"
+        src="../../static/pages/fortune/number.png"
+        mode="aspectFit"
+      />
+
       <!-- 底部装饰图 - 对应Figma node 1:311 -->
       <image
         class="bottom-decoration"
@@ -98,11 +105,21 @@
         <!-- 用户名字 - 对应Figma node 1:326 - 保持清晰可见 -->
         <text class="user-name-text"> {{ authStore.user?.name || 'YANG' }}阳有点痩 </text>
 
-        <!-- 今日点评标题 - 对应Figma node 1:327 - 保持清晰可见 -->
-        <text class="comment-title-text"> 今日点评 </text>
+        <!-- 今日点评标题 - 带查看详情图标 -->
+        <view class="comment-title-row">
+          <text class="comment-title-text"> 今日点评 </text>
+          <image
+            class="comment-detail-icon"
+            src="../../static/pages/fortune/flower.png"
+            mode="aspectFit"
+            @click="showDetailModal"
+          />
+        </view>
 
-        <!-- 今日点评内容 - 静态文字，保持清晰可见 -->
-        <text class="comment-content-text"> 绑定生辰信息，查看专属运势分析 </text>
+        <!-- 今日点评内容 - 可点击查看详情，超出显示省略号 -->
+        <text class="comment-content-text" @click="showDetailModal">
+          {{ fortuneData?.summary || fortuneData?.comment || '绑定生辰信息，查看专属运势分析' }}
+        </text>
 
         <!-- 综合分数标签 - 保持清晰可见 -->
         <text class="score-label-text"> 综合分数 </text>
@@ -116,73 +133,92 @@
         <view class="fortune-details-area" :class="{ 'visitor-blur': isVisitorMode }">
           <!-- 三项运势容器 - 对应Figma设计图 -->
           <view class="luck-sections-container">
-            <!-- 事业运区域 -->
+            <!-- 事业运区域 - 使用星数而非分数 -->
             <view class="luck-section">
               <text class="luck-name-text"> 事业运 </text>
               <view class="luck-stars-row">
-                <star-rating :score="fortuneData?.careerLuck || 4" size="small" color="#4CAF50" />
+                <star-rating
+                  :key="`career-${fortuneData?.careerStars || 0}`"
+                  :stars="fortuneData?.careerStars ?? 3"
+                  size="small"
+                  color="#4CAF50"
+                />
               </view>
             </view>
 
-            <!-- 财富运区域 -->
+            <!-- 财富运区域 - 使用星数而非分数 -->
             <view class="luck-section">
               <text class="luck-name-text"> 财富运 </text>
               <view class="luck-stars-row">
-                <star-rating :score="fortuneData?.wealthLuck || 5" size="small" color="#FFD700" />
+                <star-rating
+                  :key="`wealth-${fortuneData?.wealthStars || 0}`"
+                  :stars="fortuneData?.wealthStars ?? 3"
+                  size="small"
+                  color="#FFD700"
+                />
               </view>
             </view>
 
-            <!-- 爱情运区域 -->
+            <!-- 爱情运区域 - 使用星数而非分数 -->
             <view class="luck-section">
               <text class="luck-name-text"> 爱情运 </text>
               <view class="luck-stars-row">
-                <star-rating :score="fortuneData?.loveLuck || 2" size="small" color="#FF69B4" />
+                <star-rating
+                  :key="`love-${fortuneData?.loveStars || 0}`"
+                  :stars="fortuneData?.loveStars ?? 3"
+                  size="small"
+                  color="#FF69B4"
+                />
               </view>
             </view>
           </view>
 
-          <!-- 建议和避免区域 - 共用一个透明外框 -->
-          <view class="advice-container">
+          <!-- 建议和避免区域 - 可点击查看详情 -->
+          <view class="advice-container" @click="showAdviceModal">
             <!-- 建议 -->
             <view class="advice-item">
               <text class="advice-label-text"> 建议 </text>
-              <text class="advice-content-text">
-                {{ fortuneData?.suggestion || '喜用金水通过增强或减弱...' }}
-              </text>
+              <view class="advice-content-wrapper">
+                <text class="advice-content-text">
+                  {{ fortuneData?.suggestion || '保持积极心态，好运自然来' }}
+                </text>
+              </view>
             </view>
 
             <!-- 避免 -->
             <view class="advice-item">
               <text class="advice-label-text"> 避免 </text>
-              <text class="advice-content-text">
-                {{ fortuneData?.avoid || '今日避免与穿着搭...' }}
-              </text>
+              <view class="advice-content-wrapper">
+                <text class="advice-content-text">
+                  {{ fortuneData?.avoidance || '避免冲动决策' }}
+                </text>
+              </view>
             </view>
           </view>
 
-          <!-- 幸运卡片容器 - 水平居中 -->
+          <!-- 幸运卡片容器 - 重新布局 -->
           <view class="lucky-cards-container">
-            <!-- 幸运元素卡片 -->
-            <view class="lucky-card">
-              <text class="lucky-label-text"> 幸运元素 </text>
-              <text class="lucky-value-text">
-                {{ fortuneData?.luckyElement || '金、水' }}
-              </text>
-            </view>
-
-            <!-- 幸运色卡片 -->
-            <view class="lucky-card">
-              <text class="lucky-label-text"> 幸运色 </text>
-              <text class="lucky-value-text">
-                {{ fortuneData?.luckyColor || '蓝色' }}
-              </text>
-            </view>
-
             <!-- 宜卡片 -->
             <view class="lucky-card">
               <text class="lucky-label-text"> 宜 </text>
               <text class="lucky-value-text">
                 {{ fortuneData?.suitable || '合作' }}
+              </text>
+            </view>
+
+            <!-- 忌卡片 -->
+            <view class="lucky-card">
+              <text class="lucky-label-text"> 忌 </text>
+              <text class="lucky-value-text">
+                {{ fortuneData?.unsuitable || '争执' }}
+              </text>
+            </view>
+
+            <!-- 幸运色/数字卡片 -->
+            <view class="lucky-card">
+              <text class="lucky-label-text"> 幸运色/数字 </text>
+              <text class="lucky-value-text">
+                {{ fortuneData?.luckyColor || '蓝色' }}/{{ fortuneData?.luckyNumber || 7 }}
               </text>
             </view>
           </view>
@@ -236,11 +272,145 @@
         </view>
       </view>
     </view>
+
+    <!-- 详细运势弹窗 -->
+    <view v-if="detailModalVisible" class="modal-overlay" @click="hideDetailModal">
+      <view class="modal-content detail-modal" @click.stop>
+        <view class="modal-header">
+          <text class="modal-title"> 详细运势分析 </text>
+          <text class="modal-close" @click="hideDetailModal"> ✕ </text>
+        </view>
+
+        <view class="modal-body">
+          <!-- 今日简要总结 - 不显示标题 -->
+          <view v-if="fortuneData?.summary || fortuneData?.comment" class="modal-section">
+            <text class="modal-section-content">
+              {{ fortuneData?.summary || fortuneData?.comment || '暂无总结' }}
+            </text>
+          </view>
+
+          <!-- 星盘分析 -->
+          <view v-if="fortuneData?.astroAnalysis" class="modal-section">
+            <text class="modal-section-title"> 🌟 星盘分析 </text>
+            <text class="modal-section-content">
+              {{ fortuneData.astroAnalysis }}
+            </text>
+          </view>
+
+          <!-- 事业运分析 -->
+          <view v-if="fortuneData?.careerAnalysis" class="modal-section">
+            <text class="modal-section-title"> 💼 事业运分析 </text>
+            <text class="modal-section-content">
+              {{ fortuneData.careerAnalysis }}
+            </text>
+          </view>
+
+          <!-- 财富运分析 -->
+          <view v-if="fortuneData?.wealthAnalysis" class="modal-section">
+            <text class="modal-section-title"> 💰 财富运分析 </text>
+            <text class="modal-section-content">
+              {{ fortuneData.wealthAnalysis }}
+            </text>
+          </view>
+
+          <!-- 爱情运分析 -->
+          <view v-if="fortuneData?.loveAnalysis" class="modal-section">
+            <text class="modal-section-title"> 💕 爱情运分析 </text>
+            <text class="modal-section-content">
+              {{ fortuneData.loveAnalysis }}
+            </text>
+          </view>
+
+          <!-- 总结和建议 -->
+          <view v-if="fortuneData" class="modal-section">
+            <text class="modal-section-title"> 📋 总结和建议 </text>
+            <view class="summary-content">
+              <!-- 星数显示：标题黄色，数值白色 -->
+              <view class="summary-stars-row">
+                <text class="summary-stars-label"> 事业运星数: </text>
+                <text class="summary-stars-value"> {{ fortuneData.careerStars || 3 }}星 </text>
+              </view>
+              <view class="summary-stars-row">
+                <text class="summary-stars-label"> 财富运星数: </text>
+                <text class="summary-stars-value"> {{ fortuneData.wealthStars || 3 }}星 </text>
+              </view>
+              <view class="summary-stars-row">
+                <text class="summary-stars-label"> 爱情运星数: </text>
+                <text class="summary-stars-value"> {{ fortuneData.loveStars || 3 }}星 </text>
+              </view>
+
+              <text class="summary-subtitle"> 建议事项: </text>
+              <text class="summary-text">
+                {{ fortuneData.suggestion || '保持积极心态，好运自然来' }}
+              </text>
+
+              <text class="summary-subtitle"> 避免事项: </text>
+              <text class="summary-text">
+                {{ fortuneData.avoidance || '避免冲动决策' }}
+              </text>
+
+              <text class="summary-subtitle"> 其他事项: </text>
+              <text class="summary-item"> 今日宜: {{ fortuneData.suitable || '合作' }} </text>
+              <text class="summary-item"> 今日忌: {{ fortuneData.unsuitable || '争执' }} </text>
+              <text class="summary-item"> 今日幸运色: {{ fortuneData.luckyColor || '蓝色' }} </text>
+              <text class="summary-item"> 今日幸运数字: {{ fortuneData.luckyNumber || 7 }} </text>
+              <text class="summary-item">
+                今日运势综合数字: {{ fortuneData.overallScore || 75 }}分
+              </text>
+            </view>
+          </view>
+
+          <!-- 如果没有任何详细分析，显示提示 -->
+          <view
+            v-if="
+              !fortuneData?.astroAnalysis &&
+              !fortuneData?.careerAnalysis &&
+              !fortuneData?.wealthAnalysis &&
+              !fortuneData?.loveAnalysis
+            "
+            class="modal-section"
+          >
+            <text
+              class="modal-section-content"
+              style="text-align: center; color: rgba(255, 255, 255, 0.6)"
+            >
+              暂无详细运势分析
+            </text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 建议和避免弹窗 -->
+    <view v-if="adviceModalVisible" class="modal-overlay" @click="hideAdviceModal">
+      <view class="modal-content advice-modal" @click.stop>
+        <view class="modal-header">
+          <text class="modal-title"> 今日建议 </text>
+          <text class="modal-close" @click="hideAdviceModal"> ✕ </text>
+        </view>
+
+        <view class="modal-body">
+          <!-- 建议事项 - 不显示标题 -->
+          <view class="modal-section">
+            <text class="modal-section-content">
+              {{ fortuneData?.suggestion || '保持积极心态，好运自然来' }}
+            </text>
+          </view>
+
+          <!-- 避免事项 - 不显示标题 -->
+          <view class="modal-section">
+            <text class="modal-section-content">
+              {{ fortuneData?.avoidance || '避免冲动决策' }}
+            </text>
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { useAuthStore } from '@/stores/auth';
 import { useFortuneStore } from '@/stores/fortune';
@@ -264,6 +434,10 @@ const isHistoryMode = ref(false);
 const historyDate = ref('');
 const isPreviewMode = ref(false);
 const fromProfile = ref(false); // 标识是否从个人信息页面跳转过来
+
+// 弹窗状态
+const detailModalVisible = ref(false);
+const adviceModalVisible = ref(false);
 
 // AI重试相关状态
 const aiRetryState = ref({
@@ -504,7 +678,7 @@ async function loadAuthenticatedFortune() {
     const response = await fortuneService.getTodayFortune();
 
     if (response.success && response.data) {
-      console.log('成功获取今日运势:', response.data);
+      console.log('成功获取今日运势');
       fortuneStore.setFortune(response.data);
 
       // 根据API返回的isAuth字段更新访客模式状态
@@ -680,6 +854,34 @@ function stopLoadingAnimation() {
 const loadingTimer = ref<number | null>(null);
 
 /**
+ * 显示详细运势弹窗
+ */
+function showDetailModal() {
+  detailModalVisible.value = true;
+}
+
+/**
+ * 隐藏详细运势弹窗
+ */
+function hideDetailModal() {
+  detailModalVisible.value = false;
+}
+
+/**
+ * 显示建议和避免弹窗
+ */
+function showAdviceModal() {
+  adviceModalVisible.value = true;
+}
+
+/**
+ * 隐藏建议和避免弹窗
+ */
+function hideAdviceModal() {
+  adviceModalVisible.value = false;
+}
+
+/**
  * 处理抖音店铺按钮点击
  */
 function handleShopClick() {
@@ -745,7 +947,7 @@ function handleHistoryNavigation() {
   overflow: hidden; /* 禁止滚动 */
 }
 
-/* 主背景容器 - 与其他页面保持一致 */
+/* 主背景容器 - 全屏覆盖 */
 .main-background {
   position: fixed;
   top: 0;
@@ -756,19 +958,19 @@ function handleHistoryNavigation() {
 
   .bg-main {
     position: absolute;
-    top: -5.69%;
-    left: -52.38%;
-    width: 159.69%;
-    height: 107.94%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     z-index: 1;
   }
 
   .bg-stars {
     position: absolute;
-    top: -3.75%;
-    left: -50%;
-    width: 160%;
-    height: 105%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     z-index: 2;
   }
 }
@@ -825,6 +1027,17 @@ function handleHistoryNavigation() {
   width: 701rpx; /* 359px * 1.953 */
   height: 787rpx; /* 403px * 1.953 */
   z-index: 1;
+  opacity: 0.9;
+}
+
+/* 数字装饰图 - 位于卡片右上角 */
+.card-number-decoration {
+  position: absolute;
+  right: 40rpx; /* 距离右边缘的距离 */
+  top: 430rpx; /* 卡片顶部420rpx + 内边距10rpx */
+  width: 240rpx; /* 数字图片宽度，放大2倍：120rpx * 2 */
+  height: 240rpx; /* 数字图片高度，放大2倍：120rpx * 2 */
+  z-index: 10; /* 在卡片背景之上，但在文字之下 */
   opacity: 0.9;
 }
 
@@ -908,62 +1121,92 @@ function handleHistoryNavigation() {
   z-index: 11;
 }
 
-/* 今日点评标题 - 对应Figma node 1:327 */
-.comment-title-text {
+/* 今日点评标题行 - 包含标题和图标 */
+.comment-title-row {
   position: absolute;
   left: 86rpx; /* 44px * 1.953 */
-  top: 630rpx;
+  top: 630rpx; /* 用户名下方，留出更多空间 */
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  z-index: 11;
+}
+
+.comment-title-text {
   color: #ffffff;
   font-size: 28rpx; /* 14px * 1.953 */
   font-weight: 600;
-  z-index: 11;
+}
+
+.comment-detail-icon {
+  width: 32rpx;
+  height: 32rpx;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.comment-detail-icon:active {
+  transform: scale(1.2);
 }
 
 /* 今日点评内容 - 对应Figma node 1:328 */
 .comment-content-text {
   position: absolute;
   left: 86rpx; /* 44px * 1.953 */
-  top: 680rpx;
+  top: 680rpx; /* 紧跟标题行 */
   width: 450rpx;
   color: rgba(187, 187, 187, 1);
   font-size: 24rpx; /* 12px * 1.953 */
-  line-height: 1.6;
+  line-height: 36rpx;
   z-index: 11;
+
+  /* 文本截断 - 最多显示2行 */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 72rpx;
 }
 
-/* 综合分数标签 - 对应Figma node 1:323-324 */
+/* 综合分数标签 - 位于数字装饰图内下方 */
 .score-label-text {
   position: absolute;
-  left: 560rpx;
-  top: 650rpx;
+  right: 42rpx; /* 与数字装饰图右对齐 */
+  top: 610rpx; /* 数字装饰图顶部430rpx + 装饰图高度240rpx/2 + 偏移量40rpx */
   color: #d8d1fa;
-  font-size: 24rpx; /* 12px * 1.953 */
+  font-size: 24rpx; /* 稍微缩小字体 */
   text-align: center;
-  z-index: 11;
+  z-index: 12; /* 在装饰图之上 */
+  width: 240rpx; /* 与装饰图宽度一致 */
 }
 
-/* 综合分数数字 - 对应Figma node 1:329-330 */
+/* 综合分数数字 - 位于数字装饰图内圆正中央 */
 .score-number-text {
   position: absolute;
-  left: 578rpx;
-  top: 570rpx;
+  right: 42rpx; /* 与数字装饰图右对齐 */
+  top: 530rpx; /* 数字装饰图顶部430rpx + 装饰图高度240rpx/2 - 数字高度的一半，使其垂直居中 */
   color: #ffffff;
-  font-size: 45rpx;
+  font-size: 56rpx; /* 稍微放大以适应更大的装饰图 */
   font-weight: bold;
   font-family: 'ABeeZee', sans-serif;
   text-align: center;
-  z-index: 11;
+  z-index: 12; /* 在装饰图之上 */
+  width: 240rpx; /* 与装饰图宽度一致，确保居中 */
+  line-height: 56rpx; /* 与字体大小一致 */
 }
 
 /* 三项运势容器 - 根据Figma设计图 */
 .luck-sections-container {
   position: absolute;
-  left: 86rpx; /* 44px * 1.953 */
-  top: 840rpx;
+  left: 50%; /* 改为居中定位 */
+  transform: translateX(-50%); /* 水平居中 */
+  top: 800rpx; /* 调整到点评内容下方，留出更多空间 */
   display: flex;
-  gap: 90rpx;
+  gap: 40rpx; /* 减小间距，从90rpx改为40rpx */
   z-index: 11;
-  width: 580rpx;
+  width: 600rpx; /* 增加宽度，从580rpx改为600rpx */
+  justify-content: space-between; /* 均匀分布 */
 }
 
 /* 分项运势区域 */
@@ -984,7 +1227,8 @@ function handleHistoryNavigation() {
 
 .luck-stars-row {
   display: flex;
-  gap: 4rpx;
+  justify-content: center;
+  align-items: center;
 }
 
 /* 建议和避免区域 - 共用一个透明外框 */
@@ -992,7 +1236,7 @@ function handleHistoryNavigation() {
   position: absolute;
   left: 50%;
   transform: translate(-50%);
-  top: 960rpx;
+  top: 930rpx; /* 调整到三项运势下方 */
   width: 580rpx;
   padding: 16rpx 20rpx;
   background: rgba(139, 92, 246, 0.15);
@@ -1003,12 +1247,15 @@ function handleHistoryNavigation() {
   display: flex;
   flex-direction: column;
   gap: 8rpx;
+  cursor: pointer; /* 添加点击提示 */
 }
 
 .advice-item {
   display: flex;
   gap: 12rpx;
-  align-items: flex-start;
+  align-items: center; /* 修改为center，确保单行对齐 */
+  width: 100%;
+  height: 28rpx; /* 限制高度为1行 */
 }
 
 .advice-label-text {
@@ -1017,20 +1264,34 @@ function handleHistoryNavigation() {
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
+  line-height: 28rpx; /* 固定行高 */
+}
+
+/* 新增：内容包装器，用于控制宽度 */
+.advice-content-wrapper {
+  flex: 1;
+  min-width: 0; /* 关键：允许flex子元素收缩 */
+  overflow: hidden;
+  height: 28rpx; /* 限制高度为1行 */
 }
 
 .advice-content-text {
+  display: block;
   color: rgba(187, 187, 187, 1);
   font-size: 20rpx;
-  line-height: 1.4;
-  flex: 1;
+  line-height: 28rpx;
+  /* 强制单行截断 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
 }
 
 /* 幸运卡片容器 - 水平居中 */
 .lucky-cards-container {
   position: absolute;
   left: 86rpx;
-  top: 1080rpx;
+  top: 1060rpx; /* 调整到建议区域下方 */
   width: 580rpx;
   display: flex;
   justify-content: center;
@@ -1055,22 +1316,24 @@ function handleHistoryNavigation() {
 }
 
 .lucky-label-text {
-  color: rgba(255, 255, 255, 1);
-  font-size: 32rpx;
-  font-weight: 400;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 26rpx;
+  font-weight: 600;
 }
 
 .lucky-value-text {
-  color: #0a0c18;
+  color: rgba(255, 255, 255, 0.8); /* 修复颜色，确保可见 */
   font-size: 22rpx;
   font-weight: 400;
+  text-align: center;
+  word-break: break-all; /* 防止长文本溢出 */
 }
 
 /* 历史记录区域 - 带外框效果 */
 .history-container {
   position: absolute;
   left: 23rpx;
-  top: 1212rpx;
+  top: 1210rpx; /* 稍微上移（卡片底部1207rpx + 间距8rpx） */
   width: 701rpx;
   height: 60rpx;
   display: flex;
@@ -1288,5 +1551,202 @@ function handleHistoryNavigation() {
 
 .retry-btn:active {
   transform: translateY(2rpx);
+}
+
+/* 重复样式已删除 - 使用上方1014-1059行的定义 */
+
+/* 弹窗遮罩层 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 弹窗内容 */
+.modal-content {
+  width: 90%;
+  max-width: 600rpx; /* 减小最大宽度，确保内容不会太宽 */
+  max-height: 80vh;
+  background: linear-gradient(135deg, rgba(103, 58, 183, 0.95) 0%, rgba(81, 45, 168, 0.95) 100%);
+  border-radius: 30rpx;
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+  box-sizing: border-box; /* 确保padding计算在宽度内 */
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100rpx);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 弹窗头部 */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx 40rpx;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.modal-close {
+  font-size: 48rpx;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.modal-close:active {
+  color: #ffffff;
+}
+
+/* 弹窗主体 */
+.modal-body {
+  padding: 30rpx 40rpx;
+  max-height: 60vh;
+  box-sizing: border-box;
+}
+
+.detail-modal .modal-body {
+  /* 使用CSS滚动，滚动条显示在最外层容器右侧 */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.advice-modal .modal-body {
+  overflow: visible;
+  max-height: none; /* 建议弹窗不需要滚动 */
+}
+
+/* 弹窗章节 */
+.modal-section {
+  margin-bottom: 30rpx;
+  width: 100%; /* 确保章节宽度不超过容器 */
+  box-sizing: border-box;
+  overflow: hidden; /* 防止内容溢出 */
+}
+
+.modal-section:last-child {
+  margin-bottom: 0;
+}
+
+.modal-section-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #ffd700;
+  margin-bottom: 15rpx;
+  width: 100%; /* 确保标题不超出容器 */
+  box-sizing: border-box;
+}
+
+.modal-section-content {
+  display: block;
+  font-size: 26rpx;
+  line-height: 40rpx;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: justify;
+  width: 100%; /* 确保内容不超出容器 */
+  box-sizing: border-box;
+  word-wrap: break-word; /* 自动换行 */
+  word-break: break-word; /* 改为break-word，更温和的换行方式 */
+  overflow-wrap: break-word; /* 兼容性更好的自动换行 */
+  white-space: normal; /* 确保允许换行 */
+  overflow: hidden; /* 隐藏溢出内容 */
+}
+
+/* 总结和建议部分的特殊样式 */
+.summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 星数行容器 - 使用flex布局实现换行效果 */
+.summary-stars-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  width: 100%;
+}
+
+/* 星数标题 - 黄色 */
+.summary-stars-label {
+  display: block;
+  font-size: 24rpx;
+  color: #ffd700;
+  font-weight: 600;
+  line-height: 32rpx;
+}
+
+/* 星数数值 - 白色 */
+.summary-stars-value {
+  display: block;
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  line-height: 32rpx;
+  padding-left: 20rpx; /* 缩进，视觉上与标题区分 */
+}
+
+.summary-subtitle {
+  display: block;
+  font-size: 26rpx;
+  color: #ffd700;
+  font-weight: 600;
+  margin-top: 16rpx;
+  margin-bottom: 8rpx;
+  line-height: 36rpx;
+  word-wrap: break-word;
+}
+
+.summary-text {
+  display: block;
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 36rpx;
+  text-align: justify;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap; /* 保留换行 */
+}
+
+.summary-item {
+  display: block;
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 36rpx;
+  word-wrap: break-word;
 }
 </style>

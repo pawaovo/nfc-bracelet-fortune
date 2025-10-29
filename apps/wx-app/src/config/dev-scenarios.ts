@@ -110,7 +110,7 @@ export const DEV_SCENARIOS: Record<string, DevScenario> = {
 // 开发配置 - 只需要修改这里切换场景！
 export const DEV_CONFIG = {
   enabled: true, // 开发模式总开关
-  currentScenario: 'AUTH_USER_OWN_NFC' as keyof typeof DEV_SCENARIOS, // 👈 修改这里切换场景
+  currentScenario: 'AUTH_USER_FRESH_NFC' as keyof typeof DEV_SCENARIOS, // 👈 修改这里切换场景
 };
 
 /**
@@ -206,9 +206,39 @@ function generateDevJWT(userId: string, openid: string): string {
 
 /**
  * 微信小程序兼容的base64编码函数
+ * 注意：微信小程序真机环境不支持TextEncoder，需要手动转换
  */
 function base64Encode(str: string): string {
-  // 使用微信小程序的base64编码
-  const uint8Array = new TextEncoder().encode(str);
+  // 手动将字符串转换为UTF-8字节数组
+  const utf8Bytes: number[] = [];
+  for (let i = 0; i < str.length; i++) {
+    let charCode = str.charCodeAt(i);
+
+    if (charCode < 0x80) {
+      // 单字节字符 (0x00-0x7F)
+      utf8Bytes.push(charCode);
+    } else if (charCode < 0x800) {
+      // 双字节字符 (0x80-0x7FF)
+      utf8Bytes.push(0xc0 | (charCode >> 6));
+      utf8Bytes.push(0x80 | (charCode & 0x3f));
+    } else if (charCode < 0xd800 || charCode >= 0xe000) {
+      // 三字节字符 (0x800-0xFFFF，排除代理对)
+      utf8Bytes.push(0xe0 | (charCode >> 12));
+      utf8Bytes.push(0x80 | ((charCode >> 6) & 0x3f));
+      utf8Bytes.push(0x80 | (charCode & 0x3f));
+    } else {
+      // 处理代理对 (0xD800-0xDFFF)
+      i++;
+      const nextCharCode = str.charCodeAt(i);
+      charCode = 0x10000 + (((charCode & 0x3ff) << 10) | (nextCharCode & 0x3ff));
+      utf8Bytes.push(0xf0 | (charCode >> 18));
+      utf8Bytes.push(0x80 | ((charCode >> 12) & 0x3f));
+      utf8Bytes.push(0x80 | ((charCode >> 6) & 0x3f));
+      utf8Bytes.push(0x80 | (charCode & 0x3f));
+    }
+  }
+
+  // 转换为ArrayBuffer
+  const uint8Array = new Uint8Array(utf8Bytes);
   return uni.arrayBufferToBase64(uint8Array.buffer);
 }

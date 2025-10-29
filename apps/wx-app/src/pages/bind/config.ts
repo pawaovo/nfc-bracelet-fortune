@@ -67,8 +67,8 @@ export const defaultTheme: BindPageTheme = {
   name: '默认主题',
 
   images: {
-    mainBackground: '../../static/pages/bind/bg-main.png',
-    starsBackground: '../../static/pages/bind/bg-stars.png',
+    mainBackground: 'https://i.postimg.cc/MX248bmL/bg-main.png',
+    starsBackground: 'https://i.postimg.cc/FHZ9D7hW/bg-stars.png',
     statusIcon: '../../static/pages/bind/status-icon.svg',
     braceletIcon: '../../static/pages/bind/bracelet-icon.png',
     braceletStar: '../../static/pages/bind/bracelet-star.png',

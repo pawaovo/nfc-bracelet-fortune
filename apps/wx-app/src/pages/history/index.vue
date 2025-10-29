@@ -1,7 +1,7 @@
 <template>
   <view class="history-container">
     <!-- 星空背景 -->
-    <image class="bg-stars" src="/static/pages/history/bg-stars.png" mode="aspectFill" />
+    <image class="bg-stars" src="https://i.postimg.cc/HxJcqQx0/bg-stars.png" mode="aspectFill" />
 
     <!-- 顶部导航区域 -->
     <view class="top-nav-area">

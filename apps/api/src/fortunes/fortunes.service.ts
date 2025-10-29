@@ -80,20 +80,32 @@ export class FortunesService {
       fortuneData.overallScore,
     );
 
-    // 保存到数据库
+    // 保存到数据库（包含新增的详细字段）
     const newFortune = await this.prisma.dailyFortune.create({
       data: {
         userId,
         date: today,
         overallScore: fortuneData.overallScore,
-        comment: fortuneData.comment,
-        careerLuck: fortuneData.careerLuck,
-        wealthLuck: fortuneData.wealthLuck,
-        loveLuck: fortuneData.loveLuck,
-        luckyColor: fortuneData.luckyColor,
-        luckyNumber: fortuneData.luckyNumber,
-        suggestion: fortuneData.suggestion,
+        comment: fortuneData.comment || '今日运势平稳',
+        careerLuck: fortuneData.careerLuck || 75,
+        wealthLuck: fortuneData.wealthLuck || 75,
+        loveLuck: fortuneData.loveLuck || 75,
+        luckyColor: fortuneData.luckyColor || '蓝色',
+        luckyNumber: fortuneData.luckyNumber || 7,
+        suggestion: fortuneData.suggestion || '保持积极心态',
         recommendationId: recommendation?.id,
+        // 新增详细运势字段
+        summary: fortuneData.summary,
+        astroAnalysis: fortuneData.astroAnalysis,
+        careerAnalysis: fortuneData.careerAnalysis,
+        wealthAnalysis: fortuneData.wealthAnalysis,
+        loveAnalysis: fortuneData.loveAnalysis,
+        careerStars: fortuneData.careerStars,
+        wealthStars: fortuneData.wealthStars,
+        loveStars: fortuneData.loveStars,
+        avoidance: fortuneData.avoidance,
+        suitable: fortuneData.suitable,
+        unsuitable: fortuneData.unsuitable,
       },
       include: {
         recommendation: true,
@@ -144,25 +156,49 @@ export class FortunesService {
       },
       update: {
         overallScore: fortuneData.overallScore,
-        comment: fortuneData.comment,
-        careerLuck: fortuneData.careerLuck,
-        wealthLuck: fortuneData.wealthLuck,
-        loveLuck: fortuneData.loveLuck,
-        luckyColor: fortuneData.luckyColor,
-        luckyNumber: fortuneData.luckyNumber,
-        suggestion: fortuneData.suggestion,
+        comment: fortuneData.comment || '今日运势平稳',
+        careerLuck: fortuneData.careerLuck || 75,
+        wealthLuck: fortuneData.wealthLuck || 75,
+        loveLuck: fortuneData.loveLuck || 75,
+        luckyColor: fortuneData.luckyColor || '蓝色',
+        luckyNumber: fortuneData.luckyNumber || 7,
+        suggestion: fortuneData.suggestion || '保持积极心态',
+        // 更新新增的详细运势字段
+        summary: fortuneData.summary,
+        astroAnalysis: fortuneData.astroAnalysis,
+        careerAnalysis: fortuneData.careerAnalysis,
+        wealthAnalysis: fortuneData.wealthAnalysis,
+        loveAnalysis: fortuneData.loveAnalysis,
+        careerStars: fortuneData.careerStars,
+        wealthStars: fortuneData.wealthStars,
+        loveStars: fortuneData.loveStars,
+        avoidance: fortuneData.avoidance,
+        suitable: fortuneData.suitable,
+        unsuitable: fortuneData.unsuitable,
       },
       create: {
         userId,
         date: today,
         overallScore: fortuneData.overallScore,
-        comment: fortuneData.comment,
-        careerLuck: fortuneData.careerLuck,
-        wealthLuck: fortuneData.wealthLuck,
-        loveLuck: fortuneData.loveLuck,
-        luckyColor: fortuneData.luckyColor,
-        luckyNumber: fortuneData.luckyNumber,
-        suggestion: fortuneData.suggestion,
+        comment: fortuneData.comment || '今日运势平稳',
+        careerLuck: fortuneData.careerLuck || 75,
+        wealthLuck: fortuneData.wealthLuck || 75,
+        loveLuck: fortuneData.loveLuck || 75,
+        luckyColor: fortuneData.luckyColor || '蓝色',
+        luckyNumber: fortuneData.luckyNumber || 7,
+        suggestion: fortuneData.suggestion || '保持积极心态',
+        // 创建时包含新增的详细运势字段
+        summary: fortuneData.summary,
+        astroAnalysis: fortuneData.astroAnalysis,
+        careerAnalysis: fortuneData.careerAnalysis,
+        wealthAnalysis: fortuneData.wealthAnalysis,
+        loveAnalysis: fortuneData.loveAnalysis,
+        careerStars: fortuneData.careerStars,
+        wealthStars: fortuneData.wealthStars,
+        loveStars: fortuneData.loveStars,
+        avoidance: fortuneData.avoidance,
+        suitable: fortuneData.suitable,
+        unsuitable: fortuneData.unsuitable,
       },
       include: {
         recommendation: true,
@@ -353,16 +389,15 @@ export class FortunesService {
     try {
       // 构建AI输入数据
       const promptData = {
-        birthday: user.birthday,
+        birthday: user.birthday || undefined,
         date: date,
-        userName: user.name,
       };
 
-      // 设置6秒超时
+      // 设置40秒超时（详细运势生成需要更多时间）
       const aiResult = (await Promise.race([
         this.aiService.generateFortune(promptData),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('AI timeout after 6s')), 6000),
+          setTimeout(() => reject(new Error('AI timeout after 40s')), 40000),
         ),
       ])) as { content?: string; duration?: number } | null;
 
@@ -390,78 +425,212 @@ export class FortunesService {
    * @returns 解析后的运势数据或null
    */
   private parseAIResponse(content: string): AIFortuneResponse | null {
+    // 优先尝试文本解析（符合prompt要求的格式）
+    const textResult = this.parseTextResponse(content);
+    if (textResult) {
+      this.logger.log('Successfully parsed AI response as text format');
+      return textResult;
+    }
+
+    // 如果文本解析失败，尝试JSON格式作为fallback
     try {
-      // 尝试解析JSON格式
+      this.logger.warn('Text parsing failed, trying JSON format as fallback');
       const parsed = JSON.parse(content);
 
       // 验证必要字段
       if (this.validateAIResponse(parsed)) {
+        this.logger.log('Successfully parsed AI response as JSON format');
         return parsed;
       }
     } catch (error) {
-      // JSON解析失败，尝试文本解析
-      return this.parseTextResponse(content);
+      this.logger.error('Both text and JSON parsing failed', error);
     }
 
     return null;
   }
 
   /**
-   * 验证AI响应数据
+   * 验证AI响应数据（新版：验证详细运势字段）
    * @param data AI响应数据
    * @returns 是否有效
    */
   private validateAIResponse(data: unknown): data is AIFortuneResponse {
-    return (
-      data !== null &&
-      typeof data === 'object' &&
-      typeof (data as any).overallScore === 'number' &&
-      (data as any).overallScore >= 60 &&
-      (data as any).overallScore <= 95 &&
-      typeof (data as any).comment === 'string' &&
-      (data as any).comment.length <= 150 &&
-      typeof (data as any).careerLuck === 'number' &&
-      typeof (data as any).wealthLuck === 'number' &&
-      typeof (data as any).loveLuck === 'number'
-    );
+    if (data === null || typeof data !== 'object') {
+      return false;
+    }
+
+    const response = data as any;
+
+    // 验证综合分数
+    if (
+      typeof response.overallScore !== 'number' ||
+      response.overallScore < 60 ||
+      response.overallScore > 100
+    ) {
+      return false;
+    }
+
+    // 验证星数评分（可选，但如果存在必须是有效数字）
+    if (
+      response.careerStars !== undefined &&
+      (typeof response.careerStars !== 'number' ||
+        response.careerStars < 0 ||
+        response.careerStars > 5)
+    ) {
+      return false;
+    }
+
+    if (
+      response.wealthStars !== undefined &&
+      (typeof response.wealthStars !== 'number' ||
+        response.wealthStars < 0 ||
+        response.wealthStars > 5)
+    ) {
+      return false;
+    }
+
+    if (
+      response.loveStars !== undefined &&
+      (typeof response.loveStars !== 'number' ||
+        response.loveStars < 0 ||
+        response.loveStars > 5)
+    ) {
+      return false;
+    }
+
+    // 至少需要有summary或comment之一
+    if (!response.summary && !response.comment) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
-   * 解析文本格式的AI响应
+   * 将星数转换为0-100分数
+   * @param stars 星数（0-5）
+   * @returns 分数（0-100）
+   */
+  private convertStarsToScore(stars: number = 3): number {
+    return Math.round((stars / 5) * 100);
+  }
+
+  /**
+   * 解析文本格式的AI响应（新版详细格式）
    * @param content 文本内容
    * @returns 解析后的数据或null
    */
   private parseTextResponse(content: string): AIFortuneResponse | null {
     try {
-      const lines = content.split('\n');
       const result: AIFortuneResponse = {
         overallScore: 75,
-        comment: '',
-        careerLuck: 75,
-        wealthLuck: 75,
-        loveLuck: 75,
-        suggestion: '',
+        careerStars: 3,
+        wealthStars: 3,
+        loveStars: 3,
       };
 
-      for (const line of lines) {
-        if (line.includes('总体运势：') || line.includes('综合运势：')) {
-          const match = line.match(/(\d+)分/);
-          if (match) {
-            result.overallScore = parseInt(match[1]);
-          }
-        } else if (line.includes('事业运势：')) {
-          result.comment += line.replace('事业运势：', '').trim() + ' ';
-        } else if (line.includes('财运状况：') || line.includes('财运：')) {
-          result.comment += line.replace(/财运状况：|财运：/, '').trim() + ' ';
-        } else if (line.includes('爱情运势：') || line.includes('爱情：')) {
-          result.comment += line.replace(/爱情运势：|爱情：/, '').trim() + ' ';
-        } else if (line.includes('运势点评：') || line.includes('建议：')) {
-          result.suggestion = line.replace(/运势点评：|建议：/, '').trim();
-        }
+      // 提取星盘分析
+      const astroMatch = content.match(
+        /星盘分析[：:]\s*\n([\s\S]*?)(?=\n\n|事业运分析|$)/,
+      );
+      if (astroMatch) {
+        result.astroAnalysis = astroMatch[1].trim();
       }
 
-      // 如果解析出了有效内容，返回结果
-      if (result.comment.trim() || result.suggestion.trim()) {
+      // 提取事业运分析
+      const careerAnalysisMatch = content.match(
+        /事业运分析[：:]\s*\n([\s\S]*?)(?=\n\n|财富运分析|$)/,
+      );
+      if (careerAnalysisMatch) {
+        result.careerAnalysis = careerAnalysisMatch[1].trim();
+      }
+
+      // 提取财富运分析
+      const wealthAnalysisMatch = content.match(
+        /财富运分析[：:]\s*\n([\s\S]*?)(?=\n\n|爱情运分析|$)/,
+      );
+      if (wealthAnalysisMatch) {
+        result.wealthAnalysis = wealthAnalysisMatch[1].trim();
+      }
+
+      // 提取爱情运分析
+      const loveAnalysisMatch = content.match(
+        /爱情运分析[：:]\s*\n([\s\S]*?)(?=\n\n|总结和建议|$)/,
+      );
+      if (loveAnalysisMatch) {
+        result.loveAnalysis = loveAnalysisMatch[1].trim();
+      }
+
+      // 提取星数评分（支持小数）
+      const careerStarsMatch = content.match(/事业运星数[：:]\s*([\d.]+)/);
+      if (careerStarsMatch) {
+        result.careerStars = parseFloat(careerStarsMatch[1]);
+      }
+
+      const wealthStarsMatch = content.match(/财富运星数[：:]\s*([\d.]+)/);
+      if (wealthStarsMatch) {
+        result.wealthStars = parseFloat(wealthStarsMatch[1]);
+      }
+
+      const loveStarsMatch = content.match(/爱情运星数[：:]\s*([\d.]+)/);
+      if (loveStarsMatch) {
+        result.loveStars = parseFloat(loveStarsMatch[1]);
+      }
+
+      // 提取建议事项
+      const suggestionMatch = content.match(
+        /建议事项[：:]\s*\n([\s\S]*?)(?=\n避免事项|$)/,
+      );
+      if (suggestionMatch) {
+        result.suggestion = suggestionMatch[1].trim();
+      }
+
+      // 提取避免事项
+      const avoidanceMatch = content.match(
+        /避免事项[：:]\s*\n([\s\S]*?)(?=\n\n|今日宜|$)/,
+      );
+      if (avoidanceMatch) {
+        result.avoidance = avoidanceMatch[1].trim();
+      }
+
+      // 提取今日宜
+      const suitableMatch = content.match(/今日宜[：:]\s*([^\n]+)/);
+      if (suitableMatch) {
+        result.suitable = suitableMatch[1].trim();
+      }
+
+      // 提取今日忌
+      const unsuitableMatch = content.match(/今日忌[：:]\s*([^\n]+)/);
+      if (unsuitableMatch) {
+        result.unsuitable = unsuitableMatch[1].trim();
+      }
+
+      // 提取幸运色
+      const luckyColorMatch = content.match(/今日幸运色[：:]\s*([^\n]+)/);
+      if (luckyColorMatch) {
+        result.luckyColor = luckyColorMatch[1].trim();
+      }
+
+      // 提取幸运数字
+      const luckyNumberMatch = content.match(/今日幸运数字[：:]\s*(\d+)/);
+      if (luckyNumberMatch) {
+        result.luckyNumber = parseInt(luckyNumberMatch[1]);
+      }
+
+      // 提取综合分数
+      const overallScoreMatch = content.match(/今日运势综合数字[：:]\s*(\d+)/);
+      if (overallScoreMatch) {
+        result.overallScore = parseInt(overallScoreMatch[1]);
+      }
+
+      // 提取今日简要总结
+      const summaryMatch = content.match(/今日简要总结[：:]\s*([^\n]+)/);
+      if (summaryMatch) {
+        result.summary = summaryMatch[1].trim();
+      }
+
+      // 验证是否解析出了有效内容
+      if (result.summary || result.astroAnalysis || result.overallScore) {
         return result;
       }
     } catch (error) {
@@ -472,40 +641,55 @@ export class FortunesService {
   }
 
   /**
-   * 丰富运势数据（添加幸运色、数字等）
+   * 丰富运势数据（新版：直接使用AI返回的数据，不再随机生成）
    * @param aiData AI生成的基础数据
    * @returns 完整的运势数据
    */
   private enrichFortuneData(
     aiData: AIFortuneResponse,
   ): Omit<FortuneData, 'date' | 'isAuth' | 'recommendation'> {
-    // 生成幸运色和数字
-    const colors = [
-      '红色',
-      '橙色',
-      '黄色',
-      '绿色',
-      '蓝色',
-      '紫色',
-      '粉色',
-      '金色',
-      '银色',
-      '白色',
-    ];
-    const luckyColor = colors[Math.floor(Math.random() * colors.length)];
-    const luckyNumber = Math.floor(Math.random() * 9) + 1;
+    // 默认值
+    const defaultComment = '今日运势平稳，适合稳步推进各项计划。';
+    const defaultCareerStars = 3;
+    const defaultWealthStars = 3;
+    const defaultLoveStars = 3;
+
+    // 获取星数（优先使用AI返回的值）
+    const careerStars = aiData.careerStars ?? defaultCareerStars;
+    const wealthStars = aiData.wealthStars ?? defaultWealthStars;
+    const loveStars = aiData.loveStars ?? defaultLoveStars;
 
     return {
+      // 综合分数
       overallScore: aiData.overallScore || 75,
-      comment: aiData.comment || '今日运势平稳，适合稳步推进各项计划。',
-      careerLuck: aiData.careerLuck || Math.floor(Math.random() * 36) + 60,
-      wealthLuck: aiData.wealthLuck || Math.floor(Math.random() * 36) + 60,
-      loveLuck: aiData.loveLuck || Math.floor(Math.random() * 36) + 60,
-      luckyColor,
-      luckyNumber,
-      suggestion:
-        aiData.suggestion ||
-        `今天适合穿${luckyColor}的衣服，数字${luckyNumber}将为你带来好运。`,
+
+      // 详细分析内容
+      summary: aiData.summary || aiData.comment || defaultComment,
+      astroAnalysis: aiData.astroAnalysis,
+      careerAnalysis: aiData.careerAnalysis,
+      wealthAnalysis: aiData.wealthAnalysis,
+      loveAnalysis: aiData.loveAnalysis,
+
+      // 星级评分（新版）
+      careerStars,
+      wealthStars,
+      loveStars,
+
+      // 建议和避免
+      suggestion: aiData.suggestion || '保持积极心态，好运自然来。',
+      avoidance: aiData.avoidance || '避免冲动决策。',
+
+      // 今日宜忌和幸运元素
+      suitable: aiData.suitable || '合作',
+      unsuitable: aiData.unsuitable || '争执',
+      luckyColor: aiData.luckyColor || '蓝色',
+      luckyNumber: aiData.luckyNumber || 7,
+
+      // 兼容旧版字段（使用统一的转换方法）
+      comment: aiData.summary || aiData.comment || defaultComment,
+      careerLuck: aiData.careerLuck || this.convertStarsToScore(careerStars),
+      wealthLuck: aiData.wealthLuck || this.convertStarsToScore(wealthStars),
+      loveLuck: aiData.loveLuck || this.convertStarsToScore(loveStars),
     };
   }
 
@@ -518,11 +702,12 @@ export class FortunesService {
     'date' | 'isAuth' | 'recommendation'
   > {
     const score = Math.floor(Math.random() * 26) + 70; // 70-95分
+    const previewComment =
+      '今日运势不错，适合尝试新事物。购买专属手链，获取完整运势解读和个性化建议。';
 
     return {
       overallScore: score,
-      comment:
-        '今日运势不错，适合尝试新事物。购买专属手链，获取完整运势解读和个性化建议。',
+      comment: previewComment,
       careerLuck: Math.floor(Math.random() * 26) + 70,
       wealthLuck: Math.floor(Math.random() * 26) + 70,
       loveLuck: Math.floor(Math.random() * 26) + 70,
@@ -530,6 +715,19 @@ export class FortunesService {
       luckyNumber: 8,
       suggestion:
         '保持积极心态，好运自然来。想要获得更准确的运势分析，请购买专属手链。',
+
+      // 新增详细运势字段（访客模式使用简化版本）
+      summary: previewComment,
+      astroAnalysis: undefined,
+      careerAnalysis: undefined,
+      wealthAnalysis: undefined,
+      loveAnalysis: undefined,
+      careerStars: 3.5,
+      wealthStars: 3.5,
+      loveStars: 3.5,
+      avoidance: '避免冲动决策。',
+      suitable: '合作',
+      unsuitable: '争执',
     };
   }
 
@@ -741,13 +939,13 @@ export class FortunesService {
   }
 
   /**
-   * 格式化运势响应
+   * 格式化运势响应（新版：包含详细字段）
    */
   private formatFortuneResponse(
     fortune: any,
     isAuth: boolean = true,
   ): FortuneData {
-    const response = {
+    const response: FortuneData = {
       date: fortune.date,
       overallScore: fortune.overallScore,
       isAuth,
@@ -760,20 +958,33 @@ export class FortunesService {
             price: fortune.recommendation.price,
             douyinUrl: fortune.recommendation.douyinUrl,
           }
-        : null,
+        : undefined,
     };
 
-    // 对于已认证用户，返回完整的运势信息
+    // 对于已认证用户，返回完整的运势信息（包含新增字段）
     if (isAuth) {
       return {
         ...response,
-        comment: fortune.comment,
+        // 旧版字段（兼容）
+        comment: fortune.comment || fortune.summary || undefined,
         careerLuck: fortune.careerLuck,
         wealthLuck: fortune.wealthLuck,
         loveLuck: fortune.loveLuck,
         luckyColor: fortune.luckyColor,
         luckyNumber: fortune.luckyNumber,
         suggestion: fortune.suggestion,
+        // 新版详细字段
+        summary: fortune.summary || undefined,
+        astroAnalysis: fortune.astroAnalysis || undefined,
+        careerAnalysis: fortune.careerAnalysis || undefined,
+        wealthAnalysis: fortune.wealthAnalysis || undefined,
+        loveAnalysis: fortune.loveAnalysis || undefined,
+        careerStars: fortune.careerStars || undefined,
+        wealthStars: fortune.wealthStars || undefined,
+        loveStars: fortune.loveStars || undefined,
+        avoidance: fortune.avoidance || undefined,
+        suitable: fortune.suitable || undefined,
+        unsuitable: fortune.unsuitable || undefined,
       };
     }
 

@@ -74,8 +74,8 @@ export const defaultTheme: ProfilePageTheme = {
   name: '默认主题',
 
   images: {
-    mainBackground: '../../static/pages/profile/bg-main.png',
-    starsBackground: '../../static/pages/profile/bg-stars.png',
+    mainBackground: 'https://i.postimg.cc/MX248bmL/bg-main.png',
+    starsBackground: 'https://i.postimg.cc/FHZ9D7hW/bg-stars.png',
     avatarPlaceholder: '../../static/pages/profile/avatar-placeholder.png',
     inputNameBackground: '../../static/pages/profile/input-bg-name.png',
     inputBirthdayBackground: '../../static/pages/profile/input-bg-birthday.png',

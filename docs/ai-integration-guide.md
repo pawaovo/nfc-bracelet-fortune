@@ -10,7 +10,7 @@
 - ✅ **智能重试机制**：AI失败时支持用户手动重试（最多3次）
 - ✅ **优雅降级**：最终降级到固定模板，确保用户体验
 - ✅ **场景区分**：根据用户认证状态智能选择生成策略
-- ✅ **性能优化**：6秒AI超时 + 数据库缓存机制
+- ✅ **性能优化**：40秒AI超时 + 数据库缓存机制
 
 ## 🔧 配置要求
 
@@ -21,18 +21,19 @@
 ```env
 # AI配置（必需）
 OPENAI_API_KEY=your-api-key-here
-OPENAI_BASE_URL=https://api.deepseek.com/v1
-OPENAI_MODEL=deepseek-chat
+OPENAI_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+OPENAI_MODEL=doubao-seed-1-6-lite-251015
 
 # AI功能开关（可选）
 AI_ENABLED=true
-AI_TIMEOUT_MS=6000
+AI_TIMEOUT_MS=40000
 AI_MAX_RETRIES=3
 ```
 
 ### 支持的AI服务
 
-- **DeepSeek API**（推荐）
+- **火山引擎 Doubao**（当前使用）
+- **DeepSeek API**
 - **OpenAI API**
 - **其他OpenAI兼容API**
 
@@ -41,7 +42,7 @@ AI_MAX_RETRIES=3
 ### 场景1：AI生成成功
 
 ```
-用户请求运势 → 检查缓存 → AI生成(6s内) → 显示结果 → 保存缓存
+用户请求运势 → 检查缓存 → AI生成(40s内) → 显示结果 → 保存缓存
 ```
 
 ### 场景2：AI生成失败

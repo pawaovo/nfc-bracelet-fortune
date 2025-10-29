@@ -6,14 +6,36 @@ export interface FortuneData {
   date: string;
   overallScore: number;
   isAuth?: boolean;
-  comment?: string;
+
+  // 新版详细运势数据
+  summary?: string; // 今日简要总结
+  astroAnalysis?: string; // 星盘分析
+  careerAnalysis?: string; // 事业运分析
+  wealthAnalysis?: string; // 财富运分析
+  loveAnalysis?: string; // 爱情运分析
+
+  // 星级评分（支持小数）
+  careerStars?: number; // 事业运星数 (0-5)
+  wealthStars?: number; // 财富运星数 (0-5)
+  loveStars?: number; // 爱情运星数 (0-5)
+
+  // 建议和避免
+  suggestion?: string; // 建议事项
+  avoidance?: string; // 避免事项
+
+  // 今日宜忌和幸运元素
+  suitable?: string; // 今日宜
+  unsuitable?: string; // 今日忌
+  luckyColor?: string; // 今日幸运色
+  luckyNumber?: number; // 今日幸运数字
+
+  // 兼容旧版字段
+  comment?: string; // 旧版点评（映射到summary）
   time?: string; // 运势时间，如 "AM 8:30"
-  careerLuck?: number;
-  wealthLuck?: number;
-  loveLuck?: number;
-  luckyColor?: string;
-  luckyNumber?: number;
-  suggestion?: string;
+  careerLuck?: number; // 旧版事业运分数（0-100）
+  wealthLuck?: number; // 旧版财运分数（0-100）
+  loveLuck?: number; // 旧版爱情运分数（0-100）
+
   recommendation?: Product;
 }
 

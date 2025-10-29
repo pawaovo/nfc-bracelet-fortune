@@ -11,7 +11,16 @@ export class FortuneService {
    * @returns 今日运势数据
    */
   async getTodayFortune(): Promise<ApiResponse<FortuneData>> {
-    return apiRequest.get<FortuneData>('fortune/today');
+    const response = await apiRequest.get<FortuneData>('fortune/today');
+
+    // 确保星数字段是数字类型（防止被转换为字符串）
+    if (response.data) {
+      response.data.careerStars = Number(response.data.careerStars);
+      response.data.wealthStars = Number(response.data.wealthStars);
+      response.data.loveStars = Number(response.data.loveStars);
+    }
+
+    return response;
   }
 
   /**
@@ -19,7 +28,16 @@ export class FortuneService {
    * @returns 重新生成的运势数据
    */
   async regenerateTodayFortune(): Promise<ApiResponse<FortuneData>> {
-    return apiRequest.post('fortune/today/regenerate');
+    const response = await apiRequest.post('fortune/today/regenerate');
+
+    // 确保星数字段是数字类型
+    if (response.data) {
+      response.data.careerStars = Number(response.data.careerStars);
+      response.data.wealthStars = Number(response.data.wealthStars);
+      response.data.loveStars = Number(response.data.loveStars);
+    }
+
+    return response;
   }
 
   /**
@@ -49,7 +67,16 @@ export class FortuneService {
    * @returns 指定日期的运势数据
    */
   async getFortuneByDate(date: string): Promise<ApiResponse<FortuneData>> {
-    return apiRequest.get<FortuneData>(`fortune/date/${date}`);
+    const response = await apiRequest.get<FortuneData>(`fortune/date/${date}`);
+
+    // 确保星数字段是数字类型
+    if (response.data) {
+      response.data.careerStars = Number(response.data.careerStars);
+      response.data.wealthStars = Number(response.data.wealthStars);
+      response.data.loveStars = Number(response.data.loveStars);
+    }
+
+    return response;
   }
 
   /**
