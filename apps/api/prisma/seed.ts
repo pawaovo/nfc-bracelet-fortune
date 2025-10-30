@@ -17,7 +17,7 @@ async function main() {
       data: {
         name: '蓝宝石手链',
         description: '五行属水，完美契合水象星座，提升财运与智慧',
-        imageUrl: 'https://example.com/images/sapphire-bracelet.jpg',
+        imageUrl: 'https://i.postimg.cc/cJm5Wjsf/shang-pin-tu.png',
         price: 299,
         douyinUrl: 'https://v.douyin.com/example-sapphire',
       },
@@ -26,7 +26,7 @@ async function main() {
       data: {
         name: '红玛瑙手链',
         description: '五行属火，激发热情与活力，增强事业运势',
-        imageUrl: 'https://example.com/images/red-agate-bracelet.jpg',
+        imageUrl: 'https://i.postimg.cc/cJm5Wjsf/shang-pin-tu.png',
         price: 199,
         douyinUrl: 'https://v.douyin.com/example-red-agate',
       },
@@ -35,7 +35,7 @@ async function main() {
       data: {
         name: '绿松石手链',
         description: '五行属木，促进成长与和谐，提升爱情运势',
-        imageUrl: 'https://example.com/images/turquoise-bracelet.jpg',
+        imageUrl: 'https://i.postimg.cc/cJm5Wjsf/shang-pin-tu.png',
         price: 399,
         douyinUrl: 'https://v.douyin.com/example-turquoise',
       },
@@ -44,7 +44,7 @@ async function main() {
       data: {
         name: '黄水晶手链',
         description: '五行属土，稳定心神，增强财富积累能力',
-        imageUrl: 'https://example.com/images/citrine-bracelet.jpg',
+        imageUrl: 'https://i.postimg.cc/cJm5Wjsf/shang-pin-tu.png',
         price: 599,
         douyinUrl: 'https://v.douyin.com/example-citrine',
       },
@@ -53,7 +53,7 @@ async function main() {
       data: {
         name: '白水晶手链',
         description: '五行属金，净化能量，提升整体运势平衡',
-        imageUrl: 'https://example.com/images/clear-quartz-bracelet.jpg',
+        imageUrl: 'https://i.postimg.cc/cJm5Wjsf/shang-pin-tu.png',
         price: 159,
         douyinUrl: 'https://v.douyin.com/example-clear-quartz',
       },
