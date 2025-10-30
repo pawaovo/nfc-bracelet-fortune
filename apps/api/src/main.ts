@@ -7,11 +7,13 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   // 启用全局验证管道
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   // 设置全局API前缀
   app.setGlobalPrefix('api/v1');
@@ -23,9 +25,11 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT ?? 3000;
-  await app.listen(port);
+  // 监听所有网络接口（0.0.0.0），允许局域网访问
+  await app.listen(port, '0.0.0.0');
 
   logger.log(`Application is running on: http://localhost:${port}`);
   logger.log(`API documentation available at: http://localhost:${port}/api/v1`);
+  logger.log(`Network access: http://0.0.0.0:${port}`);
 }
 bootstrap();

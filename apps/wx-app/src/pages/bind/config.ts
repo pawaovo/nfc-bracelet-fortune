@@ -16,8 +16,6 @@ export interface BindPageTheme {
     mainBackground: string;
     // 星空背景卡片图片
     starsBackground: string;
-    // 状态栏图标
-    statusIcon: string;
     // 手链图标（装饰性）
     braceletIcon: string;
     // 手链星星装饰
@@ -36,7 +34,6 @@ export interface BindPageTheme {
     welcome: {
       title: string; // 欢迎标题，如："欢迎！"
       subtitle: string; // 欢迎副标题，如："即将绑定你的专属开运手链"
-      description: string; // 欢迎描述，如："这是你的专属开运手链"
     };
 
     // 手链信息
@@ -51,13 +48,6 @@ export interface BindPageTheme {
       loading: string; // 加载状态，如："绑定中..."
     };
   };
-
-  // 颜色配置（可选，用于未来扩展）
-  colors?: {
-    primary?: string;
-    secondary?: string;
-    text?: string;
-  };
 }
 
 /**
@@ -69,7 +59,6 @@ export const defaultTheme: BindPageTheme = {
   images: {
     mainBackground: 'https://i.postimg.cc/MX248bmL/bg-main.png',
     starsBackground: 'https://i.postimg.cc/FHZ9D7hW/bg-stars.png',
-    statusIcon: '../../static/pages/bind/status-icon.svg',
     braceletIcon: '../../static/pages/bind/bracelet-icon.png',
     braceletStar: '../../static/pages/bind/bracelet-star.png',
     detailImage1: '../../static/pages/bind/detail-image-1.png',
@@ -81,7 +70,6 @@ export const defaultTheme: BindPageTheme = {
     welcome: {
       title: '欢迎！',
       subtitle: '即将绑定你的专属开运手链',
-      description: '这是你的专属开运手链',
     },
 
     bracelet: {
@@ -93,12 +81,6 @@ export const defaultTheme: BindPageTheme = {
       normal: '微信授权并绑定',
       loading: '绑定中...',
     },
-  },
-
-  colors: {
-    primary: '#667eea',
-    secondary: '#764ba2',
-    text: '#ffffff',
   },
 };
 
@@ -142,12 +124,4 @@ export const themes: Record<string, BindPageTheme> = {
  */
 export function getTheme(themeName: string = 'default'): BindPageTheme {
   return themes[themeName] || defaultTheme;
-}
-
-/**
- * 获取所有可用主题名称
- * @returns 主题名称数组
- */
-export function getAvailableThemes(): string[] {
-  return Object.keys(themes);
 }

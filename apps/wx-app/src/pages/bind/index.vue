@@ -17,9 +17,6 @@
       <text class="welcome-subtitle">
         {{ themeConfig.texts.welcome.subtitle }}
       </text>
-      <text class="welcome-description">
-        {{ themeConfig.texts.welcome.description }}
-      </text>
     </view>
 
     <!-- 手链展示区域 -->
@@ -28,6 +25,8 @@
       <view class="bracelet-main">
         <!-- 手链图标（装饰性图片） -->
         <image class="bracelet-icon-img" :src="themeConfig.images.braceletIcon" mode="aspectFit" />
+        <!-- 今日开运手链标签 -->
+        <image class="bracelet-label" src="/static/pages/bind/今日开运手链.png" mode="aspectFit" />
         <!-- 手链星星装饰 -->
         <image class="bracelet-star" :src="themeConfig.images.braceletStar" mode="aspectFit" />
       </view>
@@ -35,18 +34,24 @@
       <!-- 手链信息 -->
       <view class="bracelet-info">
         <text class="bracelet-name">
-          {{ themeConfig.texts.bracelet.name }}
+          {{ recommendedProduct?.name || themeConfig.texts.bracelet.name }}
         </text>
         <text class="bracelet-desc">
-          {{ themeConfig.texts.bracelet.description }}
+          {{ recommendedProduct?.description || themeConfig.texts.bracelet.description }}
         </text>
       </view>
     </view>
 
     <!-- 手链详情图片区域 -->
     <view class="bracelet-details">
-      <image class="detail-img-1" :src="themeConfig.images.detailImage1" mode="aspectFit" />
-      <image class="detail-img-2" :src="themeConfig.images.detailImage2" mode="aspectFit" />
+      <!-- detail-img-1 隐藏，由数据库图片替代 -->
+      <!-- <image class="detail-img-1" :src="themeConfig.images.detailImage1" mode="aspectFit" /> -->
+      <image
+        class="detail-img-2"
+        :src="recommendedProduct?.imageUrl || themeConfig.images.detailImage2"
+        mode="aspectFit"
+        @error="handleProductImageError"
+      />
     </view>
 
     <!-- 绑定按钮区域 -->
@@ -72,6 +77,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { authService } from '@/api/auth';
+import { fortuneService } from '@/api/fortune';
 import { useAuthStore } from '@/stores/auth';
 import { getTheme, type BindPageTheme } from './config';
 
@@ -84,9 +90,11 @@ const themeConfig = ref<BindPageTheme>(getTheme('default'));
 const isBinding = ref(false);
 const nfcId = ref('');
 
-// 页面加载时获取NFC ID
-onMounted(() => {
-  // 从页面参数或全局状态获取nfcId和主题配置
+// 动态商品数据
+const recommendedProduct = ref<any>(null);
+
+// 页面加载时获取NFC ID和随机商品
+onMounted(async () => {
   const pages = getCurrentPages();
   const currentPage = pages[pages.length - 1];
   const options = currentPage.options || {};
@@ -94,21 +102,41 @@ onMounted(() => {
   // 获取 NFC ID
   if (options.nfcId) {
     nfcId.value = options.nfcId;
-    console.log('获取到NFC ID:', nfcId.value);
-  } else {
-    console.warn('未获取到NFC ID参数');
   }
 
   // 获取主题配置（支持通过 URL 参数切换主题）
-  // 例如：pages/bind/index?theme=amethyst
   if (options.theme) {
-    const themeName = options.theme as string;
-    themeConfig.value = getTheme(themeName);
-    console.log('使用主题:', themeName);
-  } else {
-    console.log('使用默认主题');
+    themeConfig.value = getTheme(options.theme as string);
   }
+
+  // 加载随机商品推荐
+  await loadRandomRecommendation();
 });
+
+/**
+ * 加载随机商品推荐
+ * 失败时自动使用config中的默认配置
+ */
+async function loadRandomRecommendation() {
+  try {
+    const response = await fortuneService.getRandomRecommendation();
+    if (response.success && response.data) {
+      recommendedProduct.value = response.data;
+    }
+  } catch (error) {
+    console.warn('加载随机商品失败，使用默认配置');
+  }
+}
+
+/**
+ * 处理商品图片加载失败
+ * 图片加载失败时，会自动使用 || 后的默认图片
+ */
+function handleProductImageError(e: any) {
+  console.warn('商品图片加载失败，使用默认图片:', {
+    imageUrl: recommendedProduct.value?.imageUrl,
+  });
+}
 
 // 处理绑定按钮点击
 const handleBindClick = async () => {
@@ -130,12 +158,8 @@ const handleBindClick = async () => {
       throw new Error('微信授权失败');
     }
 
-    console.log('微信登录成功，code:', loginResult.code);
-
     // 调用后端绑定接口（如果有NFC ID则传入，否则为undefined）
     const response = await authService.login(loginResult.code, nfcId.value || undefined);
-
-    console.log('后端响应:', response);
 
     // 处理后端响应
     if (response.success) {
@@ -159,15 +183,12 @@ const handleBindClick = async () => {
         });
       } else if (status === 'VISITOR_PREVIEW') {
         // 手链已被其他用户绑定，进入访客预览模式
-        console.log('手链已被绑定，进入访客预览模式');
-
         // 保存预览数据到本地存储
         if (previewScore && recommendation) {
           uni.setStorageSync('previewData', {
             score: previewScore,
             recommendation: recommendation,
           });
-          console.log('保存访客预览数据:', { previewScore, recommendation });
         }
 
         // 显示友好提示
@@ -300,21 +321,12 @@ const handleBindClick = async () => {
     line-height: 51rpx;
     margin-bottom: 70rpx;
   }
-
-  .welcome-description {
-    display: block;
-    font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-    font-size: 25rpx;
-    color: #ffffff;
-    font-weight: 400;
-    line-height: 36rpx;
-  }
 }
 
 /* 手链展示区域 */
 .bracelet-section {
   position: absolute;
-  top: 565rpx;
+  top: 490rpx;
   left: 138rpx;
   width: 306rpx;
   z-index: 200;
@@ -324,6 +336,9 @@ const handleBindClick = async () => {
     width: 100%;
     height: 140rpx;
     margin-bottom: 29rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     .bracelet-icon-img {
       position: absolute;
@@ -331,6 +346,13 @@ const handleBindClick = async () => {
       left: 0;
       width: 306rpx;
       height: 140rpx;
+    }
+
+    .bracelet-label {
+      position: absolute;
+      width: 260rpx;
+      height: 130rpx;
+      z-index: 10;
     }
 
     .bracelet-star {
@@ -384,10 +406,10 @@ const handleBindClick = async () => {
 
   .detail-img-2 {
     position: absolute;
-    top: 87rpx;
-    left: 236rpx;
-    width: 378rpx;
-    height: 374rpx;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
   }
 }
 

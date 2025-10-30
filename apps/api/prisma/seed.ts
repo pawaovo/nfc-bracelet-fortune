@@ -24,9 +24,18 @@ async function main() {
     }),
     prisma.product.create({
       data: {
+        name: '黄水晶手链',
+        description: '五行属土，稳定心神，增强财富积累能力',
+        imageUrl: 'https://i.postimg.cc/Cx60jmBq/huang-shui-jing.png',
+        price: 599,
+        douyinUrl: 'https://v.douyin.com/example-citrine',
+      },
+    }),
+    prisma.product.create({
+      data: {
         name: '红玛瑙手链',
         description: '五行属火，激发热情与活力，增强事业运势',
-        imageUrl: 'https://i.postimg.cc/cJm5Wjsf/shang-pin-tu.png',
+        imageUrl: 'https://i.postimg.cc/XvGbxdd8/hong-ma-nao.png',
         price: 199,
         douyinUrl: 'https://v.douyin.com/example-red-agate',
       },
@@ -35,25 +44,16 @@ async function main() {
       data: {
         name: '绿松石手链',
         description: '五行属木，促进成长与和谐，提升爱情运势',
-        imageUrl: 'https://i.postimg.cc/cJm5Wjsf/shang-pin-tu.png',
+        imageUrl: 'https://i.postimg.cc/KYk2QBth/lu-song-shi.jpg',
         price: 399,
         douyinUrl: 'https://v.douyin.com/example-turquoise',
       },
     }),
     prisma.product.create({
       data: {
-        name: '黄水晶手链',
-        description: '五行属土，稳定心神，增强财富积累能力',
-        imageUrl: 'https://i.postimg.cc/cJm5Wjsf/shang-pin-tu.png',
-        price: 599,
-        douyinUrl: 'https://v.douyin.com/example-citrine',
-      },
-    }),
-    prisma.product.create({
-      data: {
         name: '白水晶手链',
         description: '五行属金，净化能量，提升整体运势平衡',
-        imageUrl: 'https://i.postimg.cc/cJm5Wjsf/shang-pin-tu.png',
+        imageUrl: 'https://i.postimg.cc/hGzBMTT5/bai-shui-jing.png',
         price: 159,
         douyinUrl: 'https://v.douyin.com/example-clear-quartz',
       },

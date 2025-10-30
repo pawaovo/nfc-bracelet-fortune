@@ -895,6 +895,35 @@ export class FortunesService {
   }
 
   /**
+   * 获取随机商品推荐（用于欢迎页面）
+   * @returns 随机商品
+   */
+  async getRandomRecommendation(): Promise<any> {
+    const products = await this.prisma.product.findMany({
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        imageUrl: true,
+        price: true,
+        douyinUrl: true,
+      },
+      take: 5, // 获取5个商品
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (products.length === 0) {
+      return null;
+    }
+
+    // 随机选择一个商品
+    const randomIndex = Math.floor(Math.random() * products.length);
+    return products[randomIndex];
+  }
+
+  /**
    * 获取商品推荐
    */
   private async getRecommendation(score: number) {

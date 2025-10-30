@@ -689,9 +689,9 @@ function loadVisitorFortune() {
     suggestion: '保持积极心态，好运自然来。想要获得更准确的运势分析，请购买专属手链。',
     recommendation: {
       id: '1',
-      name: '紫水晶开运手链',
-      description: '提升整体运势，增强直觉力',
-      imageUrl: '/static/bracelet-sample.jpg',
+      name: '蓝宝石手链',
+      description: '五行属水，完美契合水象星座，提升财运与智慧',
+      imageUrl: 'https://i.postimg.cc/cJm5Wjsf/shang-pin-tu.png',
       price: 299,
       douyinUrl: 'https://example.com/douyin',
     },
@@ -878,10 +878,10 @@ function loadFallbackFortune() {
     suggestion: '今天适合穿蓝色系服装，数字7将为你带来好运。保持耐心，机会就在前方。',
     recommendation: {
       id: 'fallback',
-      name: '智慧运势手链',
-      description: '提升洞察力，把握机遇',
-      imageUrl: '/static/bracelet-wisdom.jpg',
-      price: 299,
+      name: '白水晶手链',
+      description: '五行属金，净化能量，提升整体运势平衡',
+      imageUrl: 'https://i.postimg.cc/hGzBMTT5/bai-shui-jing.png',
+      price: 159,
       douyinUrl: 'https://example.com/douyin',
     },
   };

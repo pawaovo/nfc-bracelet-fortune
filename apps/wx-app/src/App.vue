@@ -11,20 +11,70 @@ onLaunch(options => {
   // 初始化应用状态
   initializeApp();
 
-  // 处理应用启动（NFC启动或直接启动）
-  handleAppLaunch(options);
+  // 检查隐私协议
+  checkPrivacyAgreement(options);
 });
 
 onShow(options => {
   console.log('App Show', options);
 
-  // 处理应用启动（从后台切换回来时）
-  handleAppLaunch(options);
+  // 检查隐私协议
+  checkPrivacyAgreement(options);
 });
 
 onHide(() => {
   console.log('App Hide');
 });
+
+/**
+ * 检查隐私协议是否已同意
+ */
+function checkPrivacyAgreement(options: any) {
+  const privacyAgreed = uni.getStorageSync('privacy_agreed');
+
+  if (!privacyAgreed) {
+    // 未同意隐私协议，延迟显示弹窗，先让页面加载
+    setTimeout(() => {
+      showPrivacyDialog(() => {
+        // 用户同意
+        uni.setStorageSync('privacy_agreed', true);
+      });
+    }, 1000);
+  }
+
+  // 无论是否同意，都继续处理应用启动（让小程序能正常运行）
+  handleAppLaunch(options);
+}
+
+/**
+ * 显示隐私协议弹窗
+ */
+function showPrivacyDialog(onConfirm: () => void) {
+  uni.showModal({
+    title: '用户隐私保护提示',
+    content:
+      '欢迎使用本小程序！\n\n为了向您提供服务，我们需要收集：\n• 微信授权信息\n• 姓名和生日\n• NFC手链设备ID\n\n我们承诺保护您的个人信息安全。\n\n详情请查看"设置-隐私政策"',
+    confirmText: '同意并继续',
+    cancelText: '不同意',
+    success: res => {
+      if (res.confirm) {
+        onConfirm();
+      } else {
+        // 用户拒绝，再次提示
+        setTimeout(() => {
+          uni.showModal({
+            title: '提示',
+            content: '需要同意隐私政策才能使用小程序',
+            showCancel: false,
+            success: () => {
+              showPrivacyDialog(onConfirm);
+            },
+          });
+        }, 300);
+      }
+    },
+  });
+}
 
 /**
  * 初始化应用状态
@@ -115,13 +165,50 @@ async function handleDirectLaunch() {
       return;
     }
 
-    // 未登录，执行静默登录流程
-    console.log('用户未登录，开始静默登录');
+    // 未登录，执行静默登录
+    console.log('用户未登录，执行静默登录');
     await handleSilentLogin();
   } catch (error) {
     console.error('直接启动处理失败:', error);
+    // 出错时跳转到绑定页面，让用户手动操作
+    uni.redirectTo({
+      url: '/pages/bind/index',
+    });
+  }
+}
 
-    // 启动失败，跳转到绑定页面
+/**
+ * 处理静默登录（新访客直接打开小程序）
+ */
+async function handleSilentLogin() {
+  try {
+    console.log('开始静默登录');
+    const authStore = useAuthStore();
+
+    // 获取微信登录code
+    const code = await getWeChatLoginCode(5000);
+
+    // 调用后端登录接口（不传NFC ID）
+    const response = await authService.login(code);
+
+    if (response.success && response.data) {
+      const { status, token, user } = response.data;
+
+      console.log('静默登录成功，状态:', status);
+
+      // 保存token和用户信息
+      if (token && user) {
+        authStore.login(token, user);
+      }
+
+      // 根据状态跳转
+      handleLoginResponseNavigation(status);
+    } else {
+      throw new Error(response.message || '静默登录失败');
+    }
+  } catch (error) {
+    console.error('静默登录失败:', error);
+    // 静默登录失败，跳转到绑定页面
     uni.redirectTo({
       url: '/pages/bind/index',
     });
@@ -172,51 +259,6 @@ function handleLoginResponseNavigation(status: string, nfcId?: string, previewDa
       break;
     default:
       throw new Error(`Unknown login status: ${status}`);
-  }
-}
-
-/**
- * 处理静默登录流程（仅使用微信code，无NFC）
- */
-async function handleSilentLogin() {
-  const authStore = useAuthStore();
-  try {
-    authStore.setLoading(true);
-
-    // 获取微信登录code（2秒超时）
-    const code = await getWeChatLoginCode(2000);
-
-    // 设置API超时
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('静默登录超时')), 2000);
-    });
-
-    // 调用后端登录接口（不带nfcId）
-    const apiPromise = authService.login(code);
-    const response = (await Promise.race([apiPromise, timeoutPromise])) as any;
-
-    if (response.success) {
-      const { status, token, user } = response.data;
-      console.log('静默登录响应:', { status, hasToken: !!token, hasUser: !!user });
-
-      if (token && user) {
-        authStore.login(token, user);
-      }
-
-      // 静默登录只处理这两种状态
-      if (status === 'AUTHENTICATED' || status === 'PROFILE_INCOMPLETE') {
-        handleLoginResponseNavigation(status);
-      } else {
-        throw new Error(`Unexpected status in silent login: ${status}`);
-      }
-    } else {
-      throw new Error(response.message || '静默登录失败');
-    }
-  } catch (error) {
-    console.error('静默登录失败:', error);
-    uni.redirectTo({ url: '/pages/bind/index' });
-  } finally {
-    authStore.setLoading(false);
   }
 }
 
@@ -307,4 +349,5 @@ async function handleAuthenticatedNFCAccess(nfcId: string) {
   }
 }
 </script>
+
 <style></style>

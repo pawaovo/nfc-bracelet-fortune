@@ -94,6 +94,14 @@ export class FortuneService {
   > {
     return apiRequest.get('fortune/stats');
   }
+
+  /**
+   * 获取随机商品推荐（用于欢迎页面）
+   * @returns 随机商品数据
+   */
+  async getRandomRecommendation(): Promise<ApiResponse<any>> {
+    return apiRequest.get('fortune/recommendation/random');
+  }
 }
 
 // 导出单例实例

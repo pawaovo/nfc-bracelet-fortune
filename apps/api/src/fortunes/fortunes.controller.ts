@@ -20,7 +20,6 @@ import type {
 } from '@shared/types';
 
 @Controller('fortune')
-@UseGuards(JwtAuthGuard)
 export class FortunesController {
   private readonly logger = new Logger(FortunesController.name);
 
@@ -32,6 +31,7 @@ export class FortunesController {
    * @returns 今日运势数据
    */
   @Get('today')
+  @UseGuards(JwtAuthGuard)
   async getTodayFortune(
     @Request() req: JwtRequest,
   ): Promise<ApiResponse<FortuneData>> {
@@ -78,6 +78,7 @@ export class FortunesController {
    * @returns 重新生成的运势数据
    */
   @Post('today/regenerate')
+  @UseGuards(JwtAuthGuard)
   async regenerateTodayFortune(
     @Request() req: JwtRequest,
   ): Promise<ApiResponse<FortuneData>> {
@@ -125,6 +126,7 @@ export class FortunesController {
    * @returns 历史运势列表
    */
   @Get('history')
+  @UseGuards(JwtAuthGuard)
   async getHistoryFortunes(
     @Request() req: JwtRequest,
     @Query('page') page: string = '1',
@@ -180,6 +182,7 @@ export class FortunesController {
    * @returns 指定日期的运势数据
    */
   @Get('date/:date')
+  @UseGuards(JwtAuthGuard)
   async getFortuneByDate(
     @Request() req: JwtRequest,
     @Param('date') date: string,
@@ -227,6 +230,7 @@ export class FortunesController {
    * @returns 运势统计数据
    */
   @Get('stats')
+  @UseGuards(JwtAuthGuard)
   async getFortuneStats(
     @Request() req: JwtRequest,
   ): Promise<ApiResponse<FortuneStatsResponse>> {
@@ -251,6 +255,38 @@ export class FortunesController {
         success: false,
         data: undefined,
         message: error instanceof Error ? error.message : '获取运势统计失败',
+        code: '500',
+      };
+    }
+  }
+
+  /**
+   * 获取随机商品推荐（用于欢迎页面）
+   * 无需认证，所有用户都可以访问
+   * @returns 随机商品数据
+   */
+  @Get('recommendation/random')
+  async getRandomRecommendation(): Promise<ApiResponse<any>> {
+    try {
+      const recommendation =
+        await this.fortunesService.getRandomRecommendation();
+
+      return {
+        success: true,
+        data: recommendation,
+        message: '获取随机商品推荐成功',
+        code: '200',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get random recommendation: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : '',
+      );
+      return {
+        success: false,
+        data: undefined,
+        message:
+          error instanceof Error ? error.message : '获取随机商品推荐失败',
         code: '500',
       };
     }
