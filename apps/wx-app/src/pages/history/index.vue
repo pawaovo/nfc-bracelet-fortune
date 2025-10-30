@@ -56,7 +56,7 @@
         <!-- 当日运势标签 -->
         <text class="section-label"> 当日运势 </text>
 
-        <!-- 时间轴列表（可滚动） -->
+        <!-- 时间轴列表 -->
         <scroll-view
           v-if="shouldEnableScroll"
           class="timeline-scroll"
@@ -69,28 +69,38 @@
         >
           <view class="timeline-container">
             <view class="timeline-line" />
-            <view
-              v-for="item in historyList"
-              :key="item.date"
-              class="timeline-item"
-              @click="handleItemClick(item)"
-            >
-              <view class="timeline-dot">
-                <view class="dot-outer" />
-                <view class="dot-inner" />
-              </view>
-              <text class="timeline-date">
-                {{ item.date }}
-              </text>
-              <view class="fortune-card">
-                <text class="fortune-card-title"> 你的专属运势 </text>
-                <view class="fortune-card-info">
-                  <text class="fortune-time" :class="getTimeColorClass(item.overallScore)">
-                    {{ formatFortuneTime(item) }}
+            <template v-for="item in historyList" :key="item.date">
+              <view class="timeline-item" @click="handleItemClick(item)">
+                <view class="timeline-dot">
+                  <view class="dot-outer" />
+                  <view class="dot-inner" />
+                </view>
+                <text class="timeline-date">
+                  {{ item.date }}
+                </text>
+                <view class="fortune-card">
+                  <image
+                    class="fortune-card-bg"
+                    src="/static/pages/history/border.png"
+                    mode="scaleToFill"
+                  />
+                  <image
+                    class="fortune-card-flower"
+                    src="/static/pages/history/flower.png"
+                    mode="aspectFit"
+                    :style="getFlowerStyle(item.date)"
+                  />
+                  <text class="fortune-card-title" :class="getTimeColorClass(item.overallScore)">
+                    {{ formatFortuneScore(item) }}
                   </text>
+                  <view class="fortune-card-info">
+                    <text class="fortune-time">
+                      {{ formatFortuneSummary(item) }}
+                    </text>
+                  </view>
                 </view>
               </view>
-            </view>
+            </template>
             <view v-if="isLoadingMore" class="load-more-container">
               <view class="loading-more">
                 <view class="loading-more-spinner" />
@@ -105,31 +115,41 @@
         </scroll-view>
 
         <!-- 时间轴列表（不可滚动） -->
-        <view v-else class="timeline-scroll timeline-no-scroll">
+        <view v-else class="timeline-scroll">
           <view class="timeline-container">
             <view class="timeline-line" />
-            <view
-              v-for="item in historyList"
-              :key="item.date"
-              class="timeline-item"
-              @click="handleItemClick(item)"
-            >
-              <view class="timeline-dot">
-                <view class="dot-outer" />
-                <view class="dot-inner" />
-              </view>
-              <text class="timeline-date">
-                {{ item.date }}
-              </text>
-              <view class="fortune-card">
-                <text class="fortune-card-title"> 你的专属运势 </text>
-                <view class="fortune-card-info">
-                  <text class="fortune-time" :class="getTimeColorClass(item.overallScore)">
-                    {{ formatFortuneTime(item) }}
+            <template v-for="item in historyList" :key="item.date">
+              <view class="timeline-item" @click="handleItemClick(item)">
+                <view class="timeline-dot">
+                  <view class="dot-outer" />
+                  <view class="dot-inner" />
+                </view>
+                <text class="timeline-date">
+                  {{ item.date }}
+                </text>
+                <view class="fortune-card">
+                  <image
+                    class="fortune-card-bg"
+                    src="/static/pages/history/border.png"
+                    mode="scaleToFill"
+                  />
+                  <image
+                    class="fortune-card-flower"
+                    src="/static/pages/history/flower.png"
+                    mode="aspectFit"
+                    :style="getFlowerStyle(item.date)"
+                  />
+                  <text class="fortune-card-title" :class="getTimeColorClass(item.overallScore)">
+                    {{ formatFortuneScore(item) }}
                   </text>
+                  <view class="fortune-card-info">
+                    <text class="fortune-time">
+                      {{ formatFortuneSummary(item) }}
+                    </text>
+                  </view>
                 </view>
               </view>
-            </view>
+            </template>
           </view>
         </view>
       </view>
@@ -138,7 +158,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { fortuneService } from '@/api/fortune';
 import type { FortuneData } from '@/stores/fortune';
@@ -269,15 +289,10 @@ function handleItemClick(item: FortuneData) {
 }
 
 /**
- * 格式化运势时间信息
+ * 格式化运势分数和评语（用于标题）
+ * 格式：72分 中等运势
  */
-function formatFortuneTime(item: FortuneData): string {
-  // 如果有时间字段，显示时间
-  if (item.time) {
-    return item.time;
-  }
-
-  // 否则显示分数和评语
+function formatFortuneScore(item: FortuneData): string {
   const score = item.overallScore;
   let comment: string;
 
@@ -289,7 +304,17 @@ function formatFortuneTime(item: FortuneData): string {
     comment = '下等运势';
   }
 
-  return `综合 ${score}分 ${comment}`;
+  return `${score}分 ${comment}`;
+}
+
+/**
+ * 格式化运势总结（用于正文）
+ * 显示summary字段，只显示一行，过长时省略
+ */
+function formatFortuneSummary(item: FortuneData): string {
+  // 优先使用summary字段，其次使用comment字段
+  const summary = item.summary || item.comment || '今日运势平稳';
+  return summary;
 }
 
 /**
@@ -301,6 +326,26 @@ function getTimeColorClass(score: number): string {
   if (score >= 70) return 'time-normal';
   if (score >= 60) return 'time-fair';
   return 'time-poor';
+}
+
+/**
+ * 根据日期生成花朵装饰图片的随机位置
+ * 使用日期作为种子确保同一日期的位置始终一致
+ */
+function getFlowerStyle(date: string): string {
+  // 使用日期字符串生成伪随机数
+  let hash = 0;
+  for (let i = 0; i < date.length; i++) {
+    const char = date.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+
+  // 生成-30到30rpx的随机偏移
+  const offsetX = (hash % 61) - 30; // -30 到 30
+  const offsetY = ((hash >> 8) % 61) - 30; // -30 到 30
+
+  return `right: ${12 + offsetX}rpx; top: ${12 + offsetY}rpx;`;
 }
 </script>
 
@@ -337,7 +382,7 @@ function getTimeColorClass(score: number): string {
   justify-content: center;
   min-height: 100vh;
   padding: 60rpx;
-  padding-top: 280rpx; /* 为顶部导航区域留出空间 */
+  padding-top: 280rpx;
   text-align: center;
 }
 
@@ -447,15 +492,20 @@ function getTimeColorClass(score: number): string {
 /* 标题 */
 .main-title {
   color: #ffffff;
+  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
   font-size: 48rpx; /* 从 80rpx 调整为 48rpx */
-  font-weight: 400;
+  font-weight: 600;
+  line-height: 56rpx;
   display: block;
   margin-bottom: 8rpx;
 }
 
 .sub-title {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 24rpx; /* 从 32rpx 调整为 24rpx */
+  color: rgba(187, 187, 187, 1);
+  font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
+  font-size: 26rpx;
+  font-weight: 400;
+  line-height: 36rpx;
   display: block;
   margin-bottom: 16rpx;
 }
@@ -479,8 +529,11 @@ function getTimeColorClass(score: number): string {
 
 /* 当日运势标签 */
 .section-label {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 28rpx;
+  color: #ffffff;
+  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
+  font-size: 30rpx;
+  font-weight: 600;
+  line-height: 40rpx;
   display: block;
   flex-shrink: 0;
   margin-bottom: 16rpx; /* 与时间轴的间距 */
@@ -521,18 +574,12 @@ function getTimeColorClass(score: number): string {
 .timeline-scroll {
   flex: 1;
   overflow: hidden;
-  height: 100%; /* 确保占满剩余空间 */
-}
-
-/* 时间轴不可滚动状态 */
-.timeline-no-scroll {
-  overflow: hidden !important; /* 强制禁止滚动 */
+  height: 100%;
 }
 
 /* 时间轴容器 */
 .timeline-container {
   position: relative;
-  padding: 0;
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -554,10 +601,8 @@ function getTimeColorClass(score: number): string {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0;
   margin-bottom: 24rpx;
-  padding: 0;
-  padding-left: 10rpx; /* 整体右移 10rpx */
+  padding-left: 10rpx;
   z-index: 1;
 }
 
@@ -595,8 +640,11 @@ function getTimeColorClass(score: number): string {
 
 /* 时间轴日期 */
 .timeline-date {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 24rpx;
+  color: rgba(187, 187, 187, 1);
+  font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
+  font-size: 26rpx;
+  font-weight: 400;
+  line-height: 36rpx;
   width: 140rpx; /* 从 180rpx 减小到 140rpx，为卡片腾出更多空间 */
   flex-shrink: 0;
   padding: 0 16rpx; /* 调整内边距 */
@@ -605,36 +653,42 @@ function getTimeColorClass(score: number): string {
 /* 运势卡片 */
 .fortune-card {
   flex: 1;
-  background: rgba(230, 213, 255, 0.2);
-  border: 1rpx solid rgba(139, 123, 168, 0.3);
+  position: relative;
   border-radius: 16rpx;
   padding: 20rpx 28rpx; /* 从 24rpx 增加到 28rpx，增加卡片内部空间 */
   min-height: 100rpx;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  overflow: hidden;
+}
+
+.fortune-card-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.fortune-card-flower {
+  position: absolute;
+  width: 40rpx;
+  height: 40rpx;
+  z-index: 2;
+  opacity: 0.9;
 }
 
 .fortune-card-title {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 22rpx;
-  margin-bottom: 10rpx;
-}
-
-.fortune-card-info {
   position: relative;
-  background: rgba(250, 226, 255, 0.1);
-  border: 2rpx solid rgba(255, 255, 255, 0.2);
-  border-radius: 12rpx;
-  padding: 12rpx 20rpx;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.fortune-time {
-  color: #d8d8d8;
-  font-size: 26rpx;
+  z-index: 1;
+  color: #ffffff;
+  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
+  font-size: 30rpx;
+  font-weight: 600;
+  line-height: 40rpx;
+  margin-bottom: 10rpx;
 
   &.time-excellent {
     color: #ff4757;
@@ -655,6 +709,27 @@ function getTimeColorClass(score: number): string {
   &.time-poor {
     color: #9e9e9e;
   }
+}
+
+.fortune-card-info {
+  position: relative;
+  z-index: 1;
+  background: rgba(250, 226, 255, 0.05);
+  border-radius: 12rpx;
+  padding: 12rpx 20rpx;
+}
+
+.fortune-time {
+  font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
+  font-size: 26rpx;
+  font-weight: 400;
+  line-height: 36rpx;
+  color: #bbbbbb;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
 }
 
 /* 加载更多 */
