@@ -84,12 +84,12 @@
         mode="aspectFill"
       />
 
-      <!-- 顶部装饰图片 - 根据模式显示不同图片 -->
-      <!-- 访客模式：显示解锁图标 -->
+      <!-- 顶部装饰图片 - 访客模式和完整版都显示相同图案 -->
+      <!-- 访客模式：静态显示（无动画） -->
       <image
         v-if="isVisitorMode"
-        class="top-lock-icon"
-        src="../../static/pages/fortune/unlock.png"
+        class="phone-decoration-detail-static"
+        src="../../static/pages/fortune/decoration-phone-detail.png"
         mode="aspectFit"
       />
       <!-- 完整版模式：显示呼吸动态装饰图 -->
@@ -99,6 +99,16 @@
         src="../../static/pages/fortune/decoration-phone-detail.png"
         mode="aspectFit"
       />
+
+      <!-- 访客模式：卡片中央的锁图标和提示文字 - 最顶层 -->
+      <view v-if="isVisitorMode" class="lock-hint-container">
+        <image
+          class="card-lock-icon"
+          src="../../static/pages/fortune/unlock.png"
+          mode="aspectFit"
+        />
+        <text class="lock-hint-text"> 碰一碰手链就能解锁 </text>
+      </view>
 
       <!-- 内容区域 - 使用绝对定位 -->
       <view class="content-wrapper">
@@ -1182,6 +1192,19 @@ function handleHistoryNavigation() {
   animation: breathe 3s ease-in-out infinite;
 }
 
+/* 访客模式顶部静态装饰图 - 与完整版相同图案但无动画 */
+.phone-decoration-detail-static {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 100rpx; /* 与完整版位置一致 */
+  width: 400rpx;
+  height: 400rpx;
+  z-index: 3;
+  opacity: 0.6; /* 与完整版透明度一致 */
+  /* 无动画效果 */
+}
+
 /* 呼吸动画效果 */
 @keyframes breathe {
   0%,
@@ -1195,17 +1218,43 @@ function handleHistoryNavigation() {
   }
 }
 
-/* 访客模式顶部锁图标 */
-.top-lock-icon {
+/* 访客模式锁图标和提示文字容器 - 最顶层 */
+.lock-hint-container {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 60rpx; /* 稍微下移以适应更大的图标 */
-  width: 380rpx; /* 放大图标宽度 */
-  height: 380rpx; /* 放大图标高度 */
-  z-index: 3;
-  opacity: 0.4; /* 半透明效果 */
-  filter: drop-shadow(0 0 30rpx rgba(255, 255, 255, 0.6)); /* 增强阴影 */
+  top: 650rpx; /* 位于卡片中央位置 */
+  width: 450rpx;
+  height: 450rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100; /* 最高层级，确保在所有内容之上 */
+}
+
+/* 访客模式卡片中央锁图标 */
+.card-lock-icon {
+  position: absolute;
+  width: 450rpx; /* 放大图标尺寸，作为视觉焦点 */
+  height: 450rpx;
+  opacity: 0.9; /* 较高透明度，清晰可见 */
+  filter: drop-shadow(0 0 40rpx rgba(255, 255, 255, 0.7)); /* 明显的发光效果 */
+  z-index: 1;
+}
+
+/* 锁图标上方的提示文字 - 叠放在图标之上 */
+.lock-hint-text {
+  position: absolute;
+  color: #2d1b4e; /* 深紫色/黑色，与设计稿一致 */
+  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
+  font-size: 32rpx;
+  font-weight: 600;
+  line-height: 44rpx;
+  text-align: center;
+  text-shadow: 0 1rpx 2rpx rgba(255, 255, 255, 0.2); /* 轻微白色阴影，增强对比度 */
+  opacity: 1;
+  z-index: 2; /* 在图标之上 */
+  margin-top: 180rpx; /* 向下偏移更多，位于锁图标底部区域 */
 }
 
 /* 内容包装器 */
