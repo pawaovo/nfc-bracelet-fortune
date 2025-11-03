@@ -3,6 +3,13 @@
     <!-- 星空背景 -->
     <image class="bg-stars" src="https://i.postimg.cc/HxJcqQx0/bg-stars.png" mode="aspectFill" />
 
+    <!-- 额外背景图层 -->
+    <image
+      class="bg-overlay"
+      src="https://i.postimg.cc/xdqq6NW0/tu-ceng-743.png"
+      mode="aspectFill"
+    />
+
     <!-- 顶部导航区域 -->
     <view class="top-nav-area">
       <!-- 返回按钮 -->
@@ -69,7 +76,7 @@
         >
           <view class="timeline-container">
             <view class="timeline-line" />
-            <template v-for="item in historyList" :key="item.date">
+            <template v-for="(item, index) in historyList" :key="item.date">
               <view class="timeline-item" @click="handleItemClick(item)">
                 <view class="timeline-dot">
                   <view class="dot-outer" />
@@ -88,7 +95,7 @@
                     class="fortune-card-flower"
                     src="/static/pages/history/flower.png"
                     mode="aspectFit"
-                    :style="getFlowerStyle(item.date)"
+                    :style="getFlowerStyle(item.date, index)"
                   />
                   <text class="fortune-card-title" :class="getTimeColorClass(item.overallScore)">
                     {{ formatFortuneScore(item) }}
@@ -118,7 +125,7 @@
         <view v-else class="timeline-scroll">
           <view class="timeline-container">
             <view class="timeline-line" />
-            <template v-for="item in historyList" :key="item.date">
+            <template v-for="(item, index) in historyList" :key="item.date">
               <view class="timeline-item" @click="handleItemClick(item)">
                 <view class="timeline-dot">
                   <view class="dot-outer" />
@@ -137,7 +144,7 @@
                     class="fortune-card-flower"
                     src="/static/pages/history/flower.png"
                     mode="aspectFit"
-                    :style="getFlowerStyle(item.date)"
+                    :style="getFlowerStyle(item.date, index)"
                   />
                   <text class="fortune-card-title" :class="getTimeColorClass(item.overallScore)">
                     {{ formatFortuneScore(item) }}
@@ -329,23 +336,34 @@ function getTimeColorClass(score: number): string {
 }
 
 /**
- * 根据日期生成花朵装饰图片的随机位置
- * 使用日期作为种子确保同一日期的位置始终一致
+ * 生成花朵装饰图片的随机样式
+ * 每个卡片都有不同的水平偏移和旋转角度
+ * 限制在卡片右半段区域内，不超出边界
+ * 使用日期+索引作为种子确保样式稳定一致
  */
-function getFlowerStyle(date: string): string {
-  // 使用日期字符串生成伪随机数
+function getFlowerStyle(date: string, index: number): string {
+  // 使用日期+索引生成稳定的哈希值（不使用Math.random()避免重复渲染）
+  const seed = `${date}-${index}`;
   let hash = 0;
-  for (let i = 0; i < date.length; i++) {
-    const char = date.charCodeAt(i);
+  for (let i = 0; i < seed.length; i++) {
+    const char = seed.charCodeAt(i);
     hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32bit integer
   }
 
-  // 生成-30到30rpx的随机偏移
-  const offsetX = (hash % 61) - 30; // -30 到 30
-  const offsetY = ((hash >> 8) % 61) - 30; // -30 到 30
+  // 限制水平偏移范围：12rpx 到 120rpx（从右边缘向左偏移）
+  // 12rpx 是最小边距，120rpx 确保图标在卡片右半段
+  // 图标宽度40rpx，所以 right: 12rpx 时图标右边缘距离卡片边缘12rpx
+  const minRight = 12;
+  const maxRight = 120;
+  const offsetRange = maxRight - minRight; // 108rpx的偏移范围
+  const rightPosition = minRight + (Math.abs(hash) % offsetRange); // 12 到 120
 
-  return `right: ${12 + offsetX}rpx; top: ${12 + offsetY}rpx;`;
+  // 生成随机旋转角度：-60到60度
+  const rotation = (Math.abs(hash >> 8) % 121) - 60; // -60 到 60
+
+  // 固定在右上角，只有水平偏移，垂直位置固定
+  return `right: ${rightPosition}rpx; top: 12rpx; transform: rotate(${rotation}deg);`;
 }
 </script>
 
@@ -360,15 +378,23 @@ function getFlowerStyle(date: string): string {
   overflow: hidden;
 }
 
-/* 星空背景 */
-.bg-stars {
+/* 背景图层通用样式 */
+.bg-stars,
+.bg-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+}
+
+.bg-stars {
   opacity: 0.5;
   z-index: 0;
+}
+
+.bg-overlay {
+  z-index: 1;
 }
 
 /* 加载和错误状态 */
@@ -691,19 +717,19 @@ function getFlowerStyle(date: string): string {
   margin-bottom: 10rpx;
 
   &.time-excellent {
-    color: #ff4757;
+    color: #d946ef;
   }
 
   &.time-good {
-    color: #ff6b35;
+    color: #c084fc;
   }
 
   &.time-normal {
-    color: #ffa726;
+    color: #a78bfa;
   }
 
   &.time-fair {
-    color: #ffeb3b;
+    color: #8b5cf6;
   }
 
   &.time-poor {

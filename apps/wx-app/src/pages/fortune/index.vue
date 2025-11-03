@@ -113,7 +113,7 @@
           <text class="comment-title-text" @click="showDetailModal"> 运势分析 </text>
           <image
             class="comment-detail-icon"
-            src="../../static/pages/fortune/flower.png"
+            src="../../static/pages/fortune/today.png"
             mode="aspectFit"
             @click="showDetailModal"
           />
@@ -228,6 +228,13 @@
 
               <!-- 内容容器 -->
               <view class="lucky-card-content">
+                <!-- 图标 -->
+                <image
+                  class="lucky-card-icon"
+                  src="/static/pages/fortune/good.png"
+                  mode="aspectFit"
+                />
+
                 <!-- 标题 -->
                 <view class="lucky-label-box">
                   <text class="lucky-label-text"> 宜 </text>
@@ -251,6 +258,13 @@
 
               <!-- 内容容器 -->
               <view class="lucky-card-content">
+                <!-- 图标 -->
+                <image
+                  class="lucky-card-icon"
+                  src="/static/pages/fortune/lucky.png"
+                  mode="aspectFit"
+                />
+
                 <!-- 标题 -->
                 <view class="lucky-label-box">
                   <text class="lucky-label-text"> 忌 </text>
@@ -274,6 +288,13 @@
 
               <!-- 内容容器 -->
               <view class="lucky-card-content">
+                <!-- 图标 -->
+                <image
+                  class="lucky-card-icon"
+                  src="/static/pages/fortune/flower.png"
+                  mode="aspectFit"
+                />
+
                 <!-- 标题 -->
                 <view class="lucky-label-box">
                   <text class="lucky-label-text"> 幸运元素 </text>
@@ -1100,52 +1121,51 @@ function handleHistoryNavigation() {
   overflow: hidden; /* 禁止滚动 */
 }
 
-/* 运势卡片背景图 - 对应Figma node 1:307-310 */
-.card-bg-image {
+/* 卡片通用样式 - 居中对齐和圆角 */
+.card-bg-image,
+.card-decoration-layer,
+.bottom-decoration {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 420rpx; /* 调整到合适位置 */
-  width: 701rpx; /* 保持与内容区域一致的宽度 */
-  height: 840rpx; /* 增加高度以容纳底部的宜忌幸运色内容，从752rpx增加到840rpx */
+  border-radius: 30rpx;
+  overflow: hidden;
+}
+
+/* 运势卡片背景图 - 对应Figma node 1:307-310 */
+.card-bg-image {
+  top: 420rpx;
+  width: 701rpx;
+  height: 840rpx;
   z-index: 1;
   opacity: 0.9;
-  border-radius: 30rpx; /* 添加圆角以显示背景图的圆角效果 */
-  overflow: hidden; /* 确保内容不超出圆角边界 */
 }
 
 /* 卡片装饰背景层 - Rectangle 4 */
 .card-decoration-layer {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: 420rpx; /* 与卡片背景图位置一致 */
-  width: 701rpx; /* 与卡片背景图宽度一致 */
-  height: 840rpx; /* 与卡片背景图高度一致 */
-  z-index: 2; /* 在卡片背景图之上，但在内容之下 */
+  top: 420rpx;
+  width: 701rpx;
+  height: 840rpx;
+  z-index: 2;
   opacity: 0.8;
-  border-radius: 30rpx;
-  overflow: hidden;
 }
 
 /* 数字装饰图 - 位于卡片右上角 */
 .card-number-decoration {
   position: absolute;
-  right: 40rpx; /* 距离右边缘的距离 */
-  top: 430rpx; /* 卡片顶部420rpx + 内边距10rpx */
-  width: 240rpx; /* 数字图片宽度，放大2倍：120rpx * 2 */
-  height: 240rpx; /* 数字图片高度，放大2倍：120rpx * 2 */
-  z-index: 10; /* 在卡片背景之上，但在文字之下 */
+  right: 40rpx;
+  top: 430rpx;
+  width: 240rpx;
+  height: 240rpx;
+  z-index: 10;
   opacity: 0.9;
 }
 
-/* 底部装饰图 - 对应Figma node 1:311 */
+/* 底部装饰图 - 推荐商品卡片背景 */
 .bottom-decoration {
-  position: absolute;
-  left: 16rpx; /* 8px * 1.953 */
   bottom: 20rpx;
-  width: 718rpx; /* 367.925px * 1.953 */
-  height: 330rpx; /* 168.956px * 1.953 */
+  width: 701rpx;
+  height: 330rpx;
   z-index: 2;
 }
 
@@ -1324,7 +1344,7 @@ function handleHistoryNavigation() {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 815rpx;
+  top: 780rpx; /* 向上移动8rpx，原值815rpx */
   display: flex;
   gap: 40rpx;
   z-index: 11;
@@ -1376,29 +1396,32 @@ function handleHistoryNavigation() {
   position: absolute;
   left: 50%;
   transform: translate(-50%);
-  top: 910rpx;
+  top: 880rpx; /* 向上移动8rpx，原值910rpx */
   width: 580rpx;
   height: 140rpx;
   z-index: 11;
   cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.3); /* 添加深色背景叠加层 */
+  border-radius: 20rpx; /* 添加圆角以匹配背景图 */
 }
 
-.advice-bg-image {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-}
-
-/* 内容容器 - 相对定位，显示在背景图上方，上下对称展示 */
+/* 建议区域通用定位样式 */
+.advice-bg-image,
 .advice-content-container {
   position: absolute;
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
+}
+
+.advice-bg-image {
+  z-index: 1;
+  opacity: 0.8;
+}
+
+/* 内容容器 - 显示在背景图上方，上下对称展示 */
+.advice-content-container {
   padding: 0 20rpx;
   z-index: 2;
   display: flex;
@@ -1448,6 +1471,8 @@ function handleHistoryNavigation() {
   min-width: 0;
   overflow: hidden;
   height: 40rpx;
+  display: flex;
+  align-items: center;
 }
 
 .advice-content-text {
@@ -1456,18 +1481,19 @@ function handleHistoryNavigation() {
   font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
   font-size: 26rpx;
   font-weight: 400;
-  line-height: 36rpx;
+  line-height: 40rpx;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
+  padding-top: 4rpx;
 }
 
 /* 幸运卡片容器 */
 .lucky-cards-container {
   position: absolute;
   left: 86rpx;
-  top: 1060rpx;
+  top: 1040rpx;
   width: 580rpx;
   display: flex;
   justify-content: center;
@@ -1482,41 +1508,42 @@ function handleHistoryNavigation() {
   flex-shrink: 0;
 }
 
-.lucky-card-bg {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-}
-
+/* 幸运卡片通用定位样式 */
+.lucky-card-bg,
 .lucky-card-content {
   position: absolute;
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
+}
+
+.lucky-card-bg {
+  z-index: 1;
+}
+
+.lucky-card-content {
   z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 14rpx 12rpx 12rpx 12rpx;
+  padding: 20rpx 12rpx 12rpx 12rpx;
   box-sizing: border-box;
 }
 
+/* 幸运卡片图标 */
+.lucky-card-icon {
+  width: 48rpx;
+  height: 48rpx;
+  flex-shrink: 0;
+  margin-bottom: 8rpx; /* 图标与标题之间的间距 */
+}
+
 .lucky-label-box {
-  background-color: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: auto;
-  height: auto;
   flex-shrink: 0;
-  margin-top: 6rpx;
 }
 
 .lucky-label-text {
@@ -1535,7 +1562,7 @@ function handleHistoryNavigation() {
   font-weight: 400;
   line-height: 36rpx;
   text-align: center;
-  margin-top: -35rpx;
+  margin-top: -20rpx; /* 减少负边距，从-35rpx调整为-20rpx */
   flex: 1;
   display: flex;
   align-items: center;

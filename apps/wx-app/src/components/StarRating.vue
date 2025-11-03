@@ -1,7 +1,9 @@
 <template>
   <view class="star-rating" :data-size="size">
     <view v-for="star in stars" :key="star.index" class="star-wrapper">
-      <view class="star-icon" :style="getStarStyle(star)"> ★ </view>
+      <view class="star-container" :style="getStarStyle(star)">
+        <image class="star-icon" src="@/static/pages/fortune/star.png" mode="aspectFit" />
+      </view>
     </view>
   </view>
 </template>
@@ -25,26 +27,22 @@ const props = withDefaults(defineProps<Props>(), {
 
 // 获取星星的样式
 const getStarStyle = (star: { filled: boolean; half: boolean }) => {
+  const baseStyle: Record<string, any> = {};
+
   if (star.half) {
-    // 半星：左半边有颜色，右半边灰色
-    return {
-      background: `linear-gradient(to right, ${props.color} 50%, #e0e0e0 50%)`,
-      '-webkit-background-clip': 'text',
-      'background-clip': 'text',
-      '-webkit-text-fill-color': 'transparent',
-      color: 'transparent',
-    };
+    // 半星：使用clip-path裁剪左半边
+    baseStyle.clipPath = 'polygon(0 0, 50% 0, 50% 100%, 0 100%)';
+    baseStyle.backgroundColor = props.color;
   } else if (star.filled) {
-    // 满星：完全有颜色
-    return {
-      color: props.color,
-    };
+    // 满星：应用颜色
+    baseStyle.backgroundColor = props.color;
   } else {
-    // 空星：灰色
-    return {
-      color: '#e0e0e0',
-    };
+    // 空星：灰色半透明
+    baseStyle.backgroundColor = '#e0e0e0';
+    baseStyle.opacity = 0.3;
   }
+
+  return baseStyle;
 };
 
 // 计算星星状态（支持直接传入星数或分数）
@@ -109,23 +107,35 @@ const stars = computed(() => {
   flex-shrink: 0;
 }
 
+.star-container {
+  position: relative;
+  width: 32rpx;
+  height: 32rpx;
+  display: block;
+  -webkit-mask: url('@/static/pages/fortune/star.png') no-repeat center / contain;
+  mask: url('@/static/pages/fortune/star.png') no-repeat center / contain;
+}
+
 .star-icon {
-  font-size: 32rpx;
-  display: inline-block;
-  font-weight: normal;
-  line-height: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
 }
 
 // 根据size属性调整星星大小
-.star-rating[data-size='small'] .star-icon {
-  font-size: 32rpx;
+.star-rating[data-size='small'] .star-container {
+  width: 32rpx;
+  height: 32rpx;
 }
 
-.star-rating[data-size='medium'] .star-icon {
-  font-size: 36rpx;
+.star-rating[data-size='medium'] .star-container {
+  width: 36rpx;
+  height: 36rpx;
 }
 
-.star-rating[data-size='large'] .star-icon {
-  font-size: 48rpx;
+.star-rating[data-size='large'] .star-container {
+  width: 48rpx;
+  height: 48rpx;
 }
 </style>
