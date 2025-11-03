@@ -17,6 +17,9 @@
       <text class="welcome-subtitle">
         {{ themeConfig.texts.welcome.subtitle }}
       </text>
+      <text class="welcome-description">
+        {{ themeConfig.texts.welcome.description }}
+      </text>
     </view>
 
     <!-- 手链展示区域 -->
@@ -44,10 +47,8 @@
 
     <!-- 手链详情图片区域 -->
     <view class="bracelet-details">
-      <!-- detail-img-1 隐藏，由数据库图片替代 -->
-      <!-- <image class="detail-img-1" :src="themeConfig.images.detailImage1" mode="aspectFit" /> -->
       <image
-        class="detail-img-2"
+        class="detail-img"
         :src="recommendedProduct?.imageUrl || themeConfig.images.detailImage2"
         mode="aspectFit"
         @error="handleProductImageError"
@@ -286,10 +287,10 @@ const handleBindClick = async () => {
 
   .bg-stars {
     position: absolute;
-    top: 120rpx;
-    left: 20rpx;
-    width: 720rpx;
-    height: 1280rpx;
+    top: 200rpx;
+    left: 30rpx;
+    width: 690rpx;
+    height: 1140rpx;
     z-index: 100;
   }
 }
@@ -298,28 +299,37 @@ const handleBindClick = async () => {
 .welcome-section {
   position: absolute;
   top: 279rpx;
-  left: 151rpx;
-  width: 420rpx;
+  left: 80rpx;
+  width: 590rpx;
   z-index: 200;
 
   .welcome-title {
     display: block;
-    font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-    font-size: 35rpx;
+    font-family: 'PingFang SC', sans-serif;
+    font-size: 48rpx;
     color: #ffffff;
-    font-weight: 400;
-    line-height: 51rpx;
-    margin-bottom: 17rpx;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 10rpx;
   }
 
   .welcome-subtitle {
     display: block;
-    font-family: 'ABeeZee', 'Noto Sans JP', 'Noto Sans SC', sans-serif;
-    font-size: 35rpx;
+    font-family: 'PingFang SC', sans-serif;
+    font-size: 48rpx;
     color: #ffffff;
-    font-weight: 400;
-    line-height: 51rpx;
-    margin-bottom: 70rpx;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 30rpx;
+  }
+
+  .welcome-description {
+    display: block;
+    font-family: 'PingFang SC', sans-serif;
+    font-size: 32rpx;
+    color: #ffffff;
+    font-weight: 600;
+    line-height: 1.3;
   }
 }
 
@@ -327,13 +337,13 @@ const handleBindClick = async () => {
 .bracelet-section {
   position: absolute;
   top: 490rpx;
-  left: 138rpx;
-  width: 306rpx;
+  left: 80rpx;
+  width: 590rpx;
   z-index: 200;
 
   .bracelet-main {
     position: relative;
-    width: 100%;
+    width: 306rpx;
     height: 140rpx;
     margin-bottom: 29rpx;
     display: flex;
@@ -357,8 +367,8 @@ const handleBindClick = async () => {
 
     .bracelet-star {
       position: absolute;
-      top: 10rpx;
-      right: 0;
+      top: 20rpx;
+      left: 200rpx;
       width: 21rpx;
       height: 24rpx;
       opacity: 0.84;
@@ -368,21 +378,21 @@ const handleBindClick = async () => {
   .bracelet-info {
     .bracelet-name {
       display: block;
-      font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-      font-size: 36rpx;
+      font-family: 'PingFang SC', sans-serif;
+      font-size: 40rpx;
       color: #ffffff;
-      font-weight: 400;
-      line-height: 52rpx;
-      margin-bottom: 5rpx;
+      font-weight: 600;
+      line-height: 1.3;
+      margin-bottom: 8rpx;
     }
 
     .bracelet-desc {
       display: block;
-      font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
+      font-family: 'PingFang SC', sans-serif;
       font-size: 24rpx;
       color: #bbbbbb;
-      font-weight: 400;
-      line-height: 35rpx;
+      font-weight: 600;
+      line-height: 1.3;
     }
   }
 }
@@ -396,15 +406,7 @@ const handleBindClick = async () => {
   height: 440rpx;
   z-index: 200;
 
-  .detail-img-1 {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 444rpx;
-    height: 440rpx;
-  }
-
-  .detail-img-2 {
+  .detail-img {
     position: absolute;
     top: 0;
     left: 0;
@@ -416,7 +418,7 @@ const handleBindClick = async () => {
 /* 绑定按钮区域 */
 .bind-section {
   position: absolute;
-  top: 1435rpx;
+  top: 1380rpx;
   left: 42rpx;
   width: 668rpx;
   height: 115rpx;
@@ -442,9 +444,9 @@ const handleBindClick = async () => {
     background: transparent;
     border: none;
     color: #ffffff;
-    font-family: 'ABeeZee', 'Noto Sans JP', 'Noto Sans SC', sans-serif;
-    font-size: 35rpx;
-    font-weight: 400;
+    font-family: 'PingFang SC', sans-serif;
+    font-size: 36rpx;
+    font-weight: 600;
     line-height: 115rpx;
     text-align: center;
     display: flex;

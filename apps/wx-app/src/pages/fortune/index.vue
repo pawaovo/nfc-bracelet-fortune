@@ -63,6 +63,13 @@
       <!-- 运势卡片背景图 - 对应Figma node 1:307-310 -->
       <image class="card-bg-image" src="../../static/pages/fortune/card.png" mode="scaleToFill" />
 
+      <!-- 卡片装饰背景层 - Rectangle 4 -->
+      <image
+        class="card-decoration-layer"
+        src="../../static/pages/fortune/Rectangle 4.png"
+        mode="scaleToFill"
+      />
+
       <!-- 数字装饰图 - 位于卡片右上角 -->
       <image
         class="card-number-decoration"
@@ -134,7 +141,7 @@
           <view class="luck-sections-container">
             <!-- 事业运区域 - 使用星数而非分数 -->
             <view class="luck-section">
-              <text class="luck-name-text"> 事业运 </text>
+              <text class="luck-name-text luck-name-career"> 事业运 </text>
               <view class="luck-stars-row">
                 <star-rating
                   :key="`career-${fortuneData?.careerStars || 0}`"
@@ -147,7 +154,7 @@
 
             <!-- 财富运区域 - 使用星数而非分数 -->
             <view class="luck-section">
-              <text class="luck-name-text"> 财富运 </text>
+              <text class="luck-name-text luck-name-wealth"> 财富运 </text>
               <view class="luck-stars-row">
                 <star-rating
                   :key="`wealth-${fortuneData?.wealthStars || 0}`"
@@ -160,7 +167,7 @@
 
             <!-- 爱情运区域 - 使用星数而非分数 -->
             <view class="luck-section">
-              <text class="luck-name-text"> 爱情运 </text>
+              <text class="luck-name-text luck-name-love"> 爱情运 </text>
               <view class="luck-stars-row">
                 <star-rating
                   :key="`love-${fortuneData?.loveStars || 0}`"
@@ -185,7 +192,7 @@
             <view class="advice-content-container">
               <!-- 建议 -->
               <view class="advice-item">
-                <text class="advice-label-text"> 建议 </text>
+                <text class="advice-label-text advice-label-suggestion"> 建议 </text>
                 <view class="advice-content-wrapper">
                   <text class="advice-content-text">
                     {{ fortuneData?.suggestion || '保持积极心态，好运自然来' }}
@@ -198,7 +205,7 @@
 
               <!-- 避免 -->
               <view class="advice-item">
-                <text class="advice-label-text"> 避免 </text>
+                <text class="advice-label-text advice-label-avoidance"> 避免 </text>
                 <view class="advice-content-wrapper">
                   <text class="advice-content-text">
                     {{ fortuneData?.avoidance || '避免冲动决策' }}
@@ -1107,6 +1114,20 @@ function handleHistoryNavigation() {
   overflow: hidden; /* 确保内容不超出圆角边界 */
 }
 
+/* 卡片装饰背景层 - Rectangle 4 */
+.card-decoration-layer {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 420rpx; /* 与卡片背景图位置一致 */
+  width: 701rpx; /* 与卡片背景图宽度一致 */
+  height: 840rpx; /* 与卡片背景图高度一致 */
+  z-index: 2; /* 在卡片背景图之上，但在内容之下 */
+  opacity: 0.8;
+  border-radius: 30rpx;
+  overflow: hidden;
+}
+
 /* 数字装饰图 - 位于卡片右上角 */
 .card-number-decoration {
   position: absolute;
@@ -1269,29 +1290,33 @@ function handleHistoryNavigation() {
 /* 综合分数标签 */
 .score-label-text {
   position: absolute;
-  right: 0;
+  right: 60rpx;
   top: 80rpx;
-  color: #d8d1fa;
-  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-  font-size: 30rpx;
+  color: #ffffff;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 24rpx;
   font-weight: 600;
-  line-height: 40rpx;
+  line-height: normal;
   text-align: center;
-  width: 240rpx;
+  width: auto;
+  background-color: #23176d;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50rpx;
+  padding: 4rpx 16rpx;
 }
 
 /* 综合分数数字 */
 .score-number-text {
   position: absolute;
-  right: 0;
-  top: 0;
+  right: 90rpx;
+  top: -10rpx;
   color: #ffffff;
   font-size: 56rpx;
-  font-weight: bold;
-  font-family: 'ABeeZee', sans-serif;
-  text-align: center;
-  width: 240rpx;
-  line-height: 56rpx;
+  font-weight: 600;
+  font-family: 'PingFang SC', sans-serif;
+  font-style: italic;
+  text-align: right;
+  line-height: normal;
 }
 
 /* 三项运势容器 */
@@ -1323,6 +1348,21 @@ function handleHistoryNavigation() {
   font-weight: 600;
   line-height: 40rpx;
   margin-bottom: 8rpx;
+}
+
+/* 事业运标题颜色 - 与星星颜色一致 */
+.luck-name-career {
+  color: #1e90ff;
+}
+
+/* 财富运标题颜色 - 与星星颜色一致 */
+.luck-name-wealth {
+  color: #ffd700;
+}
+
+/* 爱情运标题颜色 - 与星星颜色一致 */
+.luck-name-love {
+  color: #ff69b4;
 }
 
 .luck-stars-row {
@@ -1391,6 +1431,16 @@ function handleHistoryNavigation() {
   line-height: 40rpx;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* 建议标题颜色 - 绿色 */
+.advice-label-suggestion {
+  color: #00ff62;
+}
+
+/* 避免标题颜色 - 红色 */
+.advice-label-avoidance {
+  color: #ff0004;
 }
 
 .advice-content-wrapper {

@@ -24,14 +24,8 @@ export interface ProfilePageTheme {
     starsBackground: string;
     /** 头像占位图 */
     avatarPlaceholder: string;
-    /** 称呼输入框背景 */
-    inputNameBackground: string;
-    /** 生日输入框背景 */
-    inputBirthdayBackground: string;
     /** 提交按钮背景 */
     buttonBackground: string;
-    /** 日历图标 */
-    calendarIcon: string;
     /** 头像图标 */
     avatarIcon: string;
   };
@@ -75,12 +69,9 @@ export const defaultTheme: ProfilePageTheme = {
 
   images: {
     mainBackground: 'https://i.postimg.cc/MX248bmL/bg-main.png',
-    starsBackground: 'https://i.postimg.cc/FHZ9D7hW/bg-stars.png',
+    starsBackground: 'https://i.postimg.cc/76bYZf8D/Group-15.png',
     avatarPlaceholder: '../../static/pages/profile/avatar-placeholder.png',
-    inputNameBackground: '../../static/pages/profile/input-bg-name.png',
-    inputBirthdayBackground: '../../static/pages/profile/input-bg-birthday.png',
     buttonBackground: '../../static/pages/profile/button-bg.png',
-    calendarIcon: '../../static/pages/profile/icon-calendar.svg',
     avatarIcon: '../../static/pages/profile/icon-avatar.svg',
   },
 
@@ -92,7 +83,7 @@ export const defaultTheme: ProfilePageTheme = {
     namePlaceholder: '输入名称',
     birthdayLabel: '生日*',
     birthdayPlaceholder: '输入日期',
-    submitButton: '开启我的好运 ···',
+    submitButton: '开启我的好运',
   },
 
   colors: {
@@ -117,26 +108,4 @@ const themes: Record<string, ProfilePageTheme> = {
  */
 export function getTheme(themeName: string = 'default'): ProfilePageTheme {
   return themes[themeName] || defaultTheme;
-}
-
-/**
- * 获取当前日期字符串
- * @returns 格式化的日期字符串，如 "2025.10.27"
- */
-export function getCurrentDate(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}.${month}.${day}`;
-}
-
-/**
- * 获取当前星期
- * @returns 星期字符串，如 "星期一"
- */
-export function getCurrentWeekday(): string {
-  const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-  const now = new Date();
-  return weekdays[now.getDay()];
 }

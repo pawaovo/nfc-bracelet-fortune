@@ -20,9 +20,7 @@ export interface BindPageTheme {
     braceletIcon: string;
     // 手链星星装饰
     braceletStar: string;
-    // 手链详情图片1
-    detailImage1: string;
-    // 手链详情图片2
+    // 手链详情图片
     detailImage2: string;
     // 按钮背景图片
     buttonBackground: string;
@@ -34,6 +32,7 @@ export interface BindPageTheme {
     welcome: {
       title: string; // 欢迎标题，如："欢迎！"
       subtitle: string; // 欢迎副标题，如："即将绑定你的专属开运手链"
+      description: string; // 欢迎描述，如："这是你的专属运势···"（新增）
     };
 
     // 手链信息
@@ -58,10 +57,9 @@ export const defaultTheme: BindPageTheme = {
 
   images: {
     mainBackground: 'https://i.postimg.cc/MX248bmL/bg-main.png',
-    starsBackground: 'https://i.postimg.cc/FHZ9D7hW/bg-stars.png',
+    starsBackground: 'https://i.postimg.cc/tTpjfJkk/Group-13.png',
     braceletIcon: '../../static/pages/bind/bracelet-icon.png',
     braceletStar: '../../static/pages/bind/bracelet-star.png',
-    detailImage1: '../../static/pages/bind/detail-image-1.png',
     detailImage2: '../../static/pages/bind/detail-image-2.png',
     buttonBackground: '../../static/pages/bind/button-bg.png',
   },
@@ -70,6 +68,7 @@ export const defaultTheme: BindPageTheme = {
     welcome: {
       title: '欢迎！',
       subtitle: '即将绑定你的专属开运手链',
+      description: '这是你的专属运势···', // 新增描述文字
     },
 
     bracelet: {

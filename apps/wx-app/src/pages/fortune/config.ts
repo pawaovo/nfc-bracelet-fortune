@@ -16,12 +16,6 @@ export interface FortunePageTheme {
     mainBackground: string; // 主背景图片
     starsBackground: string; // 星空背景图片
 
-    // 装饰图片
-    decorationPhone: string; // 手机装饰图片
-
-    // 分项运势图标
-    iconCareer: string; // 事业运图标
-
     // 其他
     shopIcon: string; // 店铺图标
   };
@@ -134,12 +128,6 @@ export const defaultTheme: FortunePageTheme = {
     // 背景图片 - 使用CDN链接
     mainBackground: 'https://i.postimg.cc/HsjPcY23/fortune.png',
     starsBackground: 'https://i.postimg.cc/FHZ9D7hW/bg-stars.png',
-
-    // 装饰图片
-    decorationPhone: '../../static/pages/fortune/decoration-phone.png',
-
-    // 分项运势图标
-    iconCareer: '../../static/pages/fortune/icon-career.svg',
 
     // 其他
     shopIcon: '../../static/pages/fortune/shop-icon.png',

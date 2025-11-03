@@ -39,12 +39,13 @@
 
     <!-- 称呼输入框 -->
     <view class="name-input-container">
-      <image class="input-bg" :src="config.images.inputNameBackground" mode="scaleToFill" />
+      <view class="input-bg" />
       <input
         v-model="formData.name"
         class="name-input"
         type="text"
         :placeholder="config.texts.namePlaceholder"
+        placeholder-style="color: rgba(255, 255, 255, 0.5);"
         maxlength="20"
       />
     </view>
@@ -56,7 +57,7 @@
 
     <!-- 生日输入框 -->
     <view class="birthday-input-container">
-      <image class="input-bg" :src="config.images.inputBirthdayBackground" mode="scaleToFill" />
+      <view class="input-bg" />
       <picker
         mode="date"
         :value="formData.birthday"
@@ -71,7 +72,7 @@
 
     <!-- 提交按钮 -->
     <view class="submit-button-container" @click="handleSubmitClick">
-      <image class="button-bg" :src="config.images.buttonBackground" mode="scaleToFill" />
+      <image class="button-bg" :src="config.images.buttonBackground" mode="aspectFit" />
       <text v-if="!isLoading" class="button-text">
         {{ config.texts.submitButton }}
       </text>
@@ -303,10 +304,10 @@ onLoad(() => {
 
   .bg-stars {
     position: absolute;
-    top: 120rpx;
-    left: 20rpx;
-    width: 720rpx;
-    height: 1280rpx;
+    top: 200rpx;
+    left: 30rpx;
+    width: 690rpx;
+    height: 1140rpx;
     z-index: 100;
   }
 }
@@ -314,49 +315,51 @@ onLoad(() => {
 /* 头像占位图 */
 .avatar-placeholder {
   position: absolute;
-  top: 480rpx;
-  left: 77rpx;
-  width: 588rpx;
-  height: 796rpx;
+  top: 29.5%;
+  left: 10.27%;
+  width: 78.53%;
+  height: 49.04%;
   z-index: 150;
 }
 
-/* 引导文字容器 - 复用绑定页面的欢迎文案样式 */
+/* 引导文字容器 */
 .guide-text-container {
   position: absolute;
-  top: 279rpx;
-  left: 151rpx;
-  width: 420rpx;
+  top: 19.03%;
+  left: 14.8%;
+  right: 14.8%;
   z-index: 200;
 }
 
-/* 引导标题 - 对应绑定页面的 welcome-title */
+/* 引导标题 "仅需一步" */
 .guide-title {
   display: block;
-  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-  font-size: 35rpx;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 48rpx;
   color: #ffffff;
-  font-weight: 400;
-  line-height: 51rpx;
-  margin-bottom: 17rpx;
+  font-weight: 600;
+  line-height: normal;
+  text-align: center;
+  margin-bottom: 10rpx;
 }
 
-/* 引导副标题 - 对应绑定页面的 welcome-subtitle */
+/* 引导副标题 "为你的专属运势注入灵魂" */
 .guide-subtitle {
   display: block;
-  font-family: 'ABeeZee', 'Noto Sans JP', 'Noto Sans SC', sans-serif;
-  font-size: 35rpx;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 48rpx;
   color: #ffffff;
-  font-weight: 400;
-  line-height: 51rpx;
-  margin-bottom: 70rpx;
+  font-weight: 600;
+  line-height: normal;
+  text-align: center;
 }
 
 /* 用户名容器 */
 .username-container {
   position: absolute;
-  top: 560rpx;
-  left: 185rpx;
+  top: 38.24%;
+  left: 26.53%;
+  right: 27.07%;
   z-index: 200;
   display: flex;
   align-items: center;
@@ -367,46 +370,50 @@ onLoad(() => {
   width: 77rpx;
   height: 77rpx;
   margin-right: 22rpx;
+  flex-shrink: 0;
 }
 
 /* 用户名文字 */
 .username-text {
-  font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
-  font-size: 37rpx;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 36.625rpx;
   color: #ffffff;
-  line-height: 99rpx;
+  font-weight: 600;
+  line-height: normal;
 }
 
 /* 称呼标签 */
 .name-label {
   position: absolute;
-  top: 700rpx;
-  left: 157rpx;
-  font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
-  font-size: 37rpx;
+  top: 46.98%;
+  left: 21.87%;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 32rpx;
   color: #ffffff;
-  line-height: 95rpx;
+  font-weight: 600;
+  line-height: normal;
   z-index: 200;
 }
 
 /* 称呼输入框容器 */
 .name-input-container {
   position: absolute;
-  top: 772rpx;
-  left: 143rpx;
-  width: 458rpx;
-  height: 81rpx;
+  top: 50.68%;
+  left: 20%;
+  right: 20.53%;
+  height: 82rpx;
   z-index: 200;
 }
 
-/* 输入框背景图片 */
+/* 输入框背景 */
 .input-bg {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.4;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 48rpx;
 }
 
 /* 称呼输入框 */
@@ -416,9 +423,9 @@ onLoad(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  padding: 0 19rpx; // 10 × 1.865
-  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-  font-size: 28rpx; // 15 × 1.865
+  padding: 0 30rpx;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 25rpx;
   color: #ffffff;
   background: transparent;
   box-sizing: border-box;
@@ -427,22 +434,23 @@ onLoad(() => {
 /* 生日标签 */
 .birthday-label {
   position: absolute;
-  top: 903rpx;
-  left: 157rpx;
-  font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
-  font-size: 37rpx;
+  top: 59.17%;
+  left: 21.87%;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 32rpx;
   color: #ffffff;
-  line-height: 95rpx;
+  font-weight: 600;
+  line-height: normal;
   z-index: 200;
 }
 
 /* 生日输入框容器 */
 .birthday-input-container {
   position: absolute;
-  top: 975rpx;
-  left: 143rpx;
-  width: 458rpx;
-  height: 81rpx;
+  top: 62.93%;
+  left: 20%;
+  right: 20.53%;
+  height: 82rpx;
   z-index: 200;
 }
 
@@ -462,16 +470,16 @@ onLoad(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  padding: 0 19rpx;
-  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-  font-size: 28rpx;
+  padding: 0 30rpx;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 25rpx;
   color: #ffffff;
-  line-height: 81rpx;
+  line-height: 82rpx;
   display: flex;
   align-items: center;
 
   &.placeholder {
-    opacity: 0.7;
+    opacity: 0.5;
   }
 }
 
@@ -479,35 +487,35 @@ onLoad(() => {
 .submit-button-container {
   position: absolute;
   top: 1140rpx;
-  left: 195rpx;
-  width: 360rpx;
-  height: 68rpx;
+  left: 143rpx;
+  width: 458rpx;
+  height: 115rpx;
   z-index: 200;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* 按钮背景图片 */
+/* 按钮背景 */
 .button-bg {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  z-index: 1;
 }
 
 /* 按钮文字 */
 .button-text {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
-  font-size: 28rpx;
+  position: relative;
+  z-index: 2;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 36rpx;
+  font-weight: 600;
   color: #ffffff;
-  line-height: 84rpx;
+  line-height: 115rpx;
+  text-align: center;
 }
 </style>
