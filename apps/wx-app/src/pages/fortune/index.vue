@@ -157,7 +157,7 @@
                   :key="`career-${fortuneData?.careerStars || 0}`"
                   :stars="fortuneData?.careerStars ?? 3"
                   size="small"
-                  color="#1E90FF"
+                  color="#46DAFF"
                 />
               </view>
             </view>
@@ -170,7 +170,7 @@
                   :key="`wealth-${fortuneData?.wealthStars || 0}`"
                   :stars="fortuneData?.wealthStars ?? 3"
                   size="small"
-                  color="#FFD700"
+                  color="#F5DD4E"
                 />
               </view>
             </view>
@@ -183,7 +183,7 @@
                   :key="`love-${fortuneData?.loveStars || 0}`"
                   :stars="fortuneData?.loveStars ?? 3"
                   size="small"
-                  color="#FF69B4"
+                  color="#FF97C6"
                 />
               </view>
             </view>
@@ -320,31 +320,19 @@
         </view>
       </view>
 
-      <!-- 历史记录区域 - 带外框效果，访客模式下模糊 -->
+      <!-- 历史记录按钮 - 独立于卡片外，访客模式下模糊 -->
       <view
-        class="history-container"
+        class="history-button"
         :class="{ 'visitor-blur': isVisitorMode }"
         @click="handleHistoryNavigation"
       >
         <image
-          class="history-bg-image"
-          src="../../static/pages/fortune/other.png"
+          class="history-button-bg"
+          src="../../static/pages/fortune/button-bg.png"
           mode="scaleToFill"
         />
-        <!-- 左侧星星装饰 - 位置偏前 -->
-        <image
-          class="history-star history-star-left"
-          src="../../static/pages/fortune/bracelet-star.png"
-          mode="aspectFit"
-        />
         <!-- 文字 -->
-        <text class="history-text"> 查看历史记录 </text>
-        <!-- 右侧星星装饰 - 位置偏后 -->
-        <image
-          class="history-star history-star-right"
-          src="../../static/pages/fortune/bracelet-star.png"
-          mode="aspectFit"
-        />
+        <text class="history-button-text"> 查看历史记录 </text>
       </view>
 
       <!-- 手链标题图片 - 固定位置 -->
@@ -1146,7 +1134,7 @@ function handleHistoryNavigation() {
 .card-bg-image {
   top: 420rpx;
   width: 701rpx;
-  height: 840rpx;
+  height: 800rpx; /* 从 780rpx 增加到 800rpx，稍微增加底部高度 */
   z-index: 1;
   opacity: 0.9;
 }
@@ -1155,7 +1143,7 @@ function handleHistoryNavigation() {
 .card-decoration-layer {
   top: 420rpx;
   width: 701rpx;
-  height: 840rpx;
+  height: 800rpx; /* 从 780rpx 增加到 800rpx，稍微增加底部高度 */
   z-index: 2;
   opacity: 0.8;
 }
@@ -1179,30 +1167,22 @@ function handleHistoryNavigation() {
   z-index: 2;
 }
 
-/* 完整版顶部呼吸动态装饰图 */
-.phone-decoration-detail {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: 100rpx; /* 下移，让底部嵌入卡片顶部 */
-  width: 400rpx;
-  height: 400rpx;
-  z-index: 3;
-  opacity: 0.6;
-  animation: breathe 3s ease-in-out infinite;
-}
-
-/* 访客模式顶部静态装饰图 - 与完整版相同图案但无动画 */
+/* 顶部装饰图 - 通用样式 */
+.phone-decoration-detail,
 .phone-decoration-detail-static {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 100rpx; /* 与完整版位置一致 */
+  top: 100rpx;
   width: 400rpx;
   height: 400rpx;
   z-index: 3;
-  opacity: 0.6; /* 与完整版透明度一致 */
-  /* 无动画效果 */
+  opacity: 0.6;
+}
+
+/* 完整版：添加呼吸动画 */
+.phone-decoration-detail {
+  animation: breathe 3s ease-in-out infinite;
 }
 
 /* 呼吸动画效果 */
@@ -1294,7 +1274,7 @@ function handleHistoryNavigation() {
 .comment-title-row {
   position: absolute;
   left: 86rpx;
-  top: 630rpx;
+  top: 610rpx; /* 从 630rpx 上移到 610rpx */
   display: flex;
   align-items: center;
   gap: 10rpx;
@@ -1324,7 +1304,7 @@ function handleHistoryNavigation() {
 .comment-content-text {
   position: absolute;
   left: 86rpx;
-  top: 680rpx;
+  top: 660rpx; /* 从 680rpx 上移到 660rpx */
   width: 450rpx;
   color: rgba(187, 187, 187, 1);
   font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
@@ -1374,7 +1354,7 @@ function handleHistoryNavigation() {
   padding: 4rpx 16rpx;
 }
 
-/* 综合分数数字 */
+/* 综合分数数字 - 添加紫色高亮效果 */
 .score-number-text {
   position: absolute;
   right: 90rpx;
@@ -1386,6 +1366,13 @@ function handleHistoryNavigation() {
   font-style: italic;
   text-align: right;
   line-height: normal;
+  /* 紫色高亮效果 */
+  text-shadow:
+    0 0 10rpx rgba(255, 255, 255, 0.8),
+    0 0 20rpx rgba(167, 139, 250, 0.8),
+    0 0 30rpx rgba(124, 58, 237, 0.6),
+    0 2rpx 4rpx rgba(0, 0, 0, 0.3);
+  filter: drop-shadow(0 0 8rpx rgba(167, 139, 250, 0.6));
 }
 
 /* 三项运势容器 */
@@ -1421,17 +1408,17 @@ function handleHistoryNavigation() {
 
 /* 事业运标题颜色 - 与星星颜色一致 */
 .luck-name-career {
-  color: #1e90ff;
+  color: #46daff;
 }
 
 /* 财富运标题颜色 - 与星星颜色一致 */
 .luck-name-wealth {
-  color: #ffd700;
+  color: #f5dd4e;
 }
 
 /* 爱情运标题颜色 - 与星星颜色一致 */
 .luck-name-love {
-  color: #ff69b4;
+  color: #ff97c6;
 }
 
 .luck-stars-row {
@@ -1440,7 +1427,7 @@ function handleHistoryNavigation() {
   align-items: center;
 }
 
-/* 建议和避免区域 */
+/* 建议和避免区域 - 优化深色背景 */
 .advice-container {
   position: absolute;
   left: 50%;
@@ -1449,8 +1436,7 @@ function handleHistoryNavigation() {
   width: 580rpx;
   height: 140rpx;
   z-index: 11;
-  cursor: pointer;
-  background-color: rgba(0, 0, 0, 0.3); /* 添加深色背景叠加层 */
+  background-color: rgba(0, 0, 0, 0.45); /* 加深背景色，从0.3提升到0.45 */
   border-radius: 20rpx; /* 添加圆角以匹配背景图 */
 }
 
@@ -1553,7 +1539,7 @@ function handleHistoryNavigation() {
 .lucky-card {
   position: relative;
   width: 172rpx;
-  height: 192rpx;
+  height: 160rpx; /* 从 192rpx 减少到 160rpx，减少 32rpx */
   flex-shrink: 0;
 }
 
@@ -1576,7 +1562,7 @@ function handleHistoryNavigation() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20rpx 12rpx 12rpx 12rpx;
+  padding: 12rpx 12rpx 12rpx 12rpx; /* 顶部padding从20rpx减少到12rpx，让图标上移 */
   box-sizing: border-box;
 }
 
@@ -1585,6 +1571,7 @@ function handleHistoryNavigation() {
   width: 48rpx;
   height: 48rpx;
   flex-shrink: 0;
+  margin-top: -5rpx; /* 图标上移5rpx */
   margin-bottom: 8rpx; /* 图标与标题之间的间距 */
 }
 
@@ -1611,7 +1598,7 @@ function handleHistoryNavigation() {
   font-weight: 400;
   line-height: 36rpx;
   text-align: center;
-  margin-top: -20rpx; /* 减少负边距，从-35rpx调整为-20rpx */
+  margin-top: 20rpx; /* 从 0rpx 调整为 8rpx，让正文继续下移 */
   flex: 1;
   display: flex;
   align-items: center;
@@ -1620,53 +1607,44 @@ function handleHistoryNavigation() {
   overflow: hidden;
 }
 
-/* 历史记录区域 - 带外框效果 */
-.history-container {
+/* 历史记录按钮 - 独立于卡片外 */
+.history-button {
   position: absolute;
-  left: 23rpx;
-  top: 1200rpx; /* 卡片底部1260rpx - 高度60rpx = 1200rpx，底部边缘与运势卡片对齐 */
-  width: 701rpx;
-  height: 60rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 1223rpx; /* 卡片底部1220rpx + 间距10rpx = 1230rpx，适当上移 */
+  width: 701rpx; /* 与运势卡片宽度保持一致 */
+  height: 50rpx; /* 从 80rpx 减少到 60rpx */
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 12;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent; /* 禁用点击时的透明区域响应 */
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 30rpx; /* 与运势卡片保持一致的圆角 */
+  overflow: hidden; /* 裁剪背景图，防止圆角外溢出 */
 }
 
-.history-bg-image {
+.history-button-bg {
   position: absolute;
   width: 100%;
   height: 100%;
   z-index: 1;
+  /* 父容器已有 overflow: hidden，无需重复设置 border-radius */
 }
 
-.history-text {
+.history-button-text {
   position: relative;
   color: #ffffff;
-  font-size: 26rpx; /* 与建议和避免区域的标题大小一致 */
+  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
+  font-size: 30rpx;
   font-weight: 600;
-  z-index: 2;
-  margin: 0 20rpx; /* 左右各留20rpx空间给星星装饰 */
+  line-height: 40rpx;
+  z-index: 3;
 }
 
-/* 星星装饰 */
-.history-star {
-  position: absolute;
-  width: 32rpx;
-  height: 32rpx;
-  z-index: 2;
-}
-
-/* 左侧星星 - 位置偏前 */
-.history-star-left {
-  left: 80rpx;
-}
-
-/* 右侧星星 - 位置偏后 */
-.history-star-right {
-  right: 80rpx;
+.history-button:active {
+  opacity: 0.8;
+  transform: translateX(-50%) scale(0.98);
 }
 
 /* 手链标题图片 - 固定位置 */
@@ -1734,17 +1712,17 @@ function handleHistoryNavigation() {
 
 .shop-button-border-wrapper {
   background: #000000;
-  border: 2rpx solid rgba(0, 229, 250, 0.2);
+  border: 2rpx solid rgba(0, 229, 250, 0.6); /* 从 0.2 提升到 0.6，增强亮蓝色外框效果 */
   border-radius: 40rpx;
-  padding: 4rpx 16rpx 4rpx 8rpx;
+  padding: 4rpx 28rpx 4rpx 8rpx; /* 右侧padding从16rpx增加到28rpx，延长外框 */
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12rpx;
   height: 30rpx;
   box-shadow:
-    0 0 12rpx rgba(0, 229, 250, 0.3),
-    inset 0 0 8rpx rgba(0, 229, 250, 0.15);
+    0 0 16rpx rgba(0, 229, 250, 0.5),
+    /* 增强外发光效果 */ inset 0 0 10rpx rgba(0, 229, 250, 0.25); /* 增强内发光效果 */
 }
 
 .shop-icon-img {
@@ -1776,9 +1754,9 @@ function handleHistoryNavigation() {
   height: auto;
 }
 
-/* 访客模式模糊效果 - 应用于运势详情区域和历史记录区域 */
+/* 访客模式模糊效果 - 应用于运势详情区域和历史记录按钮 */
 .fortune-details-area.visitor-blur,
-.history-container.visitor-blur {
+.history-button.visitor-blur {
   filter: blur(10rpx);
   pointer-events: none;
 }

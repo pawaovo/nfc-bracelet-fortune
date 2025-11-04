@@ -343,8 +343,8 @@ const handleBindClick = async () => {
 
   .bracelet-main {
     position: relative;
-    width: 306rpx;
-    height: 140rpx;
+    width: 380rpx;
+    height: 180rpx;
     margin-bottom: 29rpx;
     display: flex;
     align-items: center;
@@ -354,23 +354,24 @@ const handleBindClick = async () => {
       position: absolute;
       top: 0;
       left: 0;
-      width: 306rpx;
-      height: 140rpx;
+      width: 380rpx;
+      height: 180rpx;
     }
 
     .bracelet-label {
       position: absolute;
-      width: 260rpx;
-      height: 130rpx;
+      top: -10rpx;
+      width: 380rpx;
+      height: 180rpx;
       z-index: 10;
     }
 
     .bracelet-star {
       position: absolute;
-      top: 20rpx;
-      left: 200rpx;
-      width: 21rpx;
-      height: 24rpx;
+      top: 25rpx;
+      left: 250rpx;
+      width: 26rpx;
+      height: 30rpx;
       opacity: 0.84;
     }
   }
@@ -397,21 +398,25 @@ const handleBindClick = async () => {
   }
 }
 
-/* 手链详情图片区域 */
+/* 手链详情图片区域 - 合并为单个大容器 */
 .bracelet-details {
   position: absolute;
   top: 855rpx;
-  left: 76rpx;
-  width: 444rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600rpx;
   height: 440rpx;
   z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 
   .detail-img {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
+    border-radius: 24rpx;
+    object-fit: cover;
   }
 }
 

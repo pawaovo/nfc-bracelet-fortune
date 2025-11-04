@@ -7,6 +7,9 @@
 
       <!-- 星空背景图片 -->
       <image class="bg-stars" :src="config.images.starsBackground" mode="scaleToFill" />
+
+      <!-- 星空卡片淡暗色遮罩层 -->
+      <view class="stars-overlay" />
     </view>
 
     <!-- 头像占位图 -->
@@ -309,6 +312,18 @@ onLoad(() => {
     width: 690rpx;
     height: 1140rpx;
     z-index: 100;
+  }
+
+  /* 星空卡片淡暗色遮罩层 */
+  .stars-overlay {
+    position: absolute;
+    top: 200rpx;
+    left: 30rpx;
+    width: 690rpx;
+    height: 1140rpx;
+    background: rgba(0, 0, 0, 0.2);
+    z-index: 101;
+    pointer-events: none;
   }
 }
 

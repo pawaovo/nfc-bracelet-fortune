@@ -110,7 +110,7 @@ export const DEV_SCENARIOS: Record<string, DevScenario> = {
 // 开发配置 - 只需要修改这里切换场景！
 export const DEV_CONFIG = {
   enabled: true, // 开发模式总开关 - 开发模式true，上架前必须设置为 false
-  currentScenario: 'AUTH_USER_OTHER_NFC' as keyof typeof DEV_SCENARIOS, // 👈 修改这里切换场景
+  currentScenario: 'INCOMPLETE_PROFILE' as keyof typeof DEV_SCENARIOS, // 👈 修改这里切换场景
 };
 
 /**

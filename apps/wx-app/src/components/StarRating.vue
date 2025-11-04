@@ -25,17 +25,17 @@ const props = withDefaults(defineProps<Props>(), {
   color: '#ffd700', // 默认金色
 });
 
-// 获取星星的样式
+// 获取星星的样式 - 添加渐变效果（从原色到白色）
 const getStarStyle = (star: { filled: boolean; half: boolean }) => {
   const baseStyle: Record<string, any> = {};
 
   if (star.half) {
-    // 半星：使用clip-path裁剪左半边
+    // 半星：使用clip-path裁剪左半边，添加渐变效果（从原色到白色）
     baseStyle.clipPath = 'polygon(0 0, 50% 0, 50% 100%, 0 100%)';
-    baseStyle.backgroundColor = props.color;
+    baseStyle.background = `linear-gradient(to bottom, ${props.color}, #ffffff)`;
   } else if (star.filled) {
-    // 满星：应用颜色
-    baseStyle.backgroundColor = props.color;
+    // 满星：应用渐变颜色（从顶部原色到底部白色）
+    baseStyle.background = `linear-gradient(to bottom, ${props.color}, #ffffff)`;
   } else {
     // 空星：灰色半透明
     baseStyle.backgroundColor = '#e0e0e0';
