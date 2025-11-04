@@ -38,15 +38,15 @@
       <!-- 标题 -->
       <text class="main-title"> 我的运势足迹 </text>
 
-      <!-- 副标题 -->
-      <text class="sub-title"> 最近更新 {{ latestUpdateDate }} 历史记录 </text>
-
       <!-- 装饰线条 -->
       <image
         class="decoration-line"
         src="/static/pages/history/decoration-line.png"
         mode="widthFix"
       />
+
+      <!-- 副标题 -->
+      <text class="sub-title"> 最近更新 {{ latestUpdateDate }} 历史记录 </text>
     </view>
 
     <!-- 主内容 -->
@@ -97,9 +97,16 @@
                     mode="aspectFit"
                     :style="getFlowerStyle(item.date, index)"
                   />
-                  <text class="fortune-card-title" :class="getTimeColorClass(item.overallScore)">
-                    {{ formatFortuneScore(item) }}
-                  </text>
+                  <!-- 顶部标题行：左侧评语 + 右侧分数 -->
+                  <view class="fortune-card-header">
+                    <text class="fortune-card-title" :class="getTimeColorClass(item.overallScore)">
+                      {{ formatFortuneComment(item) }}
+                    </text>
+                    <text class="fortune-card-score">
+                      {{ item.overallScore }}
+                    </text>
+                  </view>
+                  <!-- 底部总结信息 -->
                   <view class="fortune-card-info">
                     <text class="fortune-time">
                       {{ formatFortuneSummary(item) }}
@@ -146,9 +153,16 @@
                     mode="aspectFit"
                     :style="getFlowerStyle(item.date, index)"
                   />
-                  <text class="fortune-card-title" :class="getTimeColorClass(item.overallScore)">
-                    {{ formatFortuneScore(item) }}
-                  </text>
+                  <!-- 顶部标题行：左侧评语 + 右侧分数 -->
+                  <view class="fortune-card-header">
+                    <text class="fortune-card-title" :class="getTimeColorClass(item.overallScore)">
+                      {{ formatFortuneComment(item) }}
+                    </text>
+                    <text class="fortune-card-score">
+                      {{ item.overallScore }}
+                    </text>
+                  </view>
+                  <!-- 底部总结信息 -->
                   <view class="fortune-card-info">
                     <text class="fortune-time">
                       {{ formatFortuneSummary(item) }}
@@ -296,10 +310,10 @@ function handleItemClick(item: FortuneData) {
 }
 
 /**
- * 格式化运势分数和评语（用于标题）
- * 格式：72分 中等运势
+ * 格式化运势评语（只返回评语文字，不包含分数）
+ * 格式：中等运势
  */
-function formatFortuneScore(item: FortuneData): string {
+function formatFortuneComment(item: FortuneData): string {
   const score = item.overallScore;
   let comment: string;
 
@@ -311,7 +325,7 @@ function formatFortuneScore(item: FortuneData): string {
     comment = '下等运势';
   }
 
-  return `${score}分 ${comment}`;
+  return comment;
 }
 
 /**
@@ -541,7 +555,10 @@ function getFlowerStyle(date: string, index: number): string {
   width: 480rpx;
   height: auto;
   opacity: 0.8;
-  margin-bottom: 0; /* 移除底部间距 */
+  margin-top: -22rpx; /* 上移，与标题底部叠放 */
+  margin-bottom: 16rpx; /* 与副标题的间距 */
+  margin-left: -100rpx; /* 左移一段距离 */
+  display: block;
 }
 
 /* 滚动区域容器 */
@@ -650,7 +667,7 @@ function getFlowerStyle(date: string, index: number): string {
   height: 32rpx;
   border-radius: 50%;
   background: #19131f;
-  border: 6rpx solid #ffffff;
+  border: 6rpx solid #a78bfa; /* 改为紫色 */
 }
 
 .dot-inner {
@@ -681,10 +698,10 @@ function getFlowerStyle(date: string, index: number): string {
   flex: 1;
   position: relative;
   border-radius: 16rpx;
-  padding: 20rpx 28rpx; /* 从 24rpx 增加到 28rpx，增加卡片内部空间 */
+  padding: 20rpx 28rpx;
   min-height: 100rpx;
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* 纵向布局 */
   justify-content: center;
   overflow: hidden;
 }
@@ -700,21 +717,30 @@ function getFlowerStyle(date: string, index: number): string {
 
 .fortune-card-flower {
   position: absolute;
-  width: 40rpx;
-  height: 40rpx;
+  width: 60rpx; /* 从40rpx放大到60rpx */
+  height: 60rpx; /* 从40rpx放大到60rpx */
   z-index: 2;
   opacity: 0.9;
 }
 
-.fortune-card-title {
+/* 顶部标题行：评语 + 分数 */
+.fortune-card-header {
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10rpx;
+}
+
+.fortune-card-title {
   color: #ffffff;
   font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
   font-size: 30rpx;
   font-weight: 600;
   line-height: 40rpx;
-  margin-bottom: 10rpx;
+  flex: 1;
 
   &.time-excellent {
     color: #d946ef;
@@ -737,12 +763,28 @@ function getFlowerStyle(date: string, index: number): string {
   }
 }
 
+/* 右侧分数 */
+.fortune-card-score {
+  font-family: 'ABeeZee', sans-serif;
+  font-size: 72rpx; /* 放大字体 */
+  font-weight: 700; /* 加粗 */
+  font-style: italic; /* 斜体 */
+  line-height: 1;
+  flex-shrink: 0;
+  margin-left: 20rpx;
+  align-self: flex-start; /* 允许独立定位 */
+  transform: translateY(60rpx); /* 下移20rpx */
+  color: #ffffff; /* 白色文字 */
+  text-shadow: 0 0 20rpx rgba(255, 255, 255, 0.8); /* 白色高亮发光效果 */
+}
+
 .fortune-card-info {
   position: relative;
   z-index: 1;
   background: rgba(250, 226, 255, 0.05);
   border-radius: 12rpx;
   padding: 12rpx 20rpx;
+  width: 65%; /* 宽度限制为80% */
 }
 
 .fortune-time {
