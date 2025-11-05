@@ -1,11 +1,16 @@
 // API配置文件
 
+// 环境类型
+type EnvType = 'dev' | 'tunnel' | 'prod';
+
 // API基础配置
 export const API_CONFIG = {
   // 开发环境API地址（开发者工具）
   DEV_BASE_URL: 'http://localhost:3000',
   // 真机调试API地址（⚠️ 修改为你的电脑局域网IP）
   REAL_DEVICE_BASE_URL: 'http://192.168.31.217:3000',
+  // 内网穿透地址（⚠️ 使用 cpolar 时，修改为生成的 HTTPS 地址）
+  TUNNEL_BASE_URL: 'https://7fc5590e.r16.cpolar.top',
   // 生产环境API地址（⚠️ 备案通过后修改为你的域名）
   PROD_BASE_URL: 'https://your-api-domain.com',
   // 请求超时时间（30秒，因为AI生成需要较长时间）
@@ -14,11 +19,21 @@ export const API_CONFIG = {
   VERSION: 'v1',
 };
 
+// 当前环境配置
+// ⚠️ 使用 cpolar 测试时，改为 'tunnel'
+// ⚠️ 正式上线时，改为 'prod'
+const CURRENT_ENV: EnvType = 'tunnel'; // dev | tunnel | prod
+
 // 获取当前环境的API基础URL
 export function getBaseURL(): string {
-  // 判断是否为生产环境
-  // @ts-ignore
-  if (process.env.NODE_ENV === 'production') {
+  // 手动指定环境优先
+  if (CURRENT_ENV === 'tunnel') {
+    console.log('🌐 内网穿透模式:', API_CONFIG.TUNNEL_BASE_URL);
+    return API_CONFIG.TUNNEL_BASE_URL;
+  }
+
+  if (CURRENT_ENV === 'prod') {
+    console.log('🚀 生产环境模式:', API_CONFIG.PROD_BASE_URL);
     return API_CONFIG.PROD_BASE_URL;
   }
 

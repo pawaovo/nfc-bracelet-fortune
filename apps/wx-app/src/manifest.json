@@ -1,6 +1,6 @@
 {
   "name": "专属NFC手链运势",
-  "appid": "wx7ba4129d919fdf01",
+  "appid": "wx35698b4e9c2f6afe",
   "description": "专属NFC手链运势微信小程序",
   "versionName": "1.0.0",
   "versionCode": "100",
@@ -50,7 +50,7 @@
   "quickapp": {},
   /* 小程序特有相关 */
   "mp-weixin": {
-    "appid": "wx7ba4129d919fdf01",
+    "appid": "wx35698b4e9c2f6afe",
     "setting": {
       "urlCheck": false
     },

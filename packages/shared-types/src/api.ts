@@ -55,9 +55,9 @@ export interface FortuneData {
   suggestion?: string; // 建议事项
   avoidance?: string; // 避免事项
 
-  // 今日宜忌和幸运元素
+  // 今日宜、喜用和幸运元素
   suitable?: string; // 今日宜
-  unsuitable?: string; // 今日忌
+  unsuitable?: string; // 今日喜用
   luckyColor?: string; // 今日幸运色
   luckyNumber?: number; // 今日幸运数字
 

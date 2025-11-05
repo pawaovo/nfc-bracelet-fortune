@@ -26,7 +26,7 @@ ${birthday}
 1. 综合运用星盘、运势、玄学知识进行全面分析。详细且深入地阐述每个方面的运势情况。
 2. 分析内容应包括事业、财富、爱情三方面。
 3. 提供的运势分析要详细且具有一定的深度和专业性。
-4. 根据分析结果进行总结，提供6项数据：事业运星数、财富运星数、爱情运星数、建议、避免事项、今日宜、今日忌、今日幸运色和幸运数字、综合分数；其中星数满分5星，可打半星如4.5星；今日宜、今日忌、今日幸运色和幸运数字简洁如今日宜"合作"、今日忌"激动"、今日幸运色和幸运数字"黄色、12"；最后结合总体分析结果给出综合分数，满分100分。
+4. 根据分析结果进行总结，提供6项数据：事业运星数、财富运星数、爱情运星数、建议、避免事项、今日宜、今日喜用、今日幸运色和幸运数字、综合分数；其中星数满分5星，可打半星如4.5星；今日宜、今日喜用、今日幸运色和幸运数字简洁如今日宜"合作"、今日喜用"金水"、今日幸运色和幸运数字"黄色、12"；最后结合总体分析结果给出综合分数，满分100分。
 5. 语言表达要清晰、易懂，避免使用过于晦涩的术语。
 请按以下格式输出你的运势分析：
 <fortune_analysis>
@@ -53,7 +53,7 @@ ${birthday}
 [在此写下避免事项]
 
 今日宜:[简述10字内，写下今日宜做的事]
-今日忌:[简述10字内，写下今日忌做的事]
+今日喜用:[简述5字内，写下今日喜用五行元素]
 今日幸运色:[在此写下今日幸运色]
 今日幸运数字:[在此写下今日幸运数字]
 今日运势综合数字:[在此写下今日运势综合分数]
@@ -141,8 +141,8 @@ function parseResponse(content) {
     result.suitable = suitableMatch[1].trim();
   }
 
-  // 提取今日忌
-  const unsuitableMatch = content.match(/今日忌[：:]\s*([^\n]+)/);
+  // 提取今日喜用
+  const unsuitableMatch = content.match(/今日喜用[：:]\s*([^\n]+)/);
   if (unsuitableMatch) {
     result.unsuitable = unsuitableMatch[1].trim();
   }
@@ -252,7 +252,7 @@ async function testNewAIFormat() {
     console.log(`  建议事项: ${parsed.suggestion ? '✅' : '❌'}`);
     console.log(`  避免事项: ${parsed.avoidance ? '✅' : '❌'}`);
     console.log(`  今日宜: ${parsed.suitable ? '✅' : '❌'}`);
-    console.log(`  今日忌: ${parsed.unsuitable ? '✅' : '❌'}`);
+    console.log(`  今日喜用: ${parsed.unsuitable ? '✅' : '❌'}`);
     console.log(`  幸运色: ${parsed.luckyColor ? '✅' : '❌'}`);
     console.log(`  幸运数字: ${parsed.luckyNumber ? '✅' : '❌'}`);
 

@@ -599,8 +599,8 @@ export class FortunesService {
         result.suitable = suitableMatch[1].trim();
       }
 
-      // 提取今日忌
-      const unsuitableMatch = content.match(/今日忌[：:]\s*([^\n]+)/);
+      // 提取今日喜用
+      const unsuitableMatch = content.match(/今日喜用[：:]\s*([^\n]+)/);
       if (unsuitableMatch) {
         result.unsuitable = unsuitableMatch[1].trim();
       }
@@ -679,9 +679,9 @@ export class FortunesService {
       suggestion: aiData.suggestion || '保持积极心态，好运自然来。',
       avoidance: aiData.avoidance || '避免冲动决策。',
 
-      // 今日宜忌和幸运元素
+      // 今日宜、喜用和幸运元素
       suitable: aiData.suitable || '合作',
-      unsuitable: aiData.unsuitable || '争执',
+      unsuitable: aiData.unsuitable || '金水',
       luckyColor: aiData.luckyColor || '蓝色',
       luckyNumber: aiData.luckyNumber || 7,
 
@@ -727,7 +727,7 @@ export class FortunesService {
       loveStars: 3.5,
       avoidance: '避免冲动决策。',
       suitable: '合作',
-      unsuitable: '争执',
+      unsuitable: '金水',
     };
   }
 

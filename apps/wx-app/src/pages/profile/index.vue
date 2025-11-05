@@ -46,7 +46,7 @@
       <input
         v-model="formData.name"
         class="name-input"
-        type="text"
+        type="nickname"
         :placeholder="config.texts.namePlaceholder"
         placeholder-style="color: rgba(255, 255, 255, 0.5);"
         maxlength="20"
@@ -202,7 +202,7 @@ const handleSubmitClick = async () => {
       birthday: formData.birthday,
     });
 
-    if (response.success) {
+    if (response.success && response.data) {
       console.log('用户信息更新成功:', response.data);
 
       // 更新 authStore 中的用户信息

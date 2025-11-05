@@ -116,7 +116,9 @@
         <view class="user-avatar" />
 
         <!-- 用户名字 - 对应Figma node 1:326 - 保持清晰可见 -->
-        <text class="user-name-text"> {{ authStore.user?.name || 'YANG' }}阳有点痩 </text>
+        <text class="user-name-text">
+          {{ authStore.user?.name || 'YANG阳有点痩' }}
+        </text>
 
         <!-- 运势分析标题 - 带查看详情图标 -->
         <view class="comment-title-row">
@@ -257,7 +259,7 @@
               </view>
             </view>
 
-            <!-- 忌卡片 -->
+            <!-- 喜用卡片 -->
             <view class="lucky-card">
               <!-- 背景图 -->
               <image
@@ -277,12 +279,12 @@
 
                 <!-- 标题 -->
                 <view class="lucky-label-box">
-                  <text class="lucky-label-text"> 忌 </text>
+                  <text class="lucky-label-text"> 喜用 </text>
                 </view>
 
                 <!-- 正文 -->
                 <text class="lucky-value-text">
-                  {{ fortuneData?.unsuitable || '争执' }}
+                  {{ fortuneData?.unsuitable || '金水' }}
                 </text>
               </view>
             </view>
@@ -329,7 +331,7 @@
         <image
           class="history-button-bg"
           src="../../static/pages/fortune/button-bg.png"
-          mode="scaleToFill"
+          mode="widthFix"
         />
         <!-- 文字 -->
         <text class="history-button-text"> 查看历史记录 </text>
@@ -449,7 +451,7 @@
 
               <text class="summary-subtitle"> 其他事项: </text>
               <text class="summary-item"> 今日宜: {{ fortuneData.suitable || '合作' }} </text>
-              <text class="summary-item"> 今日忌: {{ fortuneData.unsuitable || '争执' }} </text>
+              <text class="summary-item"> 今日喜用: {{ fortuneData.unsuitable || '金水' }} </text>
               <text class="summary-item"> 今日幸运色: {{ fortuneData.luckyColor || '蓝色' }} </text>
               <text class="summary-item"> 今日幸运数字: {{ fortuneData.luckyNumber || 7 }} </text>
               <text class="summary-item">
@@ -1612,34 +1614,34 @@ function handleHistoryNavigation() {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 1223rpx; /* 卡片底部1220rpx + 间距10rpx = 1230rpx，适当上移 */
+  top: 1230rpx; /* 卡片底部1220rpx + 间距10rpx */
   width: 701rpx; /* 与运势卡片宽度保持一致 */
-  height: 50rpx; /* 从 80rpx 减少到 60rpx */
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 12;
   -webkit-tap-highlight-color: transparent;
-  border-radius: 30rpx; /* 与运势卡片保持一致的圆角 */
-  overflow: hidden; /* 裁剪背景图，防止圆角外溢出 */
 }
 
 .history-button-bg {
-  position: absolute;
+  display: block;
   width: 100%;
-  height: 100%;
-  z-index: 1;
-  /* 父容器已有 overflow: hidden，无需重复设置 border-radius */
+  height: auto;
 }
 
 .history-button-text {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #ffffff;
   font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-  font-size: 30rpx;
+  font-size: 26rpx;
   font-weight: 600;
-  line-height: 40rpx;
+  white-space: nowrap;
   z-index: 3;
+  pointer-events: none;
 }
 
 .history-button:active {

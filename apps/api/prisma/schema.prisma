@@ -73,7 +73,7 @@ model DailyFortune {
   loveStars             Float?   @map("love_stars") @db.DoublePrecision // 爱情运星数(0-5)
   avoidance             String?  @db.Text // 避免事项
   suitable              String?  @db.VarChar(50) // 今日宜
-  unsuitable            String?  @db.VarChar(50) // 今日忌
+  unsuitable            String?  @db.VarChar(50) // 今日喜用
 
   // Relations
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
