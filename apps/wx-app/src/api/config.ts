@@ -22,7 +22,7 @@ export const API_CONFIG = {
 // 当前环境配置
 // ⚠️ 使用 cpolar 测试时，改为 'tunnel'
 // ⚠️ 正式上线时，改为 'prod'
-const CURRENT_ENV: EnvType = 'tunnel'; // dev | tunnel | prod
+const CURRENT_ENV: EnvType = 'dev'; // dev | tunnel | prod
 
 // 获取当前环境的API基础URL
 export function getBaseURL(): string {

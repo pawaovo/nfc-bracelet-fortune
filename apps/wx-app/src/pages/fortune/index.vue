@@ -8,6 +8,27 @@
 
     <!-- 加载状态 -->
     <view v-if="isLoading" class="loading-container">
+      <!-- 中央装饰图片 -->
+      <image
+        class="center-decoration"
+        src="https://i.postimg.cc/J7v8WvBt/Chat-GPT-Image-2025nian11yue6ri-13-15-20.png"
+        mode="aspectFit"
+      />
+
+      <!-- 水晶球装饰 - 左上 -->
+      <image
+        class="crystal-ball crystal-ball-left"
+        src="../../static/pages/fortune/crystallball.svg"
+        mode="aspectFit"
+      />
+
+      <!-- 水晶球装饰 - 右下 -->
+      <image
+        class="crystal-ball crystal-ball-right"
+        src="../../static/pages/fortune/crystalball1.svg"
+        mode="aspectFit"
+      />
+
       <view class="loading-spinner" />
       <text class="loading-text">
         {{ loadingText }}
@@ -1090,12 +1111,56 @@ function handleHistoryNavigation() {
   text-align: center;
 }
 
+/* 中央装饰图片 - 与背景融合 */
+.center-decoration {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 500rpx;
+  height: 500rpx;
+  opacity: 0.3; /* 较低透明度，融入背景 */
+  filter: brightness(0.8) saturate(0.7) blur(1px); /* 轻微模糊和降低饱和度，增强融合感 */
+  mix-blend-mode: soft-light; /* 柔光混合模式，与背景自然融合 */
+  z-index: 1; /* 在背景之上，但在其他内容之下 */
+}
+
+/* 水晶球装饰 */
+.crystal-ball {
+  position: absolute;
+  width: 140rpx; /* 缩小尺寸 */
+  height: 140rpx;
+  opacity: 0.4; /* 降低透明度，更柔和 */
+  filter: brightness(0.7) saturate(0.6); /* 降低亮度和饱和度，减弱颜色 */
+  animation: float 3s ease-in-out infinite;
+  z-index: 2; /* 在中央装饰之上 */
+}
+
+.crystal-ball-left {
+  left: 40rpx;
+  bottom: 30%;
+  animation-delay: 0s;
+}
+
+.crystal-ball-right {
+  right: 40rpx;
+  bottom: 15%;
+  animation-delay: 1.5s;
+}
+
+/* 浮动动画已在 common.scss 中定义，此处直接使用 */
+
 /* 运势页面特有的加载动画样式 */
 .loading-spinner {
   margin-bottom: 30rpx;
+  position: relative;
+  z-index: 10;
 }
 
-/* loading-text 和 error-text 样式已移至公共样式文件 */
+.loading-text {
+  position: relative;
+  z-index: 10;
+}
 
 .error-icon {
   font-size: 80rpx;
@@ -1541,7 +1606,7 @@ function handleHistoryNavigation() {
 .lucky-card {
   position: relative;
   width: 172rpx;
-  height: 160rpx; /* 从 192rpx 减少到 160rpx，减少 32rpx */
+  height: 180rpx; /* 从160rpx增加到180rpx，为2行正文提供足够空间 */
   flex-shrink: 0;
 }
 
@@ -1564,7 +1629,7 @@ function handleHistoryNavigation() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12rpx 12rpx 12rpx 12rpx; /* 顶部padding从20rpx减少到12rpx，让图标上移 */
+  padding: 12rpx 12rpx 8rpx 12rpx; /* 底部padding从12rpx减少到8rpx，为正文提供更多空间 */
   box-sizing: border-box;
 }
 
@@ -1574,7 +1639,7 @@ function handleHistoryNavigation() {
   height: 48rpx;
   flex-shrink: 0;
   margin-top: -5rpx; /* 图标上移5rpx */
-  margin-bottom: 8rpx; /* 图标与标题之间的间距 */
+  margin-bottom: 2rpx; /* 图标与标题之间的间距，从8rpx减少到2rpx */
 }
 
 .lucky-label-box {
@@ -1589,7 +1654,7 @@ function handleHistoryNavigation() {
   font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
   font-size: 30rpx;
   font-weight: 600;
-  line-height: 40rpx;
+  line-height: 36rpx; /* 从40rpx减少到36rpx，压缩标题高度 */
   white-space: nowrap;
 }
 
@@ -1600,13 +1665,14 @@ function handleHistoryNavigation() {
   font-weight: 400;
   line-height: 36rpx;
   text-align: center;
-  margin-top: 20rpx; /* 从 0rpx 调整为 8rpx，让正文继续下移 */
+  margin-top: 6rpx; /* 从20rpx减少到6rpx，减少标题和正文之间的间距 */
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   word-break: break-word;
   overflow: hidden;
+  padding: 0 4rpx; /* 添加左右内边距，防止文字贴边 */
 }
 
 /* 历史记录按钮 - 独立于卡片外 */

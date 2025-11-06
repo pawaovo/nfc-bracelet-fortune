@@ -25,8 +25,8 @@
       </text>
     </view>
 
-    <!-- 用户名显示区域 -->
-    <view class="username-container">
+    <!-- 用户名显示区域 - 只在用户填写名称后显示 -->
+    <view v-if="displayUsername" class="username-container">
       <!-- 头像图标 -->
       <image class="avatar-icon" :src="config.images.avatarIcon" mode="aspectFit" />
       <!-- 用户名文字 -->
@@ -104,10 +104,11 @@ const formData = reactive({
 // 加载状态
 const isLoading = ref(false);
 
-// 显示的用户名（如果已有用户信息则显示，否则显示配置的默认值）
+// 显示的用户名（只有在用户已有名称或填写了名称时才显示）
 const displayUsername = computed(() => {
   const authStore = useAuthStore();
-  return authStore.user?.name || config.value.texts.username;
+  // 优先显示已保存的用户名，其次显示当前输入的名称
+  return authStore.user?.name || formData.name || '';
 });
 
 /**
