@@ -8,26 +8,10 @@
 
     <!-- 加载状态 -->
     <view v-if="isLoading" class="loading-container">
-      <!-- 中央装饰图片 -->
-      <image
-        class="center-decoration"
-        src="https://i.postimg.cc/J7v8WvBt/Chat-GPT-Image-2025nian11yue6ri-13-15-20.png"
-        mode="aspectFit"
-      />
-
-      <!-- 水晶球装饰 - 左上 -->
-      <image
-        class="crystal-ball crystal-ball-left"
-        src="../../static/pages/fortune/crystallball.svg"
-        mode="aspectFit"
-      />
-
-      <!-- 水晶球装饰 - 右下 -->
-      <image
-        class="crystal-ball crystal-ball-right"
-        src="../../static/pages/fortune/crystalball1.svg"
-        mode="aspectFit"
-      />
+      <!-- PAG动画 - 叠加在中央 -->
+      <view class="pag-animation-overlay">
+        <PagLoadingCDN :width="300" :height="300" />
+      </view>
 
       <view class="loading-spinner" />
       <text class="loading-text">
@@ -361,7 +345,7 @@
       <!-- 手链标题图片 - 固定位置 -->
       <image
         class="recommendation-card-title-image"
-        src="../../static/pages/fortune/今日开运手链.png"
+        src="../../static/pages/bind/今日开运手链.png"
         mode="widthFix"
       />
 
@@ -397,6 +381,13 @@
     <!-- 详细运势弹窗 -->
     <view v-if="detailModalVisible" class="modal-overlay" @click="hideDetailModal">
       <view class="modal-content detail-modal" @click.stop>
+        <!-- Rectangle 4 装饰图层 - 与运势卡片保持一致 -->
+        <image
+          class="modal-decoration-layer"
+          src="../../static/pages/fortune/Rectangle 4.png"
+          mode="scaleToFill"
+        />
+
         <view class="modal-header">
           <text class="modal-title"> 详细运势分析 </text>
           <text class="modal-close" @click="hideDetailModal"> ✕ </text>
@@ -505,6 +496,13 @@
     <!-- 建议和避免弹窗 -->
     <view v-if="adviceModalVisible" class="modal-overlay" @click="hideAdviceModal">
       <view class="modal-content advice-modal" @click.stop>
+        <!-- Rectangle 4 装饰图层 - 与运势卡片保持一致 -->
+        <image
+          class="modal-decoration-layer"
+          src="../../static/pages/fortune/Rectangle 4.png"
+          mode="scaleToFill"
+        />
+
         <view class="modal-header">
           <text class="modal-title"> 今日建议 </text>
           <text class="modal-close" @click="hideAdviceModal"> ✕ </text>
@@ -538,6 +536,7 @@ import { useFortuneStore } from '@/stores/fortune';
 import { fortuneService } from '@/api/fortune';
 import type { FortuneData } from '@/stores/fortune';
 import StarRating from '@/components/StarRating.vue';
+import PagLoadingCDN from '@/components/PagLoadingCDN.vue';
 import { getTheme, type FortunePageTheme } from './config';
 
 // 页面配置
@@ -1111,44 +1110,21 @@ function handleHistoryNavigation() {
   text-align: center;
 }
 
-/* 中央装饰图片 - 与背景融合 */
-.center-decoration {
+/* 浮动动画已在 common.scss 中定义，此处直接使用 */
+
+/* PAG动画叠加层 - 居中显示 */
+.pag-animation-overlay {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 500rpx;
-  height: 500rpx;
-  opacity: 0.3; /* 较低透明度，融入背景 */
-  filter: brightness(0.8) saturate(0.7) blur(1px); /* 轻微模糊和降低饱和度，增强融合感 */
-  mix-blend-mode: soft-light; /* 柔光混合模式，与背景自然融合 */
-  z-index: 1; /* 在背景之上，但在其他内容之下 */
+  z-index: 5; /* 在装饰图片之上，在文字之下 */
+  width: 600rpx;
+  height: 600rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-
-/* 水晶球装饰 */
-.crystal-ball {
-  position: absolute;
-  width: 140rpx; /* 缩小尺寸 */
-  height: 140rpx;
-  opacity: 0.4; /* 降低透明度，更柔和 */
-  filter: brightness(0.7) saturate(0.6); /* 降低亮度和饱和度，减弱颜色 */
-  animation: float 3s ease-in-out infinite;
-  z-index: 2; /* 在中央装饰之上 */
-}
-
-.crystal-ball-left {
-  left: 40rpx;
-  bottom: 30%;
-  animation-delay: 0s;
-}
-
-.crystal-ball-right {
-  right: 40rpx;
-  bottom: 15%;
-  animation-delay: 1.5s;
-}
-
-/* 浮动动画已在 common.scss 中定义，此处直接使用 */
 
 /* 运势页面特有的加载动画样式 */
 .loading-spinner {
@@ -1942,6 +1918,7 @@ function handleHistoryNavigation() {
 
 /* 弹窗内容 */
 .modal-content {
+  position: relative; /* 为装饰图层提供定位上下文 */
   width: 90%;
   max-width: 600rpx;
   max-height: 80vh;
@@ -1951,6 +1928,19 @@ function handleHistoryNavigation() {
   overflow: hidden;
   animation: slideUp 0.3s ease;
   box-sizing: border-box;
+}
+
+/* 弹窗装饰图层 - Rectangle 4，与运势卡片保持一致 */
+.modal-decoration-layer {
+  position: absolute;
+  top: -50rpx; /* 超大幅度向上偏移，确保完全覆盖右上角超大圆角 */
+  left: -50rpx; /* 超大幅度向左偏移，确保完全覆盖左上角圆角 */
+  width: calc(100% + 100rpx); /* 超大幅度放大，确保完全覆盖所有边缘和圆角区域 */
+  height: calc(100% + 100rpx); /* 超大幅度放大，确保完全覆盖所有边缘和圆角区域 */
+  z-index: 1; /* 在背景之上，内容之下 */
+  opacity: 0.8; /* 与运势卡片保持一致的透明度 */
+  pointer-events: none; /* 不阻挡点击事件 */
+  /* 不设置border-radius，让父容器的overflow: hidden来裁剪 */
 }
 
 @keyframes slideUp {
@@ -1966,6 +1956,8 @@ function handleHistoryNavigation() {
 
 /* 弹窗头部 */
 .modal-header {
+  position: relative; /* 确保在装饰图层之上 */
+  z-index: 2; /* 在装饰图层之上 */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1994,6 +1986,8 @@ function handleHistoryNavigation() {
 
 /* 弹窗主体 */
 .modal-body {
+  position: relative; /* 确保在装饰图层之上 */
+  z-index: 2; /* 在装饰图层之上 */
   padding: 30rpx 40rpx;
   max-height: 60vh;
   box-sizing: border-box;

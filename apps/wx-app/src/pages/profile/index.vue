@@ -91,6 +91,7 @@ import { profileService, validateName, validateBirthday } from '@/api/profile';
 import { useAuthStore } from '@/stores/auth';
 import { getTheme } from './config';
 import type { ProfilePageTheme } from './config';
+import { preloadPagFile } from '@/utils/pagPreloader';
 
 // 页面配置
 const config = ref<ProfilePageTheme>(getTheme('default'));
@@ -269,7 +270,17 @@ onLoad(() => {
     uni.redirectTo({
       url: '/pages/bind/index',
     });
+    return;
   }
+
+  // 预加载PAG文件（静默下载）
+  preloadPagFile().then(success => {
+    if (success) {
+      console.log('PAG文件预加载完成');
+    } else {
+      console.log('PAG文件预加载失败，将在需要时下载');
+    }
+  });
 });
 </script>
 
