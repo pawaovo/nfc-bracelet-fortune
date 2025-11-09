@@ -1671,9 +1671,9 @@ function handleHistoryNavigation() {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 1220rpx; /* 向上移动35rpx，使按钮与卡片间距更紧凑 */
+  top: 1238rpx; /* 调整位置以适应80rpx按钮高度（原1220rpx + 18rpx） */
   width: 701rpx; /* 与运势卡片宽度保持一致 */
-  height: 58rpx; /* 高度减半：原约115rpx减少到58rpx */
+  height: 80rpx; /* 中等高度，平衡开发工具和真机显示效果 */
   z-index: 12;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden; /* 确保内容不溢出 */
@@ -1696,7 +1696,7 @@ function handleHistoryNavigation() {
   justify-content: center;
   color: #ffffff;
   font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-  font-size: 26rpx;
+  font-size: 27rpx; /* 调整为27rpx，与80rpx高度匹配 */
   font-weight: 400; /* 从600改为400，使用正常粗细，与其他按钮保持一致 */
   white-space: nowrap;
   z-index: 3;
