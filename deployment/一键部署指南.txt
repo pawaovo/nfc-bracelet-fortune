@@ -1,0 +1,97 @@
+========================================
+一键部署指南 - 所有信息已配置完成
+========================================
+
+✅ 已完成的配置：
+- JWT密钥：已生成
+- 微信小程序：使用开发小程序（wx35698b4e9c2f6afe）
+- AI服务：已配置火山引擎豆包
+- cpolar authtoken：已配置
+- 数据库：已配置服务器数据库
+
+========================================
+现在只需要 3 步！
+========================================
+
+步骤1：连接到服务器
+-------------------
+ssh xiaoyi-dev1@47.239.179.9 -p 43122
+密码：n6pCTKmpXDGVSjhfMzbX
+
+
+步骤2：解压项目
+-------------------
+cd ~
+unzip -o bracelet-fortune.zip -d bracelet-fortune
+
+
+步骤3：运行一键部署
+-------------------
+cd ~/deployment
+chmod +x *.sh
+./deploy-all.sh
+
+部署脚本会自动：
+✅ 检查环境
+✅ 安装依赖（Node.js, pnpm, PM2）
+✅ 创建配置文件（所有密钥已填写）
+✅ 部署后端API
+✅ 配置cpolar（authtoken已填写）
+✅ 启动服务
+
+========================================
+部署完成后
+========================================
+
+1. 记录cpolar生成的HTTPS地址
+   例如：https://abc123.r1.cpolar.top
+
+2. 告诉我这个地址，我会帮你：
+   - 修改小程序配置
+   - 编译小程序
+   - 指导上传体验版
+
+========================================
+已配置的信息（供参考）
+========================================
+
+【数据库】
+DATABASE_URL="postgresql://bracelet-fortune:HvXFmwEwfntnScWZRJyB@1Panel-postgresql-0i7g:5432/bracelet-fortune?schema=public"
+
+【JWT】
+JWT_SECRET="ba75f472156ee4cf8065bd4e4024064b6b9c8b8dc07f44bc26c80cee341dde0145c233330e3c9ec0ab92ad0ac4054f95ae6ebfe37fc813afb0ed1bfa99c"
+JWT_EXPIRES_IN="7d"
+
+【微信小程序】
+WECHAT_APP_ID="wx35698b4e9c2f6afe"
+WECHAT_APP_SECRET="b36c2b532f180193d9e2a0839ec100f3"
+
+【AI服务】
+OPENAI_API_KEY="732372aa-8401-4d91-b9c2-47726252d6ee"
+OPENAI_BASE_URL="https://ark.cn-beijing.volces.com/api/v3"
+OPENAI_MODEL="doubao-seed-1-6-lite-251015"
+
+【cpolar】
+authtoken="MjU0NTFiYmItM2Y0Ni00NzU0LTlmNGEtZTg5ZjkyMDA3ZDM4"
+
+========================================
+常用命令
+========================================
+
+# 查看服务状态
+pm2 status
+
+# 查看后端日志
+pm2 logs bracelet-api
+
+# 重启后端
+pm2 restart bracelet-api
+
+# 查看cpolar状态
+cpolar status
+
+# 查看cpolar地址
+cat ~/cpolar-url.txt
+
+========================================
+

@@ -27,8 +27,8 @@
 
     <!-- 用户名显示区域 - 只在用户填写名称后显示 -->
     <view v-if="displayUsername" class="username-container">
-      <!-- 头像图标 -->
-      <image class="avatar-icon" :src="config.images.avatarIcon" mode="aspectFit" />
+      <!-- 头像图标 - 暂时隐藏，保留代码便于后续恢复 -->
+      <image v-if="false" class="avatar-icon" :src="config.images.avatarIcon" mode="aspectFit" />
       <!-- 用户名文字 -->
       <text class="username-text">
         {{ displayUsername }}
@@ -381,18 +381,19 @@ onLoad(() => {
   text-align: center;
 }
 
-/* 用户名容器 */
+/* 用户名容器 - 隐藏头像后调整为左对齐 */
 .username-container {
   position: absolute;
   top: 38.24%;
-  left: 26.53%;
+  left: 26.53%; /* 保持原有左侧位置，与头像图标原位置对齐 */
   right: 27.07%;
   z-index: 200;
   display: flex;
   align-items: center;
+  justify-content: flex-start; /* 左对齐 */
 }
 
-/* 头像图标 */
+/* 头像图标 - 暂时隐藏，保留样式便于后续恢复 */
 .avatar-icon {
   width: 77rpx;
   height: 77rpx;
@@ -400,7 +401,7 @@ onLoad(() => {
   flex-shrink: 0;
 }
 
-/* 用户名文字 */
+/* 用户名文字 - 隐藏头像后无需调整，自动左对齐 */
 .username-text {
   font-family: 'PingFang SC', sans-serif;
   font-size: 36.625rpx;
@@ -540,7 +541,7 @@ onLoad(() => {
   z-index: 2;
   font-family: 'PingFang SC', sans-serif;
   font-size: 36rpx;
-  font-weight: 600;
+  font-weight: 400; /* 从600改为400，使用正常粗细 */
   color: #ffffff;
   line-height: 115rpx;
   text-align: center;

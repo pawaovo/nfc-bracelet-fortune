@@ -1,0 +1,83 @@
+========================================
+部署信息清单
+========================================
+
+【服务器信息】
+服务器地址: 47.239.179.9
+SSH端口: 43122
+用户名: xiaoyi-dev1
+密码: n6pCTKmpXDGVSjhfMzbX
+
+【数据库信息】
+数据库名称: bracelet-fortune
+用户名: bracelet-fortune
+密码: HvXFmwEwfntnScWZRJyB
+容器连接地址: 1Panel-postgresql-0i7g
+容器端口: 5432
+外部连接地址: 47.239.179.9
+外部端口: 15432
+
+【JWT配置】
+JWT_SECRET: ba75f472156ee4cf8065bd4e4024064b6b9c8b8dc07f44bc26c80cee341dde0145c233330e3c9ec0ab92ad0ac4054f95ae6ebfe37fc813afb0ed1bfa99c
+JWT_EXPIRES_IN: 7d
+
+【微信小程序配置】
+AppID (正式): wx7ba4129d919fdf01
+AppSecret: 需要从微信公众平台获取
+获取地址: https://mp.weixin.qq.com
+路径: 开发 → 开发管理 → 开发设置 → 开发者ID
+
+【AI服务配置】
+API Key: 732372aa-8401-4d91-b9c2-47726252d6ee
+Base URL: https://ark.cn-beijing.volces.com/api/v3
+Model: doubao-seed-1-6-lite-251015
+
+【cpolar配置】
+注册地址: https://dashboard.cpolar.com/signup
+登录后获取: authtoken
+
+========================================
+部署步骤
+========================================
+
+1. 连接到服务器
+   ssh xiaoyi-dev1@47.239.179.9 -p 43122
+   密码: n6pCTKmpXDGVSjhfMzbX
+
+2. 解压项目
+   cd ~
+   unzip -o bracelet-fortune.zip -d bracelet-fortune
+
+3. 运行部署脚本
+   cd ~/deployment
+   chmod +x *.sh
+   ./deploy-all.sh
+
+4. 配置环境变量（部署脚本会提示）
+   nano ~/bracelet-fortune/apps/api/.env
+   
+   需要填写的内容：
+   - JWT_SECRET: 复制上面生成的密钥
+   - WECHAT_APP_SECRET: 从微信公众平台获取
+   - OPENAI_API_KEY: 复制上面的AI密钥
+
+5. 配置cpolar
+   - 输入authtoken（从cpolar官网获取）
+   - 记录生成的HTTPS地址
+
+6. 修改小程序配置
+   - 修改 apps/wx-app/src/api/config.ts
+   - 修改 apps/wx-app/src/config/dev-scenarios.ts
+
+7. 编译小程序
+   cd apps/wx-app
+   pnpm build:mp-weixin
+
+8. 配置微信公众平台域名
+   - 添加cpolar生成的HTTPS地址
+
+9. 上传体验版
+   - 使用微信开发者工具上传
+
+========================================
+

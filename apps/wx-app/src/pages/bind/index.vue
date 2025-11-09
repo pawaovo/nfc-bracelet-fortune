@@ -451,7 +451,7 @@ const handleBindClick = async () => {
     color: #ffffff;
     font-family: 'PingFang SC', sans-serif;
     font-size: 36rpx;
-    font-weight: 600;
+    font-weight: 400; /* 从600改为400，使用正常粗细 */
     line-height: 115rpx;
     text-align: center;
     display: flex;

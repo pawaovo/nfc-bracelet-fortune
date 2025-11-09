@@ -117,10 +117,10 @@
 
       <!-- 内容区域 - 使用绝对定位 -->
       <view class="content-wrapper">
-        <!-- 用户头像 - 对应Figma node 1:325 - 保持清晰可见 -->
-        <view class="user-avatar" />
+        <!-- 用户头像 - 暂时隐藏，保留代码便于后续恢复 -->
+        <view v-if="false" class="user-avatar" />
 
-        <!-- 用户名字 - 对应Figma node 1:326 - 保持清晰可见 -->
+        <!-- 用户名字 - 左对齐显示 -->
         <text class="user-name-text">
           {{ authStore.user?.name || 'YANG阳有点痩' }}
         </text>
@@ -336,18 +336,33 @@
         <image
           class="history-button-bg"
           src="../../static/pages/fortune/button-bg.png"
-          mode="widthFix"
+          mode="scaleToFill"
         />
         <!-- 文字 -->
         <text class="history-button-text"> 查看历史记录 </text>
       </view>
 
-      <!-- 手链标题图片 - 固定位置 -->
-      <image
-        class="recommendation-card-title-image"
-        src="../../static/pages/bind/今日开运手链.png"
-        mode="widthFix"
-      />
+      <!-- 手链标题区域 - 包含装饰图标 -->
+      <view class="recommendation-card-title-wrapper">
+        <!-- 手链图标（装饰性图片） -->
+        <image
+          class="recommendation-title-icon"
+          src="../../static/pages/bind/bracelet-icon.png"
+          mode="aspectFit"
+        />
+        <!-- 今日开运手链标签 -->
+        <image
+          class="recommendation-card-title-image"
+          src="../../static/pages/bind/今日开运手链.png"
+          mode="aspectFit"
+        />
+        <!-- 手链星星装饰 -->
+        <image
+          class="recommendation-title-star"
+          src="../../static/pages/bind/bracelet-star.png"
+          mode="aspectFit"
+        />
+      </view>
 
       <!-- 手链信息 -->
       <view class="recommendation-bracelet-info">
@@ -1288,7 +1303,7 @@ function handleHistoryNavigation() {
   z-index: 10;
 }
 
-/* 用户头像 - 对应Figma node 1:325 */
+/* 用户头像 - 暂时隐藏，保留样式便于后续恢复 */
 .user-avatar {
   position: absolute;
   left: 86rpx; /* 44px * 1.953 */
@@ -1300,11 +1315,11 @@ function handleHistoryNavigation() {
   z-index: 11;
 }
 
-/* 用户名字 */
+/* 用户名字 - 隐藏头像后左对齐到原头像位置 */
 .user-name-text {
   position: absolute;
-  left: 200rpx;
-  top: 510rpx;
+  left: 86rpx; /* 从200rpx调整到86rpx，与原头像位置对齐，实现左对齐 */
+  top: 510rpx; /* 保持原有垂直位置 */
   color: #ffffff;
   font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
   font-size: 30rpx;
@@ -1656,16 +1671,18 @@ function handleHistoryNavigation() {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 1230rpx; /* 卡片底部1220rpx + 间距10rpx */
+  top: 1220rpx; /* 向上移动35rpx，使按钮与卡片间距更紧凑 */
   width: 701rpx; /* 与运势卡片宽度保持一致 */
+  height: 58rpx; /* 高度减半：原约115rpx减少到58rpx */
   z-index: 12;
   -webkit-tap-highlight-color: transparent;
+  overflow: hidden; /* 确保内容不溢出 */
 }
 
 .history-button-bg {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%; /* 填充整个容器高度 */
 }
 
 .history-button-text {
@@ -1680,7 +1697,7 @@ function handleHistoryNavigation() {
   color: #ffffff;
   font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
   font-size: 26rpx;
-  font-weight: 600;
+  font-weight: 400; /* 从600改为400，使用正常粗细，与其他按钮保持一致 */
   white-space: nowrap;
   z-index: 3;
   pointer-events: none;
@@ -1691,14 +1708,46 @@ function handleHistoryNavigation() {
   transform: translateX(-50%) scale(0.98);
 }
 
-/* 手链标题图片 - 固定位置 */
-.recommendation-card-title-image {
+/* 手链标题区域 - 包含装饰图标（缩小版bind页面样式） */
+.recommendation-card-title-wrapper {
   position: absolute;
   left: 60rpx;
-  bottom: 280rpx;
+  bottom: 230rpx; /* 向下移动，确保在卡片内部（卡片顶部350rpx，标题顶部230+114=344rpx） */
+  width: 240rpx; /* 缩小版：bind页面380rpx缩小到240rpx，比例约0.63 */
+  height: 114rpx; /* 缩小版：bind页面180rpx缩小到114rpx，比例约0.63 */
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 手链图标（装饰性背景） */
+.recommendation-title-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 240rpx;
-  height: auto;
-  display: block;
+  height: 114rpx;
+  z-index: 1;
+}
+
+/* 今日开运手链标签 */
+.recommendation-card-title-image {
+  position: absolute;
+  top: -6rpx; /* 缩小版：bind页面-10rpx缩小到-6rpx */
+  width: 240rpx;
+  height: 114rpx;
+  z-index: 10;
+}
+
+/* 手链星星装饰 */
+.recommendation-title-star {
+  position: absolute;
+  top: 16rpx; /* 缩小版：bind页面25rpx缩小到16rpx */
+  left: 158rpx; /* 缩小版：bind页面250rpx缩小到158rpx */
+  width: 16rpx; /* 缩小版：bind页面26rpx缩小到16rpx */
+  height: 19rpx; /* 缩小版：bind页面30rpx缩小到19rpx */
+  opacity: 0.84;
   z-index: 11;
 }
 
@@ -1706,7 +1755,7 @@ function handleHistoryNavigation() {
 .recommendation-bracelet-info {
   position: absolute;
   left: 60rpx;
-  bottom: 130rpx;
+  bottom: 105rpx; /* 从130rpx下移到105rpx，下移25rpx */
   width: 320rpx;
   display: flex;
   flex-direction: column;
@@ -1748,7 +1797,7 @@ function handleHistoryNavigation() {
 .shop-button-wrapper {
   position: absolute;
   left: 40rpx;
-  bottom: 50rpx;
+  bottom: 40rpx; /* 上移到40rpx，与卡片底部保持适当间距 */
   display: flex;
   align-items: center;
   z-index: 11;
