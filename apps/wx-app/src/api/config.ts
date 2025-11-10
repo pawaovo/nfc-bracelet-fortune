@@ -13,8 +13,8 @@ export const API_CONFIG = {
   TUNNEL_BASE_URL: 'https://38bc3a5d.cpolar.io',
   // 生产环境API地址（⚠️ 备案通过后修改为你的域名）
   PROD_BASE_URL: 'https://your-api-domain.com',
-  // 请求超时时间（30秒，因为AI生成需要较长时间）
-  TIMEOUT: 30000,
+  // 请求超时时间（60秒，因为AI生成需要较长时间）
+  TIMEOUT: 60000,
   // API版本
   VERSION: 'v1',
 };

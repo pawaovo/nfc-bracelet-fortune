@@ -64,7 +64,7 @@ export class AIService {
         maxTokens: 10000, // 增加到10000，支持详细运势分析的完整内容
         temperature: 1, // 设为1，增加输出多样性
         topP: 0.7, // 豆包AI模型推荐参数，控制采样范围
-        timeout: 30000, // 增加到30秒，因为详细运势生成需要更多时间
+        timeout: 60000, // 增加到60秒，服务器网络环境下AI生成需要更长时间
       });
     } catch (error) {
       this.logger.error('Failed to generate fortune with AI', error);
@@ -178,7 +178,7 @@ ${birthdayStr || '未提供'}
       maxTokens = 10000,
       temperature = 1,
       topP = 0.7,
-      timeout = 30000,
+      timeout = 60000, // 默认60秒超时
     } = options;
 
     const startTime = Date.now();

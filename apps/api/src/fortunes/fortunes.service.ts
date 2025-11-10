@@ -378,7 +378,7 @@ export class FortunesService {
   }
 
   /**
-   * 尝试AI生成运势（6秒超时）
+   * 尝试AI生成运势（70秒超时）
    * @param user 用户信息
    * @param date 日期
    * @returns AI生成的运势数据或null
@@ -399,11 +399,11 @@ export class FortunesService {
         date: date,
       };
 
-      // 设置40秒超时（详细运势生成需要更多时间）
+      // 设置70秒超时（服务器网络环境下AI生成需要更长时间，留10秒缓冲）
       const aiResult = (await Promise.race([
         this.aiService.generateFortune(promptData),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('AI timeout after 40s')), 40000),
+          setTimeout(() => reject(new Error('AI timeout after 70s')), 70000),
         ),
       ])) as { content?: string; duration?: number } | null;
 
