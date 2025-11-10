@@ -158,7 +158,12 @@
           <view class="luck-sections-container">
             <!-- 事业运区域 - 使用星数而非分数 -->
             <view class="luck-section">
-              <text class="luck-name-text luck-name-career"> 事业运 </text>
+              <view class="luck-title-row">
+                <text class="luck-name-text luck-name-career"> 事业运 </text>
+                <text class="luck-score-text luck-score-career">
+                  {{ Math.round((fortuneData?.careerStars ?? 3) * 20) }}
+                </text>
+              </view>
               <view class="luck-stars-row">
                 <star-rating
                   :key="`career-${fortuneData?.careerStars || 0}`"
@@ -171,7 +176,12 @@
 
             <!-- 财富运区域 - 使用星数而非分数 -->
             <view class="luck-section">
-              <text class="luck-name-text luck-name-wealth"> 财富运 </text>
+              <view class="luck-title-row">
+                <text class="luck-name-text luck-name-wealth"> 财富运 </text>
+                <text class="luck-score-text luck-score-wealth">
+                  {{ Math.round((fortuneData?.wealthStars ?? 3) * 20) }}
+                </text>
+              </view>
               <view class="luck-stars-row">
                 <star-rating
                   :key="`wealth-${fortuneData?.wealthStars || 0}`"
@@ -184,7 +194,12 @@
 
             <!-- 爱情运区域 - 使用星数而非分数 -->
             <view class="luck-section">
-              <text class="luck-name-text luck-name-love"> 爱情运 </text>
+              <view class="luck-title-row">
+                <text class="luck-name-text luck-name-love"> 爱情运 </text>
+                <text class="luck-score-text luck-score-love">
+                  {{ Math.round((fortuneData?.loveStars ?? 3) * 20) }}
+                </text>
+              </view>
               <view class="luck-stars-row">
                 <star-rating
                   :key="`love-${fortuneData?.loveStars || 0}`"
@@ -1320,11 +1335,14 @@ function handleHistoryNavigation() {
   position: absolute;
   left: 86rpx; /* 从200rpx调整到86rpx，与原头像位置对齐，实现左对齐 */
   top: 510rpx; /* 保持原有垂直位置 */
-  color: #ffffff;
+  background: linear-gradient(135deg, #e0d4ff 0%, #8b5cf6 50%, #6d28d9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-  font-size: 30rpx;
-  font-weight: 600;
-  line-height: 40rpx;
+  font-size: 48rpx; /* 继续增大字体，从42rpx增大到48rpx */
+  font-weight: 700; /* 加粗效果，从600增加到700 */
+  line-height: 56rpx; /* 相应调整行高 */
   z-index: 11;
 }
 
@@ -1455,27 +1473,42 @@ function handleHistoryNavigation() {
   flex: 1; /* 平均分配空间 */
 }
 
-.luck-name-text {
-  color: #ffffff;
+/* 运势标题行 - 包含标题和分数 */
+.luck-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+  margin-bottom: 8rpx;
+}
+
+/* 运势标题和分数文字共用样式 */
+.luck-name-text,
+.luck-score-text {
   font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
   font-size: 30rpx;
   font-weight: 600;
   line-height: 40rpx;
-  margin-bottom: 8rpx;
 }
 
-/* 事业运标题颜色 - 与星星颜色一致 */
-.luck-name-career {
+.luck-name-text {
+  color: #ffffff;
+}
+
+/* 事业运标题和分数颜色 - 与星星颜色一致 */
+.luck-name-career,
+.luck-score-career {
   color: #46daff;
 }
 
-/* 财富运标题颜色 - 与星星颜色一致 */
-.luck-name-wealth {
+/* 财富运标题和分数颜色 - 与星星颜色一致 */
+.luck-name-wealth,
+.luck-score-wealth {
   color: #f5dd4e;
 }
 
-/* 爱情运标题颜色 - 与星星颜色一致 */
-.luck-name-love {
+/* 爱情运标题和分数颜色 - 与星星颜色一致 */
+.luck-name-love,
+.luck-score-love {
   color: #ff97c6;
 }
 
@@ -1586,7 +1619,7 @@ function handleHistoryNavigation() {
 .lucky-cards-container {
   position: absolute;
   left: 86rpx;
-  top: 1040rpx;
+  top: 1030rpx; /* 从1040rpx上移到990rpx，向上移动50rpx，避免与卡片底部重合 */
   width: 580rpx;
   display: flex;
   justify-content: center;
@@ -1666,40 +1699,45 @@ function handleHistoryNavigation() {
   padding: 0 4rpx; /* 添加左右内边距，防止文字贴边 */
 }
 
-/* 历史记录按钮 - 独立于卡片外 */
+/* 历史记录按钮 - 独立于卡片外，使用flex布局实现自适应 */
 .history-button {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 1238rpx; /* 调整位置以适应80rpx按钮高度（原1220rpx + 18rpx） */
+  top: 1220rpx; /* 稍微下移，从1210rpx调整为1220rpx */
   width: 701rpx; /* 与运势卡片宽度保持一致 */
-  height: 80rpx; /* 中等高度，平衡开发工具和真机显示效果 */
+  min-height: 50rpx; /* 调整为50rpx，使按钮更紧凑 */
   z-index: 12;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden; /* 确保内容不溢出 */
+  display: flex; /* 添加flex布局，实现内容自适应 */
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* 防止被压缩 */
 }
 
 .history-button-bg {
-  display: block;
-  width: 100%;
-  height: 100%; /* 填充整个容器高度 */
-}
-
-.history-button-text {
-  position: absolute;
+  position: absolute; /* 背景图使用绝对定位，覆盖整个按钮区域 */
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 100%; /* 填充整个容器高度 */
+  z-index: 1; /* 确保背景在文字下方 */
+}
+
+.history-button-text {
+  position: relative; /* 改为相对定位，配合flex布局 */
+  padding: 12rpx 0; /* 调整padding为12rpx，配合50rpx高度 */
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
   color: #ffffff;
   font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-  font-size: 27rpx; /* 调整为27rpx，与80rpx高度匹配 */
-  font-weight: 400; /* 从600改为400，使用正常粗细，与其他按钮保持一致 */
+  font-size: 24rpx; /* 调整为24rpx，与50rpx高度匹配 */
+  font-weight: 400; /* 使用正常粗细，与其他按钮保持一致 */
   white-space: nowrap;
-  z-index: 3;
+  z-index: 3; /* 确保文字在背景之上 */
   pointer-events: none;
 }
 
@@ -1807,7 +1845,7 @@ function handleHistoryNavigation() {
   background: #000000;
   border: 2rpx solid rgba(0, 229, 250, 0.6); /* 从 0.2 提升到 0.6，增强亮蓝色外框效果 */
   border-radius: 40rpx;
-  padding: 4rpx 28rpx 4rpx 8rpx; /* 右侧padding从16rpx增加到28rpx，延长外框 */
+  padding: 4rpx 40rpx 4rpx 8rpx; /* 右侧padding从64rpx减少到40rpx，补偿字符间距增加带来的长度变化 */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1838,6 +1876,8 @@ function handleHistoryNavigation() {
   display: flex;
   align-items: center;
   height: 100%;
+  margin-left: 12rpx; /* 文字左移，从24rpx减少到12rpx */
+  letter-spacing: 6rpx; /* 增加字符间距，让文字不那么拥挤 */
 }
 
 /* 运势详情区域 - 作为模糊容器 */
@@ -2063,7 +2103,10 @@ function handleHistoryNavigation() {
   font-size: 30rpx;
   font-weight: 600;
   line-height: 40rpx;
-  color: #ffd700;
+  background: linear-gradient(135deg, #fff9c4 0%, #ffd700 40%, #ff8f00 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   margin-bottom: 15rpx;
   width: 100%;
   box-sizing: border-box;
@@ -2108,7 +2151,10 @@ function handleHistoryNavigation() {
   display: block;
   font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
   font-size: 30rpx;
-  color: #ffd700;
+  background: linear-gradient(135deg, #fff9c4 0%, #ffd700 40%, #ff8f00 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   font-weight: 600;
   line-height: 40rpx;
 }
@@ -2128,7 +2174,10 @@ function handleHistoryNavigation() {
   display: block;
   font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
   font-size: 30rpx;
-  color: #ffd700;
+  background: linear-gradient(135deg, #fff9c4 0%, #ffd700 40%, #ff8f00 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   font-weight: 600;
   line-height: 40rpx;
   margin-top: 16rpx;

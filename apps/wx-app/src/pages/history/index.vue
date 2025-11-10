@@ -53,7 +53,6 @@
     <view v-if="!isInitialLoading && !error" class="main-content">
       <!-- 空状态 -->
       <view v-if="historyList.length === 0" class="empty-container">
-        <text class="empty-icon"> 📊 </text>
         <text class="empty-text"> 暂无历史记录 </text>
         <text class="empty-desc"> 开始使用手链，记录你的运势足迹吧！ </text>
       </view>
@@ -594,11 +593,6 @@ function getFlowerStyle(date: string, index: number): string {
   flex: 1;
   padding: 60rpx;
   text-align: center;
-}
-
-.empty-icon {
-  font-size: 80rpx;
-  margin-bottom: 20rpx;
 }
 
 .empty-text {
