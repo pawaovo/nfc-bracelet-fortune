@@ -337,7 +337,7 @@ export class FortunesService {
   }
 
   /**
-   * 生成运势数据（AI优先，失败时抛出错误）
+   * 生成运势数据（AI优先，失败时使用降级方案并保存）
    * @param user 用户信息
    * @param date 日期
    * @param isAuth 是否已认证
@@ -367,8 +367,14 @@ export class FortunesService {
       };
     }
 
-    // AI失败：抛出特定错误，让前端处理重试
-    throw new Error('AI_GENERATION_FAILED');
+    // AI失败：使用降级方案（固定模板）并保存到数据库
+    // 这样用户可以在历史记录中看到运势，而不是空白
+    this.logger.warn('AI generation failed, using fallback fortune template');
+    const fallbackData = this.generateFallbackFortune();
+    return {
+      date,
+      ...fallbackData,
+    };
   }
 
   /**
@@ -728,6 +734,41 @@ export class FortunesService {
       avoidance: '避免冲动决策。',
       suitable: '合作',
       unsuitable: '金水',
+    };
+  }
+
+  /**
+   * 生成降级运势（AI失败时使用）
+   * @returns 降级运势数据
+   */
+  private generateFallbackFortune(): Omit<
+    FortuneData,
+    'date' | 'isAuth' | 'recommendation'
+  > {
+    return {
+      overallScore: 78,
+      comment:
+        '今日运势平稳向上，适合稳步推进各项计划。保持积极心态，好运自然来。',
+      careerLuck: 75,
+      wealthLuck: 80,
+      loveLuck: 76,
+      luckyColor: '蓝色',
+      luckyNumber: 7,
+      suggestion:
+        '今天适合穿蓝色系服装，数字7将为你带来好运。保持耐心，机会就在前方。',
+
+      // 新增详细运势字段
+      summary: '今日运势平稳，各方面发展稳健。',
+      astroAnalysis: '星象平稳，适合稳步前进。',
+      careerAnalysis: '工作运势良好，适合推进重要项目。',
+      wealthAnalysis: '财运稳定，适合理性投资。',
+      loveAnalysis: '感情运势平和，适合增进了解。',
+      careerStars: 4,
+      wealthStars: 4,
+      loveStars: 4,
+      avoidance: '避免冲动决策，保持理性思考。',
+      suitable: '合作、沟通、学习',
+      unsuitable: '冒险、投机、争执',
     };
   }
 

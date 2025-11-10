@@ -3,7 +3,7 @@ import { onLaunch, onShow, onHide } from '@dcloudio/uni-app';
 import { useAuthStore } from '@/stores/auth';
 import { useFortuneStore } from '@/stores/fortune';
 import { authService } from '@/api/auth';
-import { DEV_CONFIG, applyDevScenario } from '@/config/dev-scenarios';
+import { DEV_CONFIG, applyDevScenario, TEMP_NFC_BYPASS } from '@/config/dev-scenarios';
 
 onLaunch(options => {
   console.log('App Launch', options);
@@ -111,6 +111,17 @@ async function handleAppLaunch(options: any) {
   if (DEV_CONFIG.enabled) {
     console.log('🧪 开发场景系统已启用');
     options = applyDevScenario(DEV_CONFIG.currentScenario, options);
+  }
+
+  // 🚨 临时NFC绕过逻辑：如果启用，为用户生成虚拟NFC ID
+  if (TEMP_NFC_BYPASS.enabled && !options.query?.nfcId) {
+    console.log('🔧 临时NFC绕过模式已启用，生成虚拟NFC ID');
+    const virtualNfcId = generateVirtualNfcId();
+    if (!options.query) {
+      options.query = {};
+    }
+    options.query.nfcId = virtualNfcId;
+    console.log('✅ 虚拟NFC ID:', virtualNfcId);
   }
 
   // 检查是否通过NFC启动
@@ -347,6 +358,32 @@ async function handleAuthenticatedNFCAccess(nfcId: string) {
       url: `/pages/bind/index?nfcId=${nfcId}`,
     });
   }
+}
+
+/**
+ * 🚨 临时函数：生成虚拟NFC ID
+ * 基于用户的微信OpenID生成唯一的虚拟NFC ID
+ * NFC功能恢复后，此函数将不再使用
+ */
+function generateVirtualNfcId(): string {
+  // 尝试从本地存储获取已生成的虚拟NFC ID
+  const storedVirtualNfcId = uni.getStorageSync('virtualNfcId');
+  if (storedVirtualNfcId) {
+    console.log('使用已存储的虚拟NFC ID:', storedVirtualNfcId);
+    return storedVirtualNfcId;
+  }
+
+  // 生成新的虚拟NFC ID
+  // 格式: VIRTUAL_NFC_{timestamp}_{random}
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const virtualNfcId = `VIRTUAL_NFC_${timestamp}_${random}`;
+
+  // 存储到本地，确保同一用户始终使用相同的虚拟NFC ID
+  uni.setStorageSync('virtualNfcId', virtualNfcId);
+  console.log('生成新的虚拟NFC ID:', virtualNfcId);
+
+  return virtualNfcId;
 }
 </script>
 

@@ -109,8 +109,20 @@ export const DEV_SCENARIOS: Record<string, DevScenario> = {
 
 // 开发配置 - 只需要修改这里切换场景！
 export const DEV_CONFIG = {
-  enabled: true, // 开发模式总开关 - 开发模式true，上架前必须设置为 false（已关闭用于生产测试）
-  currentScenario: 'VISITOR_FRESH_NFC' as keyof typeof DEV_SCENARIOS, // 👈 修改这里切换场景
+  enabled: false, // 开发模式总开关 - 开发模式true，上架前必须设置为 false（已关闭用于生产测试）
+  currentScenario: 'VISITOR_BOUND_NFC' as keyof typeof DEV_SCENARIOS, // 👈 修改这里切换场景
+};
+
+// ========================================
+// 🚨 临时NFC功能开关（生产环境临时方案）
+// ========================================
+// 背景：NFC硬件暂时不可用，需要让用户正常使用完整功能
+// 方案：为每个用户自动生成虚拟NFC ID，体验等同于已绑定用户
+// 恢复：NFC功能可用后，将 enabled 改为 false 即可恢复正常逻辑
+// ========================================
+export const TEMP_NFC_BYPASS = {
+  enabled: true, // 🔴 临时开关：true=启用虚拟NFC，false=使用真实NFC
+  description: '临时绕过NFC验证，为所有用户提供完整功能',
 };
 
 /**

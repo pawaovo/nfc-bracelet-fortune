@@ -62,25 +62,23 @@ async function initPAGSDK() {
   if (PAG) return PAG;
 
   try {
+    // ⚠️ 根据lime-pag插件实践经验（DCloud插件市场ID: 11745）
+    // uni-app编译时只会复制static目录下的文件
+    // WASM文件必须放在static目录，路径格式：/static/ + file
     PAG = await PAGInit({
-      locateFile: (file: string) => {
-        if (file.endsWith('.wasm') || file.endsWith('.wasm.br')) {
-          // 使用jsDelivr CDN加载PAG SDK文件，减少小程序包体积
-          return `https://cdn.jsdelivr.net/npm/libpag-miniprogram@4.5.1/lib/${file}`;
-        }
-        return file;
-      },
+      locateFile: (file: string) => '/static/' + file,
     });
-    console.log('PAG SDK初始化成功（从CDN加载）');
+    console.log('✅ PAG SDK初始化成功（从本地加载）');
     return PAG;
   } catch (error) {
-    console.error('PAG SDK初始化失败:', error);
+    console.error('❌ PAG SDK初始化失败:', error);
     throw error;
   }
 }
 
 /**
  * 加载并播放PAG动画
+ * 根据官方文档标准流程：https://pag.io/docs/sdk-miniprogram.html
  */
 async function loadAndPlayPAG() {
   try {
@@ -89,7 +87,7 @@ async function loadAndPlayPAG() {
     // 1. 初始化PAG SDK
     await initPAGSDK();
 
-    // 2. 优先从缓存加载
+    // 2. 优先从缓存加载PAG文件
     pagBuffer = await loadPagFromCache();
 
     if (!pagBuffer) {
@@ -108,66 +106,70 @@ async function loadAndPlayPAG() {
       console.log('从缓存加载PAG文件成功');
     }
 
-    // 3. 等待DOM更新后获取canvas实例
+    // 3. 等待DOM更新
     await nextTick();
 
-    // 使用延迟确保canvas已渲染
+    // 4. 查询canvas节点（官方标准方式）
+    // 使用延迟确保canvas已完全渲染
     setTimeout(() => {
-      console.log('开始查询canvas...');
+      console.log('开始查询canvas节点...');
 
-      // 检查组件实例是否存在
+      // 检查组件实例
       if (!instance) {
         console.error('无法获取组件实例');
         loadError.value = true;
         return;
       }
 
-      // 使用uni.createSelectorQuery().in(proxy)在组件作用域内查询canvas
-      // 这是在Vue组件中查询canvas的正确方式
-      uni
-        .createSelectorQuery()
-        .in(instance.proxy)
+      // 使用官方推荐的查询方式：wx.createSelectorQuery()
+      // 注意：在uni-app中使用uni.createSelectorQuery()
+      const query = uni.createSelectorQuery().in(instance.proxy);
+      query
         .select('#pagCanvas')
-        .fields({ node: true, size: true })
+        .node()
         .exec(async res => {
           console.log('Canvas查询结果:', res);
 
+          // 验证查询结果
           if (!res || !res[0] || !res[0].node) {
-            console.error('获取canvas失败，查询结果:', res);
+            console.error('Canvas节点查询失败，结果:', res);
             loadError.value = true;
             return;
           }
 
           const canvas = res[0].node;
-          console.log('获取canvas成功，canvas对象:', canvas);
+          console.log('Canvas节点获取成功');
 
           try {
-            // 4. 从ArrayBuffer加载PAG文件
+            // 5. 加载PAG文件（从ArrayBuffer）
+            console.log('开始加载PAG文件...');
             pagFile = await PAG.PAGFile.load(pagBuffer);
-            console.log('PAG文件加载成功');
+            console.log('✅ PAG文件加载成功');
 
-            // 5. 创建PAGView
+            // 6. 初始化PAGView（绑定canvas）
+            console.log('开始初始化PAGView...');
             pagView = await PAG.PAGView.init(pagFile, canvas);
-            console.log('PAGView创建成功');
+            console.log('✅ PAGView初始化成功');
 
-            // 6. 设置循环播放
+            // 7. 设置循环播放
             if (props.loop) {
-              pagView.setRepeatCount(0);
+              pagView.setRepeatCount(0); // 0表示无限循环
+              console.log('✅ 已设置循环播放');
             }
 
-            // 7. 自动播放
+            // 8. 播放动画
             if (props.autoPlay) {
               await pagView.play();
-              console.log('PAG动画开始播放');
+              console.log('✅ PAG动画开始播放');
             }
           } catch (error) {
-            console.error('PAG渲染失败:', error);
+            console.error('❌ PAG渲染失败:', error);
             loadError.value = true;
           }
         });
-    }, 1000);
+    }, 500); // 减少延迟时间到500ms
   } catch (error) {
-    console.error('PAG加载失败:', error);
+    console.error('❌ PAG加载失败:', error);
     loadError.value = true;
   }
 }
