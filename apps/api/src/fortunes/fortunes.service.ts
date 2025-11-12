@@ -80,32 +80,13 @@ export class FortunesService {
       fortuneData.overallScore,
     );
 
-    // 保存到数据库（包含新增的详细字段）
+    // 保存到数据库（使用辅助方法避免重复代码）
     const newFortune = await this.prisma.dailyFortune.create({
       data: {
         userId,
         date: today,
-        overallScore: fortuneData.overallScore,
-        comment: fortuneData.comment || '今日运势平稳',
-        careerLuck: fortuneData.careerLuck || 75,
-        wealthLuck: fortuneData.wealthLuck || 75,
-        loveLuck: fortuneData.loveLuck || 75,
-        luckyColor: fortuneData.luckyColor || '蓝色',
-        luckyNumber: fortuneData.luckyNumber || 7,
-        suggestion: fortuneData.suggestion || '保持积极心态',
         recommendationId: recommendation?.id,
-        // 新增详细运势字段
-        summary: fortuneData.summary,
-        astroAnalysis: fortuneData.astroAnalysis,
-        careerAnalysis: fortuneData.careerAnalysis,
-        wealthAnalysis: fortuneData.wealthAnalysis,
-        loveAnalysis: fortuneData.loveAnalysis,
-        careerStars: fortuneData.careerStars,
-        wealthStars: fortuneData.wealthStars,
-        loveStars: fortuneData.loveStars,
-        avoidance: fortuneData.avoidance,
-        suitable: fortuneData.suitable,
-        unsuitable: fortuneData.unsuitable,
+        ...this.prepareFortuneDataPayload(fortuneData),
       },
       include: {
         recommendation: true,
@@ -146,6 +127,9 @@ export class FortunesService {
     // 重新生成运势数据
     const fortuneData = await this.generateFortuneData(user, today, isAuth);
 
+    // 准备运势数据（使用辅助方法避免重复代码）
+    const fortuneDataPayload = this.prepareFortuneDataPayload(fortuneData);
+
     // 更新或创建运势记录
     const fortune = await this.prisma.dailyFortune.upsert({
       where: {
@@ -154,51 +138,11 @@ export class FortunesService {
           date: today,
         },
       },
-      update: {
-        overallScore: fortuneData.overallScore,
-        comment: fortuneData.comment || '今日运势平稳',
-        careerLuck: fortuneData.careerLuck || 75,
-        wealthLuck: fortuneData.wealthLuck || 75,
-        loveLuck: fortuneData.loveLuck || 75,
-        luckyColor: fortuneData.luckyColor || '蓝色',
-        luckyNumber: fortuneData.luckyNumber || 7,
-        suggestion: fortuneData.suggestion || '保持积极心态',
-        // 更新新增的详细运势字段
-        summary: fortuneData.summary,
-        astroAnalysis: fortuneData.astroAnalysis,
-        careerAnalysis: fortuneData.careerAnalysis,
-        wealthAnalysis: fortuneData.wealthAnalysis,
-        loveAnalysis: fortuneData.loveAnalysis,
-        careerStars: fortuneData.careerStars,
-        wealthStars: fortuneData.wealthStars,
-        loveStars: fortuneData.loveStars,
-        avoidance: fortuneData.avoidance,
-        suitable: fortuneData.suitable,
-        unsuitable: fortuneData.unsuitable,
-      },
+      update: fortuneDataPayload,
       create: {
         userId,
         date: today,
-        overallScore: fortuneData.overallScore,
-        comment: fortuneData.comment || '今日运势平稳',
-        careerLuck: fortuneData.careerLuck || 75,
-        wealthLuck: fortuneData.wealthLuck || 75,
-        loveLuck: fortuneData.loveLuck || 75,
-        luckyColor: fortuneData.luckyColor || '蓝色',
-        luckyNumber: fortuneData.luckyNumber || 7,
-        suggestion: fortuneData.suggestion || '保持积极心态',
-        // 创建时包含新增的详细运势字段
-        summary: fortuneData.summary,
-        astroAnalysis: fortuneData.astroAnalysis,
-        careerAnalysis: fortuneData.careerAnalysis,
-        wealthAnalysis: fortuneData.wealthAnalysis,
-        loveAnalysis: fortuneData.loveAnalysis,
-        careerStars: fortuneData.careerStars,
-        wealthStars: fortuneData.wealthStars,
-        loveStars: fortuneData.loveStars,
-        avoidance: fortuneData.avoidance,
-        suitable: fortuneData.suitable,
-        unsuitable: fortuneData.unsuitable,
+        ...fortuneDataPayload,
       },
       include: {
         recommendation: true,
@@ -399,11 +343,11 @@ export class FortunesService {
         date: date,
       };
 
-      // 设置70秒超时（服务器网络环境下AI生成需要更长时间，留10秒缓冲）
+      // 设置110秒超时（确保AI有足够时间生成，留10秒缓冲）
       const aiResult = (await Promise.race([
         this.aiService.generateFortune(promptData),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('AI timeout after 70s')), 70000),
+          setTimeout(() => reject(new Error('AI timeout after 110s')), 110000),
         ),
       ])) as { content?: string; duration?: number } | null;
 
@@ -605,10 +549,26 @@ export class FortunesService {
         result.suitable = suitableMatch[1].trim();
       }
 
+      // 提取今日宜详细说明
+      const suitableDetailMatch = content.match(
+        /今日宜详细说明[：:]\s*([^\n]+)/,
+      );
+      if (suitableDetailMatch) {
+        result.suitableDetail = suitableDetailMatch[1].trim();
+      }
+
       // 提取今日喜用
       const unsuitableMatch = content.match(/今日喜用[：:]\s*([^\n]+)/);
       if (unsuitableMatch) {
         result.unsuitable = unsuitableMatch[1].trim();
+      }
+
+      // 提取今日喜用详细说明
+      const unsuitableDetailMatch = content.match(
+        /今日喜用详细说明[：:]\s*([^\n]+)/,
+      );
+      if (unsuitableDetailMatch) {
+        result.unsuitableDetail = unsuitableDetailMatch[1].trim();
       }
 
       // 提取幸运色
@@ -621,6 +581,14 @@ export class FortunesService {
       const luckyNumberMatch = content.match(/今日幸运数字[：:]\s*(\d+)/);
       if (luckyNumberMatch) {
         result.luckyNumber = parseInt(luckyNumberMatch[1]);
+      }
+
+      // 提取幸运元素详细说明
+      const luckyElementDetailMatch = content.match(
+        /幸运元素详细说明[：:]\s*([^\n]+)/,
+      );
+      if (luckyElementDetailMatch) {
+        result.luckyElementDetail = luckyElementDetailMatch[1].trim();
       }
 
       // 提取综合分数
@@ -691,11 +659,55 @@ export class FortunesService {
       luckyColor: aiData.luckyColor || '蓝色',
       luckyNumber: aiData.luckyNumber || 7,
 
+      // 详细说明（用于弹窗显示）
+      suitableDetail:
+        aiData.suitableDetail ||
+        '今日适合进行合作与沟通，有利于建立良好的人际关系。',
+      unsuitableDetail:
+        aiData.unsuitableDetail || '这些元素能够增强你的运势，带来正面能量。',
+      luckyElementDetail:
+        aiData.luckyElementDetail ||
+        '幸运色和幸运数字能为你带来好运，建议多加运用。',
+
       // 兼容旧版字段（使用统一的转换方法）
       comment: aiData.summary || aiData.comment || defaultComment,
       careerLuck: aiData.careerLuck || this.convertStarsToScore(careerStars),
       wealthLuck: aiData.wealthLuck || this.convertStarsToScore(wealthStars),
       loveLuck: aiData.loveLuck || this.convertStarsToScore(loveStars),
+    };
+  }
+
+  /**
+   * 准备运势数据负载（避免重复代码）
+   * @param fortuneData 运势数据
+   * @returns 数据库负载对象
+   */
+  private prepareFortuneDataPayload(
+    fortuneData: Omit<FortuneData, 'date' | 'isAuth' | 'recommendation'>,
+  ) {
+    return {
+      overallScore: fortuneData.overallScore,
+      comment: fortuneData.comment || '今日运势平稳',
+      careerLuck: fortuneData.careerLuck || 75,
+      wealthLuck: fortuneData.wealthLuck || 75,
+      loveLuck: fortuneData.loveLuck || 75,
+      luckyColor: fortuneData.luckyColor || '蓝色',
+      luckyNumber: fortuneData.luckyNumber || 7,
+      suggestion: fortuneData.suggestion || '保持积极心态',
+      summary: fortuneData.summary,
+      astroAnalysis: fortuneData.astroAnalysis,
+      careerAnalysis: fortuneData.careerAnalysis,
+      wealthAnalysis: fortuneData.wealthAnalysis,
+      loveAnalysis: fortuneData.loveAnalysis,
+      careerStars: fortuneData.careerStars,
+      wealthStars: fortuneData.wealthStars,
+      loveStars: fortuneData.loveStars,
+      avoidance: fortuneData.avoidance,
+      suitable: fortuneData.suitable,
+      unsuitable: fortuneData.unsuitable,
+      suitableDetail: fortuneData.suitableDetail,
+      unsuitableDetail: fortuneData.unsuitableDetail,
+      luckyElementDetail: fortuneData.luckyElementDetail,
     };
   }
 
@@ -1055,6 +1067,9 @@ export class FortunesService {
         avoidance: fortune.avoidance || undefined,
         suitable: fortune.suitable || undefined,
         unsuitable: fortune.unsuitable || undefined,
+        suitableDetail: fortune.suitableDetail || undefined,
+        unsuitableDetail: fortune.unsuitableDetail || undefined,
+        luckyElementDetail: fortune.luckyElementDetail || undefined,
       };
     }
 

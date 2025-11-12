@@ -92,10 +92,18 @@ class ApiRequest {
 
       // 处理不同类型的错误
       if (error instanceof Error) {
-        if (error.message.includes('timeout')) {
-          throw new Error('请求超时，请检查网络连接');
+        if (error.message.includes('timeout') || error.message.includes('time out')) {
+          throw new Error('AI生成超时，请重试');
         } else if (error.message.includes('network')) {
           throw new Error('网络连接失败，请检查网络设置');
+        }
+      }
+
+      // 处理微信小程序的错误格式
+      if (typeof error === 'object' && error !== null) {
+        const err = error as any;
+        if (err.errMsg?.includes('timeout') || err.errMsg?.includes('time out')) {
+          throw new Error('AI生成超时，请重试');
         }
       }
 

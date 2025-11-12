@@ -8,12 +8,17 @@
 
     <!-- 加载状态 -->
     <view v-if="isLoading" class="loading-container">
-      <!-- PAG动画 - 叠加在中央 -->
+      <!-- PAG动画 - 全屏填充，手动控制 -->
       <view class="pag-animation-overlay">
-        <PagLoadingCDN :width="300" :height="300" />
+        <PagLoadingCDN
+          ref="pagLoadingRef"
+          :fill-width="true"
+          :auto-play="false"
+          :loop="false"
+          :manual-control="true"
+        />
       </view>
 
-      <view class="loading-spinner" />
       <text class="loading-text">
         {{ loadingText }}
       </text>
@@ -126,29 +131,29 @@
         </text>
 
         <!-- 运势分析标题 - 带查看详情图标 -->
+        <!-- 暂时禁用点击功能，后续升级恢复：@click="showDetailModal" -->
         <view class="comment-title-row">
-          <text class="comment-title-text" @click="showDetailModal"> 运势分析 </text>
+          <text class="comment-title-text"> 运势分析 </text>
           <image
             class="comment-detail-icon"
             src="../../static/pages/fortune/today.png"
             mode="aspectFit"
-            @click="showDetailModal"
           />
         </view>
 
-        <!-- 今日点评内容 - 可点击查看详情，超出显示省略号 -->
-        <text class="comment-content-text" @click="showDetailModal">
+        <!-- 今日点评内容 - 暂时禁用点击功能，后续升级恢复：@click="showDetailModal" -->
+        <text class="comment-content-text">
           {{ fortuneData?.summary || fortuneData?.comment || '绑定生辰信息，查看专属运势分析' }}
         </text>
 
-        <!-- 综合分数区域 - 可点击查看详细运势分析 -->
-        <view class="score-area" @click="showDetailModal">
+        <!-- 综合分数区域 - 暂时禁用点击功能，后续升级恢复：@click="showDetailModal" -->
+        <view class="score-area">
           <!-- 综合分数标签 - 保持清晰可见 -->
           <text class="score-label-text"> 综合分数 </text>
 
           <!-- 综合分数数字 - 保持清晰可见 -->
           <text class="score-number-text">
-            {{ fortuneData?.overallScore || 88 }}
+            {{ calculateOverallScore() }}
           </text>
         </view>
 
@@ -212,7 +217,8 @@
           </view>
 
           <!-- 建议和避免区域 - 使用背景图 -->
-          <view class="advice-container" @click="showAdviceModal">
+          <!-- 暂时禁用点击功能，后续升级恢复：@click="showAdviceModal" -->
+          <view class="advice-container">
             <!-- 背景图 -->
             <image
               class="advice-bg-image"
@@ -250,6 +256,7 @@
           <!-- 幸运卡片容器 - 重新布局 -->
           <view class="lucky-cards-container">
             <!-- 宜卡片 -->
+            <!-- 暂时禁用点击功能，后续升级恢复：@click="showSuitableModal" -->
             <view class="lucky-card">
               <!-- 背景图 -->
               <image
@@ -280,6 +287,7 @@
             </view>
 
             <!-- 喜用卡片 -->
+            <!-- 暂时禁用点击功能，后续升级恢复：@click="showUnsuitableModal" -->
             <view class="lucky-card">
               <!-- 背景图 -->
               <image
@@ -310,6 +318,7 @@
             </view>
 
             <!-- 幸运元素卡片 -->
+            <!-- 暂时禁用点击功能，后续升级恢复：@click="showLuckyElementModal" -->
             <view class="lucky-card">
               <!-- 背景图 -->
               <image
@@ -409,6 +418,7 @@
     </view>
 
     <!-- 详细运势弹窗 -->
+    <!-- 【暂时禁用】此弹窗功能暂时禁用，作为后续升级功能交付，请勿删除 -->
     <view v-if="detailModalVisible" class="modal-overlay" @click="hideDetailModal">
       <view class="modal-content detail-modal" @click.stop>
         <!-- Rectangle 4 装饰图层 - 与运势卡片保持一致 -->
@@ -496,9 +506,7 @@
               <text class="summary-item"> 今日喜用: {{ fortuneData.unsuitable || '金水' }} </text>
               <text class="summary-item"> 今日幸运色: {{ fortuneData.luckyColor || '蓝色' }} </text>
               <text class="summary-item"> 今日幸运数字: {{ fortuneData.luckyNumber || 7 }} </text>
-              <text class="summary-item">
-                今日运势综合数字: {{ fortuneData.overallScore || 75 }}分
-              </text>
+              <text class="summary-item"> 今日运势综合数字: {{ calculateOverallScore() }}分 </text>
             </view>
           </view>
 
@@ -524,6 +532,7 @@
     </view>
 
     <!-- 建议和避免弹窗 -->
+    <!-- 【暂时禁用】此弹窗功能暂时禁用，作为后续升级功能交付，请勿删除 -->
     <view v-if="adviceModalVisible" class="modal-overlay" @click="hideAdviceModal">
       <view class="modal-content advice-modal" @click.stop>
         <!-- Rectangle 4 装饰图层 - 与运势卡片保持一致 -->
@@ -534,22 +543,55 @@
         />
 
         <view class="modal-header">
-          <text class="modal-title"> 今日建议 </text>
+          <text class="modal-title"> 今日建议和避免 </text>
           <text class="modal-close" @click="hideAdviceModal"> ✕ </text>
         </view>
 
         <view class="modal-body">
-          <!-- 建议事项 - 不显示标题 -->
+          <!-- 建议事项 -->
           <view class="modal-section">
+            <text class="modal-section-title"> 建议 </text>
             <text class="modal-section-content">
               {{ fortuneData?.suggestion || '保持积极心态，好运自然来' }}
             </text>
           </view>
 
-          <!-- 避免事项 - 不显示标题 -->
+          <!-- 避免事项 -->
           <view class="modal-section">
+            <text class="modal-section-title"> 避免 </text>
             <text class="modal-section-content">
               {{ fortuneData?.avoidance || '避免冲动决策' }}
+            </text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 幸运卡片详情弹窗 -->
+    <!-- 【暂时禁用】此弹窗功能暂时禁用，作为后续升级功能交付，请勿删除 -->
+    <view v-if="luckyModalVisible" class="modal-overlay" @click="hideLuckyModal">
+      <view class="modal-content advice-modal" @click.stop>
+        <!-- Rectangle 4 装饰图层 - 与运势卡片保持一致 -->
+        <image
+          class="modal-decoration-layer"
+          src="../../static/pages/fortune/Rectangle 4.png"
+          mode="scaleToFill"
+        />
+
+        <view class="modal-header">
+          <text class="modal-title">
+            {{ luckyModalTitle }}
+          </text>
+          <text class="modal-close" @click="hideLuckyModal"> ✕ </text>
+        </view>
+
+        <view class="modal-body">
+          <view class="modal-section">
+            <text class="modal-section-title">
+              {{ luckyModalContentTitle }}
+            </text>
+            <text class="modal-section-content">
+              {{ luckyModalContentDetail }}
             </text>
           </view>
         </view>
@@ -586,8 +628,12 @@ const isPreviewMode = ref(false);
 const fromProfile = ref(false); // 标识是否从个人信息页面跳转过来
 
 // 弹窗状态
+// 【暂时禁用】以下弹窗状态暂时未使用，作为后续升级功能保留，请勿删除
 const detailModalVisible = ref(false);
 const adviceModalVisible = ref(false);
+const luckyModalVisible = ref(false);
+const luckyModalType = ref<'suitable' | 'unsuitable' | 'luckyElement'>('suitable');
+const luckyModalTitle = ref('详细说明');
 
 // AI重试相关状态
 const aiRetryState = ref({
@@ -609,8 +655,79 @@ const loadingMessages = ref([
   '马上就好...',
 ]);
 
+// PAG 组件引用
+const pagLoadingRef = ref<InstanceType<typeof PagLoadingCDN>>();
+
+// PAG 动画配置（根据实际动画调整）
+// 说明：
+// - PAG 文件真实时长：25 秒，帧率：24fps
+// - loopStart: 初始动画播放到此时间点后，开始循环中间段
+// - loopEnd: 循环段的结束时间点
+// - endingStart: AI 返回后，从此时间点开始播放结束动画
+//
+// 当前配置：
+// - 0s-13s: 初始动画 (52%)
+// - 13s-18s: 循环播放此段内容 (20%)，等待 AI 返回
+// - 20s-25s: AI 返回后播放结束动画 (20%)
+const PAG_CONFIG = {
+  totalDuration: 25, // 总时长 25秒（自动从 PAG 文件读取，此值仅用于参考）
+  loopStart: 13, // 循环开始时间 13秒 (52%)
+  loopEnd: 18, // 循环结束时间 18秒 (72%)
+  endingStart: 20, // 结束动画开始时间 20秒 (80%)
+  endingBufferMs: 500, // 结束动画额外缓冲时间（毫秒）
+  componentCheckIntervalMs: 100, // PAG 组件就绪检查间隔（毫秒）
+  componentInitDelayMs: 300, // PAG 组件初始化延迟（毫秒）
+};
+
 // 计算属性
 const fortuneData = computed(() => fortuneStore.todayFortune);
+
+// 【暂时禁用】以下计算属性用于弹窗功能，暂时未使用，作为后续升级功能保留，请勿删除
+// 幸运卡片弹窗内容标题（动态计算）
+const luckyModalContentTitle = computed(() => {
+  const data = fortuneData.value;
+  switch (luckyModalType.value) {
+    case 'suitable':
+      return `今日宜：${data?.suitable || '合作'}`;
+    case 'unsuitable':
+      return `今日喜用：${data?.unsuitable || '金水'}`;
+    case 'luckyElement':
+      return `今日幸运元素：${data?.luckyColor || '蓝色'}/${data?.luckyNumber || 7}`;
+    default:
+      return '';
+  }
+});
+
+// 幸运卡片弹窗详细说明（动态计算）
+const luckyModalContentDetail = computed(() => {
+  const data = fortuneData.value;
+  switch (luckyModalType.value) {
+    case 'suitable':
+      return data?.suitableDetail || '今日适合进行合作与沟通，有利于建立良好的人际关系。';
+    case 'unsuitable':
+      return data?.unsuitableDetail || '这些元素能够增强你的运势，带来正面能量。';
+    case 'luckyElement':
+      return data?.luckyElementDetail || '幸运色和幸运数字能为你带来好运，建议多加运用。';
+    default:
+      return '';
+  }
+});
+
+/**
+ * 计算综合分数
+ * 综合分数 = (事业运分数 + 财富运分数 + 爱情运分数) / 3，保留整数
+ */
+function calculateOverallScore(): number {
+  if (!fortuneData.value) {
+    return 88; // 默认值
+  }
+
+  const careerScore = Math.round((fortuneData.value.careerStars ?? 3) * 20);
+  const wealthScore = Math.round((fortuneData.value.wealthStars ?? 3) * 20);
+  const loveScore = Math.round((fortuneData.value.loveStars ?? 3) * 20);
+
+  return Math.round((careerScore + wealthScore + loveScore) / 3);
+}
 
 // 页面生命周期
 onLoad((options: Record<string, unknown>) => {
@@ -843,7 +960,8 @@ async function loadAuthenticatedFortune() {
     console.error('API调用失败:', error);
     handleFortuneError(error);
   } finally {
-    stopLoadingAnimation();
+    // 等待结束动画播放完成
+    await stopLoadingAnimation();
     isLoading.value = false;
   }
 }
@@ -852,15 +970,21 @@ async function loadAuthenticatedFortune() {
  * 处理运势获取错误
  */
 function handleFortuneError(error: unknown) {
-  if (
-    error?.response?.data?.code === 'AI_FAILED' ||
-    (error instanceof Error && error.message.includes('AI生成失败'))
-  ) {
-    // AI生成失败，显示重试界面
+  // 检查是否为 AI 相关错误（包括超时）
+  const isAIError =
+    (error as any)?.response?.data?.code === 'AI_FAILED' ||
+    (error instanceof Error && error.message.includes('AI生成失败')) ||
+    (error instanceof Error && error.message.includes('超时')) ||
+    (error as any)?.errMsg?.includes('timeout') ||
+    (error as any)?.errMsg?.includes('time out');
+
+  if (isAIError) {
+    // AI生成失败或超时，显示重试界面
     aiRetryState.value.showRetry = true;
-    console.log('AI生成失败，显示重试界面');
+    console.log('AI生成失败或超时，显示重试界面');
   } else {
     // 其他错误，使用降级方案
+    console.log('其他错误，使用降级方案:', error);
     loadFallbackFortune();
   }
 }
@@ -926,7 +1050,8 @@ async function handleAIRetry() {
       });
     }
   } finally {
-    stopLoadingAnimation();
+    // 等待结束动画播放完成
+    await stopLoadingAnimation();
     aiRetryState.value.isRetrying = false;
     isLoading.value = false;
   }
@@ -975,7 +1100,7 @@ function loadFallbackFortune() {
 }
 
 /**
- * 启动加载动画
+ * 启动加载动画（包含 PAG 动画控制）
  */
 function startLoadingAnimation() {
   let messageIndex = 0;
@@ -987,25 +1112,123 @@ function startLoadingAnimation() {
 
   // 保存定时器引用以便清理
   loadingTimer.value = messageInterval;
+
+  // 启动 PAG 动画控制
+  startPagAnimation();
 }
 
 /**
- * 停止加载动画
+ * 停止加载动画（包含 PAG 动画控制）
+ * @returns Promise，等待结束动画播放完成
  */
-function stopLoadingAnimation() {
+async function stopLoadingAnimation() {
   if (loadingTimer.value) {
     clearInterval(loadingTimer.value);
     loadingTimer.value = null;
   }
   loadingText.value = loadingMessages.value[0];
+
+  // 播放 PAG 结束动画并等待完成
+  await playPagEnding();
+}
+
+/**
+ * 启动 PAG 动画控制
+ * 播放初始动画 -> 循环中间段
+ */
+function startPagAnimation() {
+  if (!pagLoadingRef.value) {
+    console.warn('⚠️ PAG 组件未初始化，延迟启动');
+    // 延迟重试
+    setTimeout(() => startPagAnimation(), PAG_CONFIG.componentInitDelayMs);
+    return;
+  }
+
+  // 检查 PAG 组件是否已就绪
+  if (!pagLoadingRef.value.checkReady()) {
+    console.log('⏳ 等待 PAG 组件加载完成...');
+    // 使用更短的间隔检查
+    setTimeout(() => startPagAnimation(), PAG_CONFIG.componentCheckIntervalMs);
+    return;
+  }
+
+  // 获取 PAG 文件信息
+  const pagInfo = pagLoadingRef.value.getPagInfo();
+  if (!pagInfo) {
+    console.warn('⚠️ 无法获取 PAG 文件信息');
+    return;
+  }
+
+  console.log('📊 PAG 文件信息:', pagInfo);
+
+  // 根据实际 PAG 文件时长动态计算进度
+  const totalDuration = pagInfo.duration; // 实际总时长（秒）
+  const loopStartProgress = PAG_CONFIG.loopStart / totalDuration;
+  const loopEndProgress = PAG_CONFIG.loopEnd / totalDuration;
+
+  console.log('🎬 启动 PAG 加载动画');
+  console.log(
+    `📐 循环区间: ${(loopStartProgress * 100).toFixed(0)}% - ${(loopEndProgress * 100).toFixed(0)}%`
+  );
+
+  // 先播放初始动画（0 到 loopStart）
+  pagLoadingRef.value.playInitialAnimation(loopStartProgress);
+
+  // loopStart 秒后开始循环中间段
+  setTimeout(() => {
+    if (!pagLoadingRef.value) return;
+    console.log('🔄 开始循环中间段');
+    pagLoadingRef.value.startMiddleLoop(loopStartProgress, loopEndProgress);
+  }, PAG_CONFIG.loopStart * 1000);
+}
+
+/**
+ * 播放 PAG 结束动画
+ * @returns Promise，结束动画播放完成后 resolve
+ */
+function playPagEnding(): Promise<void> {
+  return new Promise(resolve => {
+    if (!pagLoadingRef.value) {
+      console.warn('⚠️ PAG 组件未初始化');
+      resolve();
+      return;
+    }
+
+    // 获取 PAG 文件信息
+    const pagInfo = pagLoadingRef.value.getPagInfo();
+    if (!pagInfo) {
+      console.warn('⚠️ 无法获取 PAG 文件信息');
+      resolve();
+      return;
+    }
+
+    const totalDuration = pagInfo.duration;
+    const endingStartProgress = PAG_CONFIG.endingStart / totalDuration;
+    const endingDuration = (totalDuration - PAG_CONFIG.endingStart) * 1000; // 结束动画时长（毫秒）
+
+    console.log('✅ AI 返回结果，播放结束动画');
+    console.log(`📐 结束动画起点: ${(endingStartProgress * 100).toFixed(0)}%`);
+    console.log(`⏱️ 结束动画时长: ${(endingDuration / 1000).toFixed(1)}秒`);
+
+    // 播放结束动画
+    pagLoadingRef.value.playEnding(endingStartProgress);
+
+    // 等待结束动画播放完成
+    setTimeout(() => {
+      console.log('✅ 结束动画播放完成');
+      resolve();
+    }, endingDuration + PAG_CONFIG.endingBufferMs); // 额外增加缓冲时间确保播放完成
+  });
 }
 
 // 加载定时器引用
-const loadingTimer = ref<number | null>(null);
+const loadingTimer = ref<ReturnType<typeof setInterval> | null>(null);
 
 /**
  * 显示详细运势弹窗
+ * 【暂时禁用】此功能暂时禁用，作为后续升级功能交付，请勿删除
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function showDetailModal() {
   detailModalVisible.value = true;
 }
@@ -1019,7 +1242,9 @@ function hideDetailModal() {
 
 /**
  * 显示建议和避免弹窗
+ * 【暂时禁用】此功能暂时禁用，作为后续升级功能交付，请勿删除
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function showAdviceModal() {
   adviceModalVisible.value = true;
 }
@@ -1029,6 +1254,46 @@ function showAdviceModal() {
  */
 function hideAdviceModal() {
   adviceModalVisible.value = false;
+}
+
+/**
+ * 显示"今日宜"详情弹窗
+ * 【暂时禁用】此功能暂时禁用，作为后续升级功能交付，请勿删除
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function showSuitableModal() {
+  luckyModalType.value = 'suitable';
+  luckyModalTitle.value = '今日宜';
+  luckyModalVisible.value = true;
+}
+
+/**
+ * 显示"今日喜用"详情弹窗
+ * 【暂时禁用】此功能暂时禁用，作为后续升级功能交付，请勿删除
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function showUnsuitableModal() {
+  luckyModalType.value = 'unsuitable';
+  luckyModalTitle.value = '今日喜用';
+  luckyModalVisible.value = true;
+}
+
+/**
+ * 显示"幸运元素"详情弹窗
+ * 【暂时禁用】此功能暂时禁用，作为后续升级功能交付，请勿删除
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function showLuckyElementModal() {
+  luckyModalType.value = 'luckyElement';
+  luckyModalTitle.value = '幸运元素';
+  luckyModalVisible.value = true;
+}
+
+/**
+ * 隐藏幸运卡片详情弹窗
+ */
+function hideLuckyModal() {
+  luckyModalVisible.value = false;
 }
 
 /**
@@ -1142,30 +1407,30 @@ function handleHistoryNavigation() {
 
 /* 浮动动画已在 common.scss 中定义，此处直接使用 */
 
-/* PAG动画叠加层 - 居中显示 */
+/* PAG动画叠加层 - 全屏填充 */
 .pag-animation-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 5; /* 在装饰图片之上，在文字之下 */
-  width: 600rpx;
-  height: 600rpx;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw; /* 全屏宽度 */
+  height: 100vh; /* 全屏高度 */
+  z-index: 3; /* 在星空背景之上，在文字之下 */
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none; /* 允许点击穿透 */
 }
 
-/* 运势页面特有的加载动画样式 */
-.loading-spinner {
-  margin-bottom: 30rpx;
-  position: relative;
-  z-index: 10;
-}
-
+/* 加载文字 */
 .loading-text {
-  position: relative;
-  z-index: 10;
+  position: fixed;
+  bottom: 100rpx; /* 距离底部一定距离 */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20; /* 在所有元素之上 */
+  font-size: 32rpx;
+  color: #ffffff;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
 }
 
 .error-icon {
@@ -1368,13 +1633,14 @@ function handleHistoryNavigation() {
 .comment-detail-icon {
   width: 32rpx;
   height: 32rpx;
-  transition: transform 0.2s ease;
+  /* 暂时禁用点击效果，后续升级恢复：transition: transform 0.2s ease; */
   flex-shrink: 0;
 }
 
-.comment-detail-icon:active {
+/* 暂时禁用点击效果，后续升级恢复 */
+/* .comment-detail-icon:active {
   transform: scale(1.2);
-}
+} */
 
 /* 运势分析内容 */
 .comment-content-text {
@@ -1396,7 +1662,7 @@ function handleHistoryNavigation() {
   max-height: 108rpx;
 }
 
-/* 综合分数区域容器 - 可点击 */
+/* 综合分数区域容器 - 【暂时禁用点击效果】后续升级恢复 */
 .score-area {
   position: absolute;
   right: 42rpx;
@@ -1404,13 +1670,14 @@ function handleHistoryNavigation() {
   width: 240rpx;
   height: 120rpx;
   z-index: 12;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
+  /* 暂时禁用点击效果，后续升级恢复：cursor: pointer; */
+  /* 暂时禁用点击效果，后续升级恢复：transition: opacity 0.2s ease; */
 }
 
-.score-area:active {
+/* 暂时禁用点击效果，后续升级恢复 */
+/* .score-area:active {
   opacity: 0.8;
-}
+} */
 
 /* 综合分数标签 */
 .score-label-text {

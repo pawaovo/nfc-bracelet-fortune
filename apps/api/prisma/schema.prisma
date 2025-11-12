@@ -74,6 +74,9 @@ model DailyFortune {
   avoidance             String?  @db.Text // 避免事项
   suitable              String?  @db.VarChar(50) // 今日宜
   unsuitable            String?  @db.VarChar(50) // 今日喜用
+  suitableDetail        String?  @map("suitable_detail") @db.Text // 今日宜的详细说明
+  unsuitableDetail      String?  @map("unsuitable_detail") @db.Text // 今日喜用的详细说明
+  luckyElementDetail    String?  @map("lucky_element_detail") @db.Text // 幸运元素的详细说明
 
   // Relations
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)

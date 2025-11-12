@@ -81,6 +81,14 @@
       </text>
       <text v-else class="button-text"> 保存中... </text>
     </view>
+
+    <!-- PAG 文件下载等待提示 -->
+    <view v-if="showPagWaiting" class="pag-waiting-overlay">
+      <view class="pag-waiting-content">
+        <view class="pag-waiting-spinner" />
+        <text class="pag-waiting-text"> 即将开启运势分析，资源下载中，完成后自动跳转 </text>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -91,10 +99,13 @@ import { profileService, validateName, validateBirthday } from '@/api/profile';
 import { useAuthStore } from '@/stores/auth';
 import { getTheme } from './config';
 import type { ProfilePageTheme } from './config';
-import { preloadPagFile } from '@/utils/pagPreloader';
+import { preloadPagFile, isPagCached } from '@/utils/pagPreloader';
 
 // 页面配置
 const config = ref<ProfilePageTheme>(getTheme('default'));
+
+// Auth Store（统一管理，避免重复调用）
+const authStore = useAuthStore();
 
 // 表单数据
 const formData = reactive({
@@ -105,9 +116,14 @@ const formData = reactive({
 // 加载状态
 const isLoading = ref(false);
 
+// PAG 文件下载等待状态
+const showPagWaiting = ref(false);
+
+// PAG 文件预下载 Promise（用于等待下载完成）
+let pagPreloadPromise: Promise<boolean> | null = null;
+
 // 显示的用户名（只有在用户已有名称或填写了名称时才显示）
 const displayUsername = computed(() => {
-  const authStore = useAuthStore();
   // 优先显示已保存的用户名，其次显示当前输入的名称
   return authStore.user?.name || formData.name || '';
 });
@@ -169,6 +185,66 @@ const validateForm = (): boolean => {
 };
 
 /**
+ * 检查 PAG 文件并跳转到运势页面
+ */
+const checkPagAndNavigate = async () => {
+  try {
+    // 1. 检查 PAG 文件是否已缓存
+    const cached = await isPagCached();
+
+    if (cached) {
+      // PAG 文件已缓存，直接跳转
+      console.log('✅ PAG 文件已缓存，直接跳转');
+      navigateToFortune();
+    } else {
+      // PAG 文件未缓存，显示等待提示
+      console.log('⏳ PAG 文件未缓存，等待下载完成...');
+      showPagWaiting.value = true;
+      isLoading.value = false; // 隐藏"保存中..."提示
+
+      // 等待 PAG 文件下载完成
+      if (pagPreloadPromise) {
+        const success = await pagPreloadPromise;
+        if (success) {
+          console.log('✅ PAG 文件下载完成，自动跳转');
+        } else {
+          console.warn('⚠️ PAG 文件下载失败，仍然跳转（将在运势页面重新下载）');
+        }
+      }
+
+      // 下载完成后自动跳转
+      showPagWaiting.value = false;
+      navigateToFortune();
+    }
+  } catch (error) {
+    console.error('❌ 检查 PAG 文件失败:', error);
+    // 即使检查失败，也继续跳转
+    showPagWaiting.value = false;
+    navigateToFortune();
+  }
+};
+
+/**
+ * 跳转到运势页面
+ */
+const navigateToFortune = () => {
+  // 检查用户是否通过NFC绑定流程进入
+  const currentNfcId = uni.getStorageSync('currentNfcId');
+
+  if (currentNfcId) {
+    // NFC绑定用户，跳转到完整版运势页面
+    uni.redirectTo({
+      url: '/pages/fortune/index?fromProfile=true',
+    });
+  } else {
+    // 新访客用户，跳转到访客版运势页面
+    uni.redirectTo({
+      url: '/pages/fortune/index?mode=visitor',
+    });
+  }
+};
+
+/**
  * 提交按钮点击事件
  */
 const handleSubmitClick = async () => {
@@ -181,7 +257,6 @@ const handleSubmitClick = async () => {
     isLoading.value = true;
 
     // 验证登录状态
-    const authStore = useAuthStore();
     if (!authStore.isAuthenticated) {
       console.error('用户未登录，需要重新登录');
       uni.showToast({
@@ -208,7 +283,6 @@ const handleSubmitClick = async () => {
       console.log('用户信息更新成功:', response.data);
 
       // 更新 authStore 中的用户信息
-      const authStore = useAuthStore();
       authStore.setUser(response.data);
 
       // 显示成功提示
@@ -218,22 +292,9 @@ const handleSubmitClick = async () => {
         duration: 1500,
       });
 
-      // 延迟跳转，让用户看到成功提示
-      setTimeout(() => {
-        // 检查用户是否通过NFC绑定流程进入
-        const currentNfcId = uni.getStorageSync('currentNfcId');
-
-        if (currentNfcId) {
-          // NFC绑定用户，跳转到完整版运势页面
-          uni.redirectTo({
-            url: '/pages/fortune/index?fromProfile=true',
-          });
-        } else {
-          // 新访客用户，跳转到访客版运势页面
-          uni.redirectTo({
-            url: '/pages/fortune/index?mode=visitor',
-          });
-        }
+      // 延迟后检查 PAG 文件并跳转
+      setTimeout(async () => {
+        await checkPagAndNavigate();
       }, 1500);
     } else {
       throw new Error(response.message || '保存失败');
@@ -261,7 +322,6 @@ onLoad(() => {
   console.log('个人信息补全页面加载');
 
   // 初始化 auth store
-  const authStore = useAuthStore();
   authStore.initFromStorage();
 
   // 验证登录状态
@@ -273,14 +333,22 @@ onLoad(() => {
     return;
   }
 
-  // 预加载PAG文件（静默下载）
-  preloadPagFile().then(success => {
-    if (success) {
-      console.log('PAG文件预加载完成');
-    } else {
-      console.log('PAG文件预加载失败，将在需要时下载');
-    }
-  });
+  // 🎬 后台预下载 PAG 文件
+  // 在用户填写信息时，后台静默下载 PAG 动画文件
+  // 这样当用户进入运势页面时，PAG 文件已经缓存好了
+  console.log('🎬 开始后台预下载 PAG 文件...');
+  pagPreloadPromise = preloadPagFile();
+  pagPreloadPromise
+    .then(success => {
+      if (success) {
+        console.log('✅ PAG 文件预下载成功');
+      } else {
+        console.warn('⚠️ PAG 文件预下载失败，将在运势页面时重新下载');
+      }
+    })
+    .catch(error => {
+      console.error('❌ PAG 文件预下载出错:', error);
+    });
 });
 </script>
 
@@ -545,5 +613,60 @@ onLoad(() => {
   color: #ffffff;
   line-height: 115rpx;
   text-align: center;
+}
+
+/* PAG 文件下载等待提示遮罩层 */
+.pag-waiting-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* PAG 等待提示内容 */
+.pag-waiting-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 80rpx;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20rpx;
+  backdrop-filter: blur(10px);
+}
+
+/* PAG 等待加载动画 */
+.pag-waiting-spinner {
+  width: 80rpx;
+  height: 80rpx;
+  border: 6rpx solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: pag-spin 1s linear infinite;
+  margin-bottom: 40rpx;
+}
+
+@keyframes pag-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* PAG 等待提示文字 */
+.pag-waiting-text {
+  font-size: 28rpx;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1.6;
+  max-width: 500rpx;
 }
 </style>

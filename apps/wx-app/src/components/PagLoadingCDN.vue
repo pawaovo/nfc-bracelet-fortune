@@ -8,22 +8,21 @@
     <!-- 加载失败提示 -->
     <view v-if="loadError" class="error-container">
       <text class="error-text"> 动画加载失败 </text>
+      <text class="error-detail">
+        {{ errorMessage }}
+      </text>
       <button class="retry-btn" @tap="retryLoad">重试</button>
     </view>
 
     <!-- PAG Canvas -->
     <!-- libpag-miniprogram 基于 WebAssembly + WebGL，必须使用 type="webgl" -->
-    <canvas
-      id="pagCanvas"
-      type="webgl"
-      class="pag-canvas"
-      :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }"
-    />
+    <!-- 使用动态ID避免冲突 -->
+    <canvas :id="canvasId" type="webgl" class="pag-canvas" :style="canvasStyle" />
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick, getCurrentInstance } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, getCurrentInstance } from 'vue';
 import { PAGInit } from 'libpag-miniprogram';
 import { loadPagFromCache, downloadPagFileWithProgress } from '@/utils/pagPreloader';
 
@@ -32,6 +31,8 @@ interface Props {
   height?: number;
   autoPlay?: boolean;
   loop?: boolean;
+  fillWidth?: boolean; // 是否横向填充屏幕
+  manualControl?: boolean; // 是否手动控制播放（用于自定义循环逻辑）
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -39,12 +40,40 @@ const props = withDefaults(defineProps<Props>(), {
   height: 300,
   autoPlay: true,
   loop: true,
+  fillWidth: false,
+  manualControl: false,
 });
 
-const canvasWidth = ref(props.width);
-const canvasHeight = ref(props.height);
+// 生成唯一的canvas ID，避免多个组件实例冲突
+const canvasId = `pagCanvas_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
 const isDownloading = ref(false);
 const loadError = ref(false);
+const errorMessage = ref('');
+
+// 获取屏幕尺寸
+const screenWidth = ref(375); // 默认值
+const screenHeight = ref(667); // 默认值
+
+// Canvas样式 - 使用px单位（官方示例推荐）
+const canvasStyle = computed(() => {
+  if (props.fillWidth) {
+    // 全屏填充
+    const width = screenWidth.value;
+    const height = screenHeight.value;
+    return `width: ${width}px; height: ${height}px;`;
+  }
+  return `width: ${props.width}px; height: ${props.height}px;`;
+});
+
+// 计算实际的 canvas 尺寸
+const actualWidth = computed(() => {
+  return props.fillWidth ? screenWidth.value : props.width;
+});
+
+const actualHeight = computed(() => {
+  return props.fillWidth ? screenHeight.value : props.height;
+});
 
 // 获取组件实例，用于正确的canvas查询作用域
 const instance = getCurrentInstance();
@@ -54,47 +83,67 @@ let pagView: any = null;
 let pagFile: any = null;
 let pagBuffer: ArrayBuffer | null = null;
 
+// 手动控制播放相关
+let animationTimer: ReturnType<typeof setInterval> | null = null;
+let progressCheckTimer: ReturnType<typeof setInterval> | null = null; // 进度检查定时器
+const isLoopingMiddle = ref(false); // 是否正在循环中间段
+const currentProgress = ref(0); // 当前播放进度
+const isReady = ref(false); // PAG 组件是否已就绪
+
 /**
  * 初始化PAG SDK
- * 使用CDN加载，减少小程序包体积
+ * 使用本地WASM文件
+ *
+ * 注意：uni-app编译时会自动复制static目录下的文件到编译输出目录
+ * 官方示例使用 /utils/ 路径，但在uni-app中需要使用 /static/ 路径
+ * 参考：https://github.com/Tencent/libpag/blob/main/web/demo/wechat-miniprogram/pages/index/index.js
  */
 async function initPAGSDK() {
   if (PAG) return PAG;
 
   try {
-    // ⚠️ 根据lime-pag插件实践经验（DCloud插件市场ID: 11745）
+    console.log('🔧 初始化PAG SDK (WASM: /static/libpag.wasm.br)');
+
     // uni-app编译时只会复制static目录下的文件
     // WASM文件必须放在static目录，路径格式：/static/ + file
     PAG = await PAGInit({
       locateFile: (file: string) => '/static/' + file,
     });
-    console.log('✅ PAG SDK初始化成功（从本地加载）');
+    console.log('✅ PAG SDK初始化成功');
     return PAG;
   } catch (error) {
     console.error('❌ PAG SDK初始化失败:', error);
+    errorMessage.value = `SDK初始化失败: ${error instanceof Error ? error.message : String(error)}`;
     throw error;
   }
 }
 
 /**
  * 加载并播放PAG动画
- * 根据官方文档标准流程：https://pag.io/docs/sdk-miniprogram.html
+ * 优先从缓存加载，缓存未命中时从网络下载
  */
 async function loadAndPlayPAG() {
   try {
     loadError.value = false;
+    errorMessage.value = '';
+
+    console.log('🎬 开始加载PAG动画...');
 
     // 1. 初始化PAG SDK
     await initPAGSDK();
 
-    // 2. 优先从缓存加载PAG文件
-    pagBuffer = await loadPagFromCache();
+    // 2. 尝试从缓存加载 PAG 文件
+    const cachedBuffer = await loadPagFromCache();
 
-    if (!pagBuffer) {
-      // 缓存不存在，需要下载
-      console.log('PAG文件未缓存，开始下载...');
+    if (cachedBuffer) {
+      console.log('✅ 从缓存加载成功 (', (cachedBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB)');
+      pagBuffer = cachedBuffer;
+    } else {
+      // 3. 缓存未命中，从网络下载并缓存
+      console.log('⚠️ 缓存未命中，开始下载...');
       isDownloading.value = true;
 
+      // 使用带缓存的下载函数（会自动保存到缓存）
       pagBuffer = await downloadPagFileWithProgress();
 
       isDownloading.value = false;
@@ -102,74 +151,85 @@ async function loadAndPlayPAG() {
       if (!pagBuffer) {
         throw new Error('PAG文件下载失败');
       }
-    } else {
-      console.log('从缓存加载PAG文件成功');
+
+      console.log('✅ 下载并缓存成功 (', (pagBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB)');
     }
 
     // 3. 等待DOM更新
     await nextTick();
 
-    // 4. 查询canvas节点（官方标准方式）
-    // 使用延迟确保canvas已完全渲染
+    // 4. 查询canvas节点（使用动态ID）
+    // 增加延迟确保canvas已完全渲染
     setTimeout(() => {
-      console.log('开始查询canvas节点...');
-
       // 检查组件实例
       if (!instance) {
-        console.error('无法获取组件实例');
+        console.error('❌ 无法获取组件实例');
+        errorMessage.value = '组件实例获取失败';
         loadError.value = true;
         return;
       }
 
       // 使用官方推荐的查询方式：wx.createSelectorQuery()
-      // 注意：在uni-app中使用uni.createSelectorQuery()
+      // 参考：https://github.com/Tencent/libpag/blob/main/web/demo/wechat-miniprogram/pages/index/index.js
       const query = uni.createSelectorQuery().in(instance.proxy);
       query
-        .select('#pagCanvas')
+        .select(`#${canvasId}`)
         .node()
         .exec(async res => {
-          console.log('Canvas查询结果:', res);
-
           // 验证查询结果
           if (!res || !res[0] || !res[0].node) {
-            console.error('Canvas节点查询失败，结果:', res);
+            console.error('❌ Canvas节点查询失败');
+            errorMessage.value = 'Canvas节点查询失败，请检查canvas是否正确渲染';
             loadError.value = true;
             return;
           }
 
           const canvas = res[0].node;
-          console.log('Canvas节点获取成功');
+
+          // 设置canvas的实际渲染尺寸（物理像素）
+          const dpr = uni.getSystemInfoSync().pixelRatio || 2;
+          canvas.width = actualWidth.value * dpr;
+          canvas.height = actualHeight.value * dpr;
+          console.log(`🎨 Canvas尺寸: ${canvas.width}x${canvas.height} (dpr: ${dpr})`);
 
           try {
             // 5. 加载PAG文件（从ArrayBuffer）
-            console.log('开始加载PAG文件...');
             pagFile = await PAG.PAGFile.load(pagBuffer);
-            console.log('✅ PAG文件加载成功');
+            console.log('✅ PAG文件加载成功:', pagFile.width(), 'x', pagFile.height());
 
             // 6. 初始化PAGView（绑定canvas）
-            console.log('开始初始化PAGView...');
             pagView = await PAG.PAGView.init(pagFile, canvas);
-            console.log('✅ PAGView初始化成功');
 
-            // 7. 设置循环播放
-            if (props.loop) {
+            // 7. 设置缩放模式 - 让 PAG 内容填充整个 Canvas
+            // ScaleMode: 0=None, 1=Stretch, 2=LetterBox, 3=Zoom
+            if (props.fillWidth) {
+              pagView.setScaleMode(3); // Zoom 模式：等比缩放并裁剪，填充整个画布
+            }
+
+            // 8. 设置循环播放（仅在非手动控制模式下）
+            if (props.loop && !props.manualControl) {
               pagView.setRepeatCount(0); // 0表示无限循环
-              console.log('✅ 已设置循环播放');
             }
 
-            // 8. 播放动画
-            if (props.autoPlay) {
+            // 9. 播放动画（仅在非手动控制模式下自动播放）
+            if (props.autoPlay && !props.manualControl) {
               await pagView.play();
-              console.log('✅ PAG动画开始播放');
+              console.log('▶️ PAG动画开始播放');
             }
+
+            // 10. 标记组件已就绪
+            isReady.value = true;
+            console.log('✅ PAG 组件已就绪');
           } catch (error) {
             console.error('❌ PAG渲染失败:', error);
+            errorMessage.value = `渲染失败: ${error instanceof Error ? error.message : String(error)}`;
             loadError.value = true;
           }
         });
-    }, 500); // 减少延迟时间到500ms
+    }, 800); // 增加延迟到800ms，确保canvas完全渲染
   } catch (error) {
     console.error('❌ PAG加载失败:', error);
+    errorMessage.value = `加载失败: ${error instanceof Error ? error.message : String(error)}`;
     loadError.value = true;
   }
 }
@@ -184,14 +244,201 @@ function retryLoad() {
 
 // 组件挂载时初始化
 onMounted(() => {
-  console.log('PagLoadingCDN组件挂载');
+  // 获取屏幕尺寸
+  if (props.fillWidth) {
+    const systemInfo = uni.getSystemInfoSync();
+    screenWidth.value = systemInfo.windowWidth;
+    screenHeight.value = systemInfo.windowHeight;
+    console.log(
+      '📱 屏幕尺寸:',
+      screenWidth.value,
+      'x',
+      screenHeight.value,
+      '(dpr:',
+      systemInfo.pixelRatio + ')'
+    );
+  }
+
   setTimeout(() => {
     loadAndPlayPAG();
   }, 100);
 });
 
+/**
+ * 开始播放初始动画（0 到指定进度）
+ * @param endProgress 播放到的进度 (0.0 - 1.0)，例如 0.8 表示播放到 80%
+ */
+function playInitialAnimation(endProgress: number = 1.0) {
+  if (!pagView || !pagFile) {
+    console.error('❌ PAG 未初始化');
+    return;
+  }
+
+  // 清除之前的进度检查定时器
+  if (progressCheckTimer) {
+    clearInterval(progressCheckTimer);
+    progressCheckTimer = null;
+  }
+
+  console.log(`🎬 播放初始动画: 0% -> ${(endProgress * 100).toFixed(0)}%`);
+
+  try {
+    // 从头开始播放
+    pagView.setProgress(0);
+    pagView.setRepeatCount(1); // 只播放一次
+    pagView.play();
+
+    // 监听播放进度，到达指定进度时停止
+    progressCheckTimer = setInterval(() => {
+      if (!pagView) {
+        clearInterval(progressCheckTimer!);
+        progressCheckTimer = null;
+        return;
+      }
+
+      const progress = pagView.getProgress();
+      if (progress >= endProgress) {
+        clearInterval(progressCheckTimer!);
+        progressCheckTimer = null;
+        pagView.pause();
+        console.log(`⏸️ 初始动画播放完成，停在 ${(progress * 100).toFixed(0)}%`);
+      }
+    }, 100); // 每100ms检查一次
+  } catch (error) {
+    console.error('❌ 播放初始动画失败:', error);
+    if (progressCheckTimer) {
+      clearInterval(progressCheckTimer);
+      progressCheckTimer = null;
+    }
+  }
+}
+
+/**
+ * 开始循环播放中间段
+ * @param startProgress 开始进度 (0.0 - 1.0)，例如 0.8 表示 80%
+ * @param endProgress 结束进度 (0.0 - 1.0)，例如 0.88 表示 88%
+ */
+function startMiddleLoop(startProgress: number, endProgress: number) {
+  if (!pagView || !pagFile) {
+    console.error('❌ PAG 未初始化');
+    return;
+  }
+
+  // 停止之前的定时器
+  if (animationTimer) {
+    clearInterval(animationTimer);
+    animationTimer = null;
+  }
+
+  isLoopingMiddle.value = true;
+
+  const frameRate = pagFile.frameRate();
+  const duration = pagFile.duration() / 1000000; // 转换为秒
+  const frameDuration = 1000 / frameRate; // 每帧的毫秒数
+
+  // 计算循环段的总帧数
+  const loopDuration = (endProgress - startProgress) * duration;
+  const totalFrames = Math.floor(loopDuration * frameRate);
+  const progressStep = (endProgress - startProgress) / totalFrames;
+
+  currentProgress.value = startProgress;
+
+  console.log(
+    `🔄 开始循环中间段: ${(startProgress * 100).toFixed(0)}% - ${(endProgress * 100).toFixed(0)}%, 帧率: ${frameRate}fps, 循环时长: ${loopDuration.toFixed(2)}s`
+  );
+
+  // 使用定时器手动控制每一帧
+  animationTimer = setInterval(() => {
+    if (!isLoopingMiddle.value) {
+      clearInterval(animationTimer!);
+      animationTimer = null;
+      return;
+    }
+
+    currentProgress.value += progressStep;
+
+    // 循环回到起点
+    if (currentProgress.value >= endProgress) {
+      currentProgress.value = startProgress;
+    }
+
+    pagView.setProgress(currentProgress.value);
+    pagView.flush(); // 刷新渲染当前帧
+  }, frameDuration);
+}
+
+/**
+ * 播放结束动画
+ * @param startProgress 结束动画开始进度，例如 0.92 表示 92%
+ */
+function playEnding(startProgress: number) {
+  if (!pagView) {
+    console.error('❌ PAG 未初始化');
+    return;
+  }
+
+  // 停止中间段循环
+  isLoopingMiddle.value = false;
+  if (animationTimer) {
+    clearInterval(animationTimer);
+    animationTimer = null;
+  }
+
+  // 清除进度检查定时器
+  if (progressCheckTimer) {
+    clearInterval(progressCheckTimer);
+    progressCheckTimer = null;
+  }
+
+  console.log(`🎬 播放结束动画，从进度 ${(startProgress * 100).toFixed(0)}% 开始`);
+
+  try {
+    // 设置进度并播放到结束
+    pagView.setProgress(startProgress);
+    pagView.setRepeatCount(1); // 只播放一次
+    pagView.play();
+  } catch (error) {
+    console.error('❌ 播放结束动画失败:', error);
+  }
+}
+
+/**
+ * 获取 PAG 文件信息
+ */
+function getPagInfo() {
+  // 必须同时检查 pagFile、pagView 和 isReady
+  if (!pagFile || !pagView || !isReady.value) {
+    return null;
+  }
+
+  return {
+    duration: pagFile.duration() / 1000000, // 转换为秒
+    frameRate: pagFile.frameRate(),
+    width: pagFile.width(),
+    height: pagFile.height(),
+  };
+}
+
+/**
+ * 检查 PAG 组件是否已就绪
+ */
+function checkReady() {
+  return isReady.value;
+}
+
 // 清理资源
 onBeforeUnmount(() => {
+  // 清理所有定时器
+  if (animationTimer) {
+    clearInterval(animationTimer);
+    animationTimer = null;
+  }
+  if (progressCheckTimer) {
+    clearInterval(progressCheckTimer);
+    progressCheckTimer = null;
+  }
+
+  // 清理 PAG 资源
   if (pagView) {
     pagView.stop();
     pagView.destroy();
@@ -199,15 +446,25 @@ onBeforeUnmount(() => {
   if (pagFile) {
     pagFile.destroy();
   }
-  console.log('PAG资源已清理');
 });
 
 // 暴露方法给父组件
 defineExpose({
+  // 基础控制方法
   play: () => pagView?.play(),
   pause: () => pagView?.pause(),
   stop: () => pagView?.stop(),
   retry: retryLoad,
+
+  // 手动控制方法（用于自定义循环逻辑）
+  playInitialAnimation, // 播放初始动画
+  startMiddleLoop, // 开始循环中间段
+  playEnding, // 播放结束动画
+  getPagInfo, // 获取 PAG 文件信息
+  checkReady, // 检查组件是否已就绪
+  setProgress: (progress: number) => pagView?.setProgress(progress), // 设置播放进度
+  getProgress: () => pagView?.getProgress(), // 获取当前播放进度
+  flush: () => pagView?.flush(), // 刷新渲染当前帧
 });
 </script>
 
@@ -239,11 +496,21 @@ defineExpose({
   flex-direction: column;
   align-items: center;
   gap: 20rpx;
+  padding: 40rpx;
 }
 
 .error-text {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.8);
   font-size: 28rpx;
+  font-weight: 500;
+}
+
+.error-detail {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 24rpx;
+  text-align: center;
+  max-width: 500rpx;
+  word-break: break-all;
 }
 
 .retry-btn {
@@ -253,10 +520,14 @@ defineExpose({
   border-radius: 20rpx;
   color: #ffffff;
   font-size: 26rpx;
+  margin-top: 20rpx;
 }
 
 .pag-canvas {
   display: block;
   background: transparent;
+  /* 确保canvas可见 */
+  opacity: 1;
+  visibility: visible;
 }
 </style>

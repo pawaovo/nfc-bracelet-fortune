@@ -98,11 +98,11 @@
                   />
                   <!-- 顶部标题行：左侧评语 + 右侧分数 -->
                   <view class="fortune-card-header">
-                    <text class="fortune-card-title" :class="getTimeColorClass(item.overallScore)">
+                    <text class="fortune-card-title" :class="getTimeColorClass(item)">
                       {{ formatFortuneComment(item) }}
                     </text>
                     <text class="fortune-card-score">
-                      {{ item.overallScore }}
+                      {{ calculateOverallScore(item) }}
                     </text>
                   </view>
                   <!-- 底部总结信息 -->
@@ -154,11 +154,11 @@
                   />
                   <!-- 顶部标题行：左侧评语 + 右侧分数 -->
                   <view class="fortune-card-header">
-                    <text class="fortune-card-title" :class="getTimeColorClass(item.overallScore)">
+                    <text class="fortune-card-title" :class="getTimeColorClass(item)">
                       {{ formatFortuneComment(item) }}
                     </text>
                     <text class="fortune-card-score">
-                      {{ item.overallScore }}
+                      {{ calculateOverallScore(item) }}
                     </text>
                   </view>
                   <!-- 底部总结信息 -->
@@ -309,19 +309,38 @@ function handleItemClick(item: FortuneData) {
 }
 
 /**
+ * 计算综合分数
+ * 综合分数 = (事业运分数 + 财富运分数 + 爱情运分数) / 3，保留整数
+ */
+function calculateOverallScore(item: FortuneData): number {
+  const careerScore = Math.round((item.careerStars ?? 3) * 20);
+  const wealthScore = Math.round((item.wealthStars ?? 3) * 20);
+  const loveScore = Math.round((item.loveStars ?? 3) * 20);
+
+  return Math.round((careerScore + wealthScore + loveScore) / 3);
+}
+
+/**
  * 格式化运势评语（只返回评语文字，不包含分数）
- * 格式：中等运势
+ * 格式：中等运势 / 中上运势 / 上等运势 / 上上运势
+ * 分数范围：
+ * - 上上运势：90-100分
+ * - 上等运势：80-89分
+ * - 中上运势：70-79分
+ * - 中等运势：<70分
  */
 function formatFortuneComment(item: FortuneData): string {
-  const score = item.overallScore;
+  const score = calculateOverallScore(item);
   let comment: string;
 
-  if (score >= 80) {
+  if (score >= 90) {
+    comment = '上上运势';
+  } else if (score >= 80) {
     comment = '上等运势';
-  } else if (score >= 60) {
-    comment = '中等运势';
+  } else if (score >= 70) {
+    comment = '中上运势';
   } else {
-    comment = '下等运势';
+    comment = '中等运势';
   }
 
   return comment;
@@ -339,13 +358,18 @@ function formatFortuneSummary(item: FortuneData): string {
 
 /**
  * 获取时间文字颜色类
+ * 颜色等级与运势等级对应：
+ * - time-excellent: 上上运势（90-100分）- 紫红色
+ * - time-good: 上等运势（80-89分）- 浅紫色
+ * - time-normal: 中上运势（70-79分）- 中紫色
+ * - time-fair: 中等运势（<70分）- 深紫色
  */
-function getTimeColorClass(score: number): string {
-  if (score >= 90) return 'time-excellent';
-  if (score >= 80) return 'time-good';
-  if (score >= 70) return 'time-normal';
-  if (score >= 60) return 'time-fair';
-  return 'time-poor';
+function getTimeColorClass(item: FortuneData): string {
+  const score = calculateOverallScore(item);
+  if (score >= 90) return 'time-excellent'; // 上上运势
+  if (score >= 80) return 'time-good'; // 上等运势
+  if (score >= 70) return 'time-normal'; // 中上运势
+  return 'time-fair'; // 中等运势
 }
 
 /**
@@ -736,24 +760,29 @@ function getFlowerStyle(date: string, index: number): string {
   line-height: 40rpx;
   flex: 1;
 
+  /* 上上运势：90-100分 */
   &.time-excellent {
-    color: #d946ef;
+    color: #d946ef; /* 紫红色 */
   }
 
+  /* 上等运势：80-89分 */
   &.time-good {
-    color: #c084fc;
+    color: #c084fc; /* 浅紫色 */
   }
 
+  /* 中上运势：70-79分 */
   &.time-normal {
-    color: #a78bfa;
+    color: #a78bfa; /* 中紫色 */
   }
 
+  /* 中等运势：<70分 */
   &.time-fair {
-    color: #8b5cf6;
+    color: #8b5cf6; /* 深紫色 */
   }
 
+  /* 保留备用（当前未使用） */
   &.time-poor {
-    color: #9e9e9e;
+    color: #9e9e9e; /* 灰色 */
   }
 }
 

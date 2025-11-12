@@ -29,6 +29,11 @@ export interface FortuneData {
   luckyColor?: string; // 今日幸运色
   luckyNumber?: number; // 今日幸运数字
 
+  // 详细说明（用于弹窗显示）
+  suitableDetail?: string; // 今日宜的详细说明
+  unsuitableDetail?: string; // 今日喜用的详细说明
+  luckyElementDetail?: string; // 幸运元素的详细说明
+
   // 兼容旧版字段
   comment?: string; // 旧版点评（映射到summary）
   time?: string; // 运势时间，如 "AM 8:30"

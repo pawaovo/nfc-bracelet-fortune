@@ -3,8 +3,10 @@
  * 用于在用户浏览其他页面时，后台静默下载PAG文件
  */
 
-const PAG_FILE_URL = 'https://cdn.jsdelivr.net/gh/pawaovo/pag-files@main/loading_bmp.pag';
+// 使用自己的服务器（通过cpolar）
+const PAG_FILE_URL = 'https://41412356.cpolar.io/pag/loading-fortune.pag';
 const CACHE_KEY = 'loading-fortune.pag';
+const DOWNLOAD_TIMEOUT = 120000; // 下载超时时间：120秒
 
 /**
  * 获取缓存文件路径
@@ -53,6 +55,7 @@ export async function preloadPagFile(): Promise<boolean> {
     return new Promise(resolve => {
       wx.downloadFile({
         url: PAG_FILE_URL,
+        timeout: DOWNLOAD_TIMEOUT, // 增加超时时间
         success: res => {
           if (res.statusCode === 200) {
             // 3. 保存到本地缓存
@@ -98,6 +101,7 @@ export async function downloadPagFileWithProgress(
     return new Promise(resolve => {
       const downloadTask = wx.downloadFile({
         url: PAG_FILE_URL,
+        timeout: DOWNLOAD_TIMEOUT, // 增加超时时间
         success: res => {
           if (res.statusCode === 200) {
             // 读取文件为ArrayBuffer
