@@ -1,5 +1,5 @@
 import { apiRequest } from './request';
-import type { ApiResponse, UpdateProfileDto, UserPartial, WebRegisterRequest } from '@shared/types';
+import type { ApiResponse, UpdateProfileDto, UserPartial } from '@shared/types';
 
 /**
  * Profile API 服务类
@@ -20,13 +20,6 @@ export class ProfileService {
    */
   async getCurrentProfile(): Promise<ApiResponse<UserPartial>> {
     return apiRequest.get<UserPartial>('profile');
-  }
-
-  /**
-   * H5 账号注册 + NFC 绑定
-   */
-  async registerWeb(payload: WebRegisterRequest): Promise<ApiResponse<UserPartial>> {
-    return apiRequest.post<UserPartial>('profile/web-register', payload);
   }
 }
 

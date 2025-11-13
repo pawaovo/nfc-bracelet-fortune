@@ -78,8 +78,8 @@ class ApiRequest {
 
       console.log(`[API] Response:`, response);
 
-      // 检查HTTP状态码
-      if (response.statusCode !== HTTP_STATUS.OK) {
+      // 检查 HTTP 状态码，允许 2xx 视为成功
+      if (response.statusCode < HTTP_STATUS.OK || response.statusCode >= 300) {
         throw new Error(
           `HTTP ${response.statusCode}: ${this.getStatusMessage(response.statusCode)}`
         );
@@ -90,21 +90,12 @@ class ApiRequest {
     } catch (error) {
       console.error(`[API] Request failed:`, error);
 
-      // 处理不同类型的错误
-      if (error instanceof Error) {
-        if (error.message.includes('timeout') || error.message.includes('time out')) {
-          throw new Error('AI生成超时，请重试');
-        } else if (error.message.includes('network')) {
-          throw new Error('网络连接失败，请检查网络设置');
-        }
+      if (this.includesErrorKeyword(error, ['timeout', 'time out'])) {
+        throw new Error('AI生成超时，请稍后重试');
       }
 
-      // 处理微信小程序的错误格式
-      if (typeof error === 'object' && error !== null) {
-        const err = error as any;
-        if (err.errMsg?.includes('timeout') || err.errMsg?.includes('time out')) {
-          throw new Error('AI生成超时，请重试');
-        }
+      if (this.includesErrorKeyword(error, ['network'])) {
+        throw new Error('网络请求失败，请检查网络');
       }
 
       throw error;
@@ -166,6 +157,26 @@ class ApiRequest {
       url,
       method: 'DELETE',
       header,
+    });
+  }
+
+  private includesErrorKeyword(error: unknown, keywords: string[]): boolean {
+    const candidates: string[] = [];
+
+    if (error instanceof Error && typeof error.message === 'string') {
+      candidates.push(error.message);
+    }
+
+    if (typeof error === 'object' && error !== null) {
+      const errMsg = (error as { errMsg?: string }).errMsg;
+      if (typeof errMsg === 'string') {
+        candidates.push(errMsg);
+      }
+    }
+
+    return candidates.some(message => {
+      const lowerCaseMessage = message.toLowerCase();
+      return keywords.some(keyword => lowerCaseMessage.includes(keyword.toLowerCase()));
     });
   }
 

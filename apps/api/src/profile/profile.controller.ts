@@ -1,7 +1,6 @@
 import {
   Controller,
   Put,
-  Post,
   Get,
   Body,
   HttpCode,
@@ -13,8 +12,7 @@ import {
 import { ProfileService } from './profile.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { RegisterWebDto } from './dto/register-web.dto';
-import type { ApiResponse, UserPartial, JwtRequest } from '@shared/types';
+import type { ApiResponse, UserPartial } from '@shared/types';
 
 @Controller('profile')
 export class ProfileController {
@@ -32,7 +30,7 @@ export class ProfileController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async updateProfile(
-    @Request() request: JwtRequest,
+    @Request() request: any,
     @Body() updateProfileDto: UpdateProfileDto,
   ): Promise<ApiResponse<UserPartial>> {
     try {
@@ -71,28 +69,6 @@ export class ProfileController {
     }
   }
 
-  @Post('web-register')
-  @HttpCode(HttpStatus.CREATED)
-  async registerWeb(
-    @Body() registerWebDto: RegisterWebDto,
-  ): Promise<ApiResponse<UserPartial>> {
-    try {
-      const result = await this.profileService.registerWeb(registerWebDto);
-      return {
-        success: true,
-        data: result,
-        message: '注册并绑定成功',
-      };
-    } catch (error) {
-      this.logger.error('Web register failed', error);
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : '注册失败',
-        code: 'WEB_REGISTER_FAILED',
-      };
-    }
-  }
-
   /**
    * 获取当前用户个人信息
    * @param request 请求对象（包含用户信息）
@@ -102,7 +78,7 @@ export class ProfileController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async getCurrentProfile(
-    @Request() request: JwtRequest,
+    @Request() request: any,
   ): Promise<ApiResponse<UserPartial>> {
     try {
       const userId = request.user.sub;

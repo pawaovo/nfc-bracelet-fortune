@@ -14,12 +14,12 @@
 
 ### 1.1 本地调试流程
 
-| 项目      | 说明                                                                                      |
-| --------- | ----------------------------------------------------------------------------------------- |
-| Node/pnpm | Node ≥ 18、pnpm ≥ 8，执行 `pnpm install` 安装依赖                                         |
-| 数据库    | 可复用远程 PostgreSQL，也可在本地 Docker/Postgres 启动并调节 `.env` 的 `DATABASE_URL`     |
-| 启动命令  | `pnpm --filter api start:dev`（后端） + `pnpm --filter wx-app dev:h5`（H5）               |
-| NFC 模拟  | 浏览器地址栏附加 `?nfcId=LOCAL_TEST`；若需真机调试，可让手机访问 `http://<局域网IP>:5173` |
+| 项目 | 说明 |
+| --- | --- |
+| Node/pnpm | Node ≥ 18、pnpm ≥ 8，执行 `pnpm install` 安装依赖 |
+| 数据库 | 可复用远程 PostgreSQL，也可在本地 Docker/Postgres 启动并调节 `.env` 的 `DATABASE_URL` |
+| 启动命令 | `pnpm --filter api start:dev`（后端） + `pnpm --filter wx-app dev:h5`（H5） |
+| NFC 模拟 | 浏览器地址栏附加 `?nfcId=LOCAL_TEST`；若需真机调试，可让手机访问 `http://<局域网IP>:5173` |
 
 常用并行脚本：
 
@@ -28,8 +28,6 @@ pnpm concurrently "pnpm --filter api start:dev" "pnpm --filter wx-app dev:h5"
 ```
 
 本地验证完毕（表单提交、数据库写入、同账号多 NFC）后，再执行后续的远程部署步骤。
-
-- H5 绑定流程说明：NFC URL 进入绑定页 → 点击“绑定按钮”会跳转到“个人信息” → 输入用户名/密码/生日后保存，即会调用 `profile/web-register` 接口落库，同时允许同一账号绑定多个 NFC。
 
 ---
 
@@ -63,7 +61,6 @@ pnpm concurrently "pnpm --filter api start:dev" "pnpm --filter wx-app dev:h5"
 
    - 如需 HTTPS，额外配置证书/301 跳转。
    - `sudo nginx -s reload` 使配置生效。
-
 3. **验证**
    - 浏览器访问 `https://h5.example.com/#/pages/bind/index?nfcId=TEST`，确认页面加载与 API 请求正常（Network 中应指向 47.239.179.9:43122）。
 
@@ -124,13 +121,13 @@ pnpm concurrently "pnpm --filter api start:dev" "pnpm --filter wx-app dev:h5"
 
 ## 7. 常见问题
 
-| 现象           | 处理建议                                                                                  |
-| -------------- | ----------------------------------------------------------------------------------------- |
-| 页面白屏 / 404 | 确认 Nginx `root`、`try_files` 配置；确保静态文件上传完整。                               |
-| API 403/跨域   | Network 中检查请求域名，若跨域受限需在后端 `enableCors` 中允许 H5 域名。                  |
-| NFC 无响应     | 检查标签内 URL、浏览器 NFC 权限；仅 HTTPS URL 才能被部分浏览器接受。                      |
-| 表单提交失败   | 浏览器 Console 日志 + 服务器日志；确认 `username/password/nfcId` 已传到 `/profile` 接口。 |
-| 数据库迁移失败 | `users` 表若已有重复用户名需要手动处理；并在交互式终端运行 `prisma migrate dev`。         |
+| 现象 | 处理建议 |
+| --- | --- |
+| 页面白屏 / 404 | 确认 Nginx `root`、`try_files` 配置；确保静态文件上传完整。 |
+| API 403/跨域 | Network 中检查请求域名，若跨域受限需在后端 `enableCors` 中允许 H5 域名。 |
+| NFC 无响应 | 检查标签内 URL、浏览器 NFC 权限；仅 HTTPS URL 才能被部分浏览器接受。 |
+| 表单提交失败 | 浏览器 Console 日志 + 服务器日志；确认 `username/password/nfcId` 已传到 `/profile` 接口。 |
+| 数据库迁移失败 | `users` 表若已有重复用户名需要手动处理；并在交互式终端运行 `prisma migrate dev`。 |
 
 ---
 
@@ -152,4 +149,4 @@ pnpm concurrently "pnpm --filter api start:dev" "pnpm --filter wx-app dev:h5"
 - 后端完善密码加密、Web 登录接口、验证码流程等安全机制。
 - 引入 CI/CD，将构建、scp、pm2 重启等步骤自动化。
 
-如需扩展该指南（例如补充 Docker、uniCloud、CI/CD 操作），可继续在本文件追加章节。\*\*\*
+如需扩展该指南（例如补充 Docker、uniCloud、CI/CD 操作），可继续在本文件追加章节。***

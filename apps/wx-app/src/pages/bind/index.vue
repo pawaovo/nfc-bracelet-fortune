@@ -90,7 +90,6 @@ const themeConfig = ref<BindPageTheme>(getTheme('default'));
 // 响应式数据
 const isBinding = ref(false);
 const nfcId = ref('');
-const isH5Platform = process.env.UNI_PLATFORM === 'h5';
 
 // 动态商品数据
 const recommendedProduct = ref<any>(null);
@@ -150,7 +149,7 @@ const handleBindClick = async () => {
 
   if (isH5Platform) {
     const target = nfcId.value
-      ? `/pages/profile/index?nfcId=${nfcId.value}`
+      ? /pages/profile/index?nfcId=
       : '/pages/profile/index';
     uni.navigateTo({ url: target });
     return;
@@ -431,3 +430,4 @@ const handleBindClick = async () => {
   }
 }
 </style>
+

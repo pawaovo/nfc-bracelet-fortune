@@ -624,6 +624,7 @@ import { isPagCached } from '@/utils/pagPreloader';
 
 // 页面配置
 const config = ref<FortunePageTheme>(getTheme('default'));
+const FORCE_RELOAD_FLAG_KEY = 'fortuneForceReload';
 
 // Stores
 const authStore = useAuthStore();
@@ -637,6 +638,7 @@ const isHistoryMode = ref(false);
 const historyDate = ref('');
 const isPreviewMode = ref(false);
 const fromProfile = ref(false); // 标识是否从个人信息页面跳转过来
+const forceReloadToken = ref(false);
 
 // PAG 资源下载等待状态
 const showPagWaiting = ref(false);
@@ -705,6 +707,16 @@ const pagAnimationState = ref({
 // 计算属性
 const fortuneData = computed(() => fortuneStore.todayFortune);
 
+const TRUE_LIKE_VALUES = ['1', 'true', 'yes'];
+
+function isTrueLike(value: unknown): boolean {
+  if (value === undefined || value === null) {
+    return false;
+  }
+  const normalized = String(value).trim().toLowerCase();
+  return TRUE_LIKE_VALUES.includes(normalized);
+}
+
 // 【暂时禁用】以下计算属性用于弹窗功能，暂时未使用，作为后续升级功能保留，请勿删除
 // 幸运卡片弹窗内容标题（动态计算）
 const luckyModalContentTitle = computed(() => {
@@ -768,8 +780,22 @@ onLoad((options: Record<string, unknown>) => {
   }
 
   // 检查是否从个人信息页面跳转过来
-  if (options?.fromProfile === 'true') {
+  const fromProfileQuery = isTrueLike(options?.fromProfile);
+  let forceReloadFromStorage = false;
+  try {
+    const storedFlag = uni.getStorageSync(FORCE_RELOAD_FLAG_KEY);
+    if (storedFlag) {
+      forceReloadFromStorage = true;
+      uni.removeStorageSync(FORCE_RELOAD_FLAG_KEY);
+    }
+  } catch (storageError) {
+    console.warn('读取强制刷新标记失败:', storageError);
+  }
+
+  if (fromProfileQuery || forceReloadFromStorage) {
     fromProfile.value = true;
+    forceReloadToken.value = true;
+    fortuneStore.clearFortune();
   }
 
   // 检查是否为历史查看模式
@@ -991,11 +1017,15 @@ async function loadHistoryFortune() {
  */
 async function loadAuthenticatedFortune() {
   // 检查是否已有今日运势缓存
-  if (fortuneStore.hasTodayFortune && fortuneStore.isToday) {
+  const shouldUseCache =
+    !forceReloadToken.value && fortuneStore.hasTodayFortune && fortuneStore.isToday;
+  if (shouldUseCache) {
     console.log('使用缓存的今日运势');
     isLoading.value = false;
     return;
   }
+  fromProfile.value = false;
+  forceReloadToken.value = false;
 
   try {
     console.log('🚀 开始加载运势（AI调用和PAG下载并行）');
