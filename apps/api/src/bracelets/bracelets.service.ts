@@ -18,8 +18,8 @@ export class BraceletsService {
       const bracelet = await this.prisma.bracelet.findUnique({
         where: { nfcId },
         include: {
-          user: true
-        }
+          user: true,
+        },
       });
 
       return bracelet;
@@ -39,8 +39,8 @@ export class BraceletsService {
       const bracelets = await this.prisma.bracelet.findMany({
         where: { userId },
         include: {
-          user: true
-        }
+          user: true,
+        },
       });
 
       return bracelets;
@@ -62,17 +62,22 @@ export class BraceletsService {
         data: {
           nfcId,
           userId,
-          boundAt: userId ? new Date() : null
+          boundAt: userId ? new Date() : null,
         },
         include: {
-          user: true
-        }
+          user: true,
+        },
       });
 
-      this.logger.log(`Created new bracelet: ${bracelet.id} with nfcId: ${nfcId}`);
+      this.logger.log(
+        `Created new bracelet: ${bracelet.id} with nfcId: ${nfcId}`,
+      );
       return bracelet;
     } catch (error) {
-      this.logger.error(`Failed to create bracelet with nfcId: ${nfcId}`, error);
+      this.logger.error(
+        `Failed to create bracelet with nfcId: ${nfcId}`,
+        error,
+      );
       throw error;
     }
   }
@@ -87,7 +92,7 @@ export class BraceletsService {
     try {
       // 检查手链是否存在
       let bracelet = await this.findByNfcId(nfcId);
-      
+
       if (!bracelet) {
         // 如果手链不存在，创建新的手链记录
         bracelet = await this.create(nfcId, userId);
@@ -100,18 +105,21 @@ export class BraceletsService {
           where: { nfcId },
           data: {
             userId,
-            boundAt: new Date()
+            boundAt: new Date(),
           },
           include: {
-            user: true
-          }
+            user: true,
+          },
         });
       }
 
       this.logger.log(`Bound bracelet ${nfcId} to user ${userId}`);
-      return bracelet!;
+      return bracelet;
     } catch (error) {
-      this.logger.error(`Failed to bind bracelet ${nfcId} to user ${userId}`, error);
+      this.logger.error(
+        `Failed to bind bracelet ${nfcId} to user ${userId}`,
+        error,
+      );
       throw error;
     }
   }
@@ -127,11 +135,11 @@ export class BraceletsService {
         where: { nfcId },
         data: {
           userId: null,
-          boundAt: null
+          boundAt: null,
         },
         include: {
-          user: true
-        }
+          user: true,
+        },
       });
 
       this.logger.log(`Unbound bracelet: ${nfcId}`);
@@ -171,7 +179,7 @@ export class BraceletsService {
   async delete(nfcId: string): Promise<void> {
     try {
       await this.prisma.bracelet.delete({
-        where: { nfcId }
+        where: { nfcId },
       });
 
       this.logger.log(`Deleted bracelet: ${nfcId}`);

@@ -44,6 +44,12 @@ const props = withDefaults(defineProps<Props>(), {
   manualControl: false,
 });
 
+// 定义事件
+const emit = defineEmits<{
+  downloadComplete: []; // PAG文件下载完成事件
+  ready: []; // PAG组件完全就绪事件（Canvas初始化完成）
+}>();
+
 // 生成唯一的canvas ID，避免多个组件实例冲突
 const canvasId = `pagCanvas_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -89,6 +95,7 @@ let progressCheckTimer: ReturnType<typeof setInterval> | null = null; // 进度�
 const isLoopingMiddle = ref(false); // 是否正在循环中间段
 const currentProgress = ref(0); // 当前播放进度
 const isReady = ref(false); // PAG 组件是否已就绪
+const isLoading = ref(false); // 是否正在加载中（防止重复加载）
 
 /**
  * 初始化PAG SDK
@@ -123,7 +130,20 @@ async function initPAGSDK() {
  * 优先从缓存加载，缓存未命中时从网络下载
  */
 async function loadAndPlayPAG() {
+  // 防止重复加载
+  if (isLoading.value) {
+    console.warn('⚠️ PAG 正在加载中，跳过重复调用');
+    return;
+  }
+
+  // 防止重复初始化
+  if (isReady.value) {
+    console.warn('⚠️ PAG 已初始化完成，跳过重复调用');
+    return;
+  }
+
   try {
+    isLoading.value = true;
     loadError.value = false;
     errorMessage.value = '';
 
@@ -138,6 +158,8 @@ async function loadAndPlayPAG() {
     if (cachedBuffer) {
       console.log('✅ 从缓存加载成功 (', (cachedBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB)');
       pagBuffer = cachedBuffer;
+      // 触发下载完成事件（缓存命中也算下载完成）
+      emit('downloadComplete');
     } else {
       // 3. 缓存未命中，从网络下载并缓存
       console.log('⚠️ 缓存未命中，开始下载...');
@@ -153,6 +175,8 @@ async function loadAndPlayPAG() {
       }
 
       console.log('✅ 下载并缓存成功 (', (pagBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB)');
+      // 触发下载完成事件
+      emit('downloadComplete');
     }
 
     // 3. 等待DOM更新
@@ -194,21 +218,26 @@ async function loadAndPlayPAG() {
 
           try {
             // 5. 加载PAG文件（从ArrayBuffer）
+            console.log('🔄 开始加载PAG文件...');
             pagFile = await PAG.PAGFile.load(pagBuffer);
             console.log('✅ PAG文件加载成功:', pagFile.width(), 'x', pagFile.height());
 
             // 6. 初始化PAGView（绑定canvas）
+            console.log('🔄 开始初始化PAGView...');
             pagView = await PAG.PAGView.init(pagFile, canvas);
+            console.log('✅ PAGView初始化成功');
 
             // 7. 设置缩放模式 - 让 PAG 内容填充整个 Canvas
             // ScaleMode: 0=None, 1=Stretch, 2=LetterBox, 3=Zoom
             if (props.fillWidth) {
               pagView.setScaleMode(3); // Zoom 模式：等比缩放并裁剪，填充整个画布
+              console.log('✅ 设置缩放模式: Zoom');
             }
 
             // 8. 设置循环播放（仅在非手动控制模式下）
             if (props.loop && !props.manualControl) {
               pagView.setRepeatCount(0); // 0表示无限循环
+              console.log('✅ 设置循环播放');
             }
 
             // 9. 播放动画（仅在非手动控制模式下自动播放）
@@ -220,10 +249,25 @@ async function loadAndPlayPAG() {
             // 10. 标记组件已就绪
             isReady.value = true;
             console.log('✅ PAG 组件已就绪');
+
+            // 验证状态
+            console.log('🔍 验证状态:', {
+              pagFile: !!pagFile,
+              pagView: !!pagView,
+              isReady: isReady.value,
+            });
+
+            // 触发就绪事件
+            emit('ready');
+            console.log('📢 已触发ready事件');
+
+            // 标记加载完成
+            isLoading.value = false;
           } catch (error) {
             console.error('❌ PAG渲染失败:', error);
             errorMessage.value = `渲染失败: ${error instanceof Error ? error.message : String(error)}`;
             loadError.value = true;
+            isLoading.value = false;
           }
         });
     }, 800); // 增加延迟到800ms，确保canvas完全渲染
@@ -231,6 +275,7 @@ async function loadAndPlayPAG() {
     console.error('❌ PAG加载失败:', error);
     errorMessage.value = `加载失败: ${error instanceof Error ? error.message : String(error)}`;
     loadError.value = true;
+    isLoading.value = false;
   }
 }
 
@@ -296,12 +341,18 @@ function playInitialAnimation(endProgress: number = 1.0) {
         return;
       }
 
-      const progress = pagView.getProgress();
-      if (progress >= endProgress) {
+      try {
+        const progress = pagView.getProgress();
+        if (progress >= endProgress) {
+          clearInterval(progressCheckTimer!);
+          progressCheckTimer = null;
+          pagView.pause();
+          console.log(`⏸️ 初始动画播放完成，停在 ${(progress * 100).toFixed(0)}%`);
+        }
+      } catch (error) {
+        console.error('❌ 检查播放进度失败:', error);
         clearInterval(progressCheckTimer!);
         progressCheckTimer = null;
-        pagView.pause();
-        console.log(`⏸️ 初始动画播放完成，停在 ${(progress * 100).toFixed(0)}%`);
       }
     }, 100); // 每100ms检查一次
   } catch (error) {
@@ -349,9 +400,19 @@ function startMiddleLoop(startProgress: number, endProgress: number) {
 
   // 使用定时器手动控制每一帧
   animationTimer = setInterval(() => {
+    // 检查循环状态
     if (!isLoopingMiddle.value) {
       clearInterval(animationTimer!);
       animationTimer = null;
+      return;
+    }
+
+    // 检查 PAG 对象是否仍然有效
+    if (!pagView || !pagFile) {
+      console.warn('⚠️ PAG 对象已销毁，停止循环');
+      clearInterval(animationTimer!);
+      animationTimer = null;
+      isLoopingMiddle.value = false;
       return;
     }
 
@@ -362,8 +423,15 @@ function startMiddleLoop(startProgress: number, endProgress: number) {
       currentProgress.value = startProgress;
     }
 
-    pagView.setProgress(currentProgress.value);
-    pagView.flush(); // 刷新渲染当前帧
+    try {
+      pagView.setProgress(currentProgress.value);
+      pagView.flush(); // 刷新渲染当前帧
+    } catch (error) {
+      console.error('❌ PAG 循环播放失败:', error);
+      clearInterval(animationTimer!);
+      animationTimer = null;
+      isLoopingMiddle.value = false;
+    }
   }, frameDuration);
 }
 
@@ -407,7 +475,18 @@ function playEnding(startProgress: number) {
  */
 function getPagInfo() {
   // 必须同时检查 pagFile、pagView 和 isReady
+  console.log('🔍 getPagInfo检查:', {
+    pagFile: !!pagFile,
+    pagView: !!pagView,
+    isReady: isReady.value,
+  });
+
   if (!pagFile || !pagView || !isReady.value) {
+    console.warn('⚠️ getPagInfo返回null，原因:', {
+      noPagFile: !pagFile,
+      noPagView: !pagView,
+      notReady: !isReady.value,
+    });
     return null;
   }
 
@@ -428,7 +507,12 @@ function checkReady() {
 
 // 清理资源
 onBeforeUnmount(() => {
-  // 清理所有定时器
+  console.log('🧹 PagLoadingCDN 组件卸载，清理资源');
+
+  // 1. 先停止循环标志，防止定时器继续执行
+  isLoopingMiddle.value = false;
+
+  // 2. 清理所有定时器
   if (animationTimer) {
     clearInterval(animationTimer);
     animationTimer = null;
@@ -438,14 +522,26 @@ onBeforeUnmount(() => {
     progressCheckTimer = null;
   }
 
-  // 清理 PAG 资源
+  // 3. 停止并销毁 PAG 资源
   if (pagView) {
-    pagView.stop();
-    pagView.destroy();
+    try {
+      pagView.stop();
+      pagView.destroy();
+    } catch (error) {
+      console.error('❌ 销毁 PAGView 失败:', error);
+    }
   }
   if (pagFile) {
-    pagFile.destroy();
+    try {
+      pagFile.destroy();
+    } catch (error) {
+      console.error('❌ 销毁 PAGFile 失败:', error);
+    }
   }
+
+  // 4. 重置状态
+  isReady.value = false;
+  isLoading.value = false;
 });
 
 // 暴露方法给父组件

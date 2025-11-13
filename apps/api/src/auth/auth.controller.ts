@@ -7,7 +7,7 @@ import {
   HttpStatus,
   UseGuards,
   Request,
-  Logger
+  Logger,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -27,32 +27,34 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginRequest: LoginDto): Promise<ApiResponse<LoginResponse>> {
+  async login(
+    @Body() loginRequest: LoginDto,
+  ): Promise<ApiResponse<LoginResponse>> {
     try {
-      this.logger.log('Login request received', { 
+      this.logger.log('Login request received', {
         hasCode: !!loginRequest.code,
-        hasNfcId: !!loginRequest.nfcId 
+        hasNfcId: !!loginRequest.nfcId,
       });
 
       const result = await this.authService.login(loginRequest);
-      
-      this.logger.log('Login successful', { 
+
+      this.logger.log('Login successful', {
         status: result.status,
-        hasToken: !!result.token 
+        hasToken: !!result.token,
       });
 
       return {
         success: true,
         data: result,
-        message: 'Login successful'
+        message: 'Login successful',
       };
     } catch (error) {
       this.logger.error('Login failed', error);
-      
+
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Login failed',
-        code: 'LOGIN_FAILED'
+        code: 'LOGIN_FAILED',
       };
     }
   }
@@ -68,7 +70,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async verifyNFC(
     @Request() request: any,
-    @Body() body: VerifyNfcDto
+    @Body() body: VerifyNfcDto,
   ): Promise<ApiResponse<{ status: string }>> {
     try {
       const userId = request.user.sub;
@@ -77,25 +79,26 @@ export class AuthController {
       this.logger.log('NFC verification request', { userId, nfcId });
 
       const result = await this.authService.verifyNFCAccess(userId, nfcId);
-      
-      this.logger.log('NFC verification successful', { 
-        userId, 
-        nfcId, 
-        status: result.status 
+
+      this.logger.log('NFC verification successful', {
+        userId,
+        nfcId,
+        status: result.status,
       });
 
       return {
         success: true,
         data: result,
-        message: 'NFC verification successful'
+        message: 'NFC verification successful',
       };
     } catch (error) {
       this.logger.error('NFC verification failed', error);
-      
+
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'NFC verification failed',
-        code: 'NFC_VERIFICATION_FAILED'
+        message:
+          error instanceof Error ? error.message : 'NFC verification failed',
+        code: 'NFC_VERIFICATION_FAILED',
       };
     }
   }
@@ -111,7 +114,7 @@ export class AuthController {
   async getCurrentUser(@Request() request: any): Promise<ApiResponse<any>> {
     try {
       const userId = request.user.sub;
-      
+
       this.logger.log('Get current user request', { userId });
 
       // 这里可以调用用户服务获取完整的用户信息
@@ -120,15 +123,18 @@ export class AuthController {
       return {
         success: true,
         data: request.user,
-        message: 'User information retrieved successfully'
+        message: 'User information retrieved successfully',
       };
     } catch (error) {
       this.logger.error('Get current user failed', error);
-      
+
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to get user information',
-        code: 'GET_USER_FAILED'
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to get user information',
+        code: 'GET_USER_FAILED',
       };
     }
   }
@@ -141,30 +147,33 @@ export class AuthController {
   @Post('refresh')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async refreshToken(@Request() request: any): Promise<ApiResponse<{ token: string }>> {
+  async refreshToken(
+    @Request() request: any,
+  ): Promise<ApiResponse<{ token: string }>> {
     try {
       const { sub: userId, openid } = request.user;
-      
+
       this.logger.log('Token refresh request', { userId });
 
       // 生成新的token
       const token = this.authService['jwtService'].generateToken({
         sub: userId,
-        openid
+        openid,
       });
 
       return {
         success: true,
         data: { token },
-        message: 'Token refreshed successfully'
+        message: 'Token refreshed successfully',
       };
     } catch (error) {
       this.logger.error('Token refresh failed', error);
-      
+
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Token refresh failed',
-        code: 'TOKEN_REFRESH_FAILED'
+        message:
+          error instanceof Error ? error.message : 'Token refresh failed',
+        code: 'TOKEN_REFRESH_FAILED',
       };
     }
   }
@@ -180,7 +189,7 @@ export class AuthController {
   async logout(@Request() request: any): Promise<ApiResponse<void>> {
     try {
       const userId = request.user.sub;
-      
+
       this.logger.log('Logout request', { userId });
 
       // 这里可以添加token黑名单逻辑
@@ -188,15 +197,15 @@ export class AuthController {
 
       return {
         success: true,
-        message: 'Logout successful'
+        message: 'Logout successful',
       };
     } catch (error) {
       this.logger.error('Logout failed', error);
-      
+
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Logout failed',
-        code: 'LOGOUT_FAILED'
+        code: 'LOGOUT_FAILED',
       };
     }
   }

@@ -4,7 +4,7 @@
  */
 
 // 使用自己的服务器（通过cpolar）
-const PAG_FILE_URL = 'https://41412356.cpolar.io/pag/loading-fortune.pag';
+const PAG_FILE_URL = 'https://720dcf1a.cpolar.io/pag/loading-fortune.pag';
 const CACHE_KEY = 'loading-fortune.pag';
 const DOWNLOAD_TIMEOUT = 120000; // 下载超时时间：120秒
 

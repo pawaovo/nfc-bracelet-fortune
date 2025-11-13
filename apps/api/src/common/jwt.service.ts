@@ -41,7 +41,7 @@ export class JwtService {
    */
   decodeToken(token: string): JwtPayload | null {
     try {
-      return this.jwtService.decode(token) as JwtPayload;
+      return this.jwtService.decode(token);
     } catch {
       return null;
     }
@@ -61,7 +61,7 @@ export class JwtService {
 
     const now = Math.floor(Date.now() / 1000);
     const threshold = thresholdMinutes * 60;
-    
-    return (payload.exp - now) < threshold;
+
+    return payload.exp - now < threshold;
   }
 }
