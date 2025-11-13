@@ -5,9 +5,11 @@ import { ProfileController } from './profile.controller';
 import { ProfileService } from './profile.service';
 import { PrismaService } from '../common/prisma.service';
 import { JwtService as CustomJwtService } from '../common/jwt.service';
+import { BraceletsModule } from '../bracelets/bracelets.module';
 
 @Module({
   imports: [
+    BraceletsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

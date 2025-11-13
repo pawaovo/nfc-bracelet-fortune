@@ -118,6 +118,7 @@ export class AuthService {
           user: {
             id: user.id,
             wechatOpenId: user.wechatOpenId,
+            username: user.username ?? null,
             name: user.name,
             birthday: user.birthday,
           },
@@ -130,6 +131,7 @@ export class AuthService {
         user: {
           id: user.id,
           wechatOpenId: user.wechatOpenId,
+          username: user.username ?? null,
           name: user.name,
           birthday: user.birthday,
         },
@@ -163,6 +165,7 @@ export class AuthService {
         user: {
           id: user.id,
           wechatOpenId: user.wechatOpenId,
+          username: user.username ?? null,
           name: user.name,
           birthday: user.birthday,
         },
@@ -175,6 +178,7 @@ export class AuthService {
       user: {
         id: user.id,
         wechatOpenId: user.wechatOpenId,
+        username: user.username ?? null,
         name: user.name,
         birthday: user.birthday,
       },

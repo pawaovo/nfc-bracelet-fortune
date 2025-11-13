@@ -1,5 +1,11 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { BraceletsService } from '../bracelets/bracelets.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import type { UserPartial } from '@shared/types';
 
@@ -7,74 +13,73 @@ import type { UserPartial } from '@shared/types';
 export class ProfileService {
   private readonly logger = new Logger(ProfileService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly braceletsService: BraceletsService,
+  ) {}
 
   /**
-   * 更新用户个人信息
-   * @param userId 用户ID
-   * @param updateProfileDto 更新数据
-   * @returns 更新后的用户信息
+   * �����û�������Ϣ��������NFC
    */
-  async updateProfile(userId: string, updateProfileDto: UpdateProfileDto): Promise<UserPartial> {
+  async updateProfile(
+    userId: string,
+    updateProfileDto: UpdateProfileDto,
+  ): Promise<UserPartial> {
     try {
-      this.logger.log(`Updating profile for user ${userId}`, updateProfileDto);
-
-      // 验证用户是否存在
-      const existingUser = await this.prisma.user.findUnique({
-        where: { id: userId }
+      this.logger.log(`Updating profile for user ${userId}`, {
+        hasNfcId: !!updateProfileDto.nfcId,
       });
 
+      const existingUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
       if (!existingUser) {
         throw new NotFoundException(`User with ID ${userId} not found`);
       }
 
-      // 验证生日格式
-      let birthdayDate: Date | null = null;
-      if (updateProfileDto.birthday) {
-        birthdayDate = new Date(updateProfileDto.birthday);
-        if (isNaN(birthdayDate.getTime())) {
-          throw new BadRequestException('Invalid birthday format. Expected YYYY-MM-DD');
-        }
+      const birthdayDate = this.validateBirthday(updateProfileDto.birthday);
+      const trimmedName = this.validateName(updateProfileDto.name);
+      const normalizedUsername = await this.ensureUsernameAvailable(
+        userId,
+        updateProfileDto.username,
+      );
 
-        // 检查生日是否在合理范围内
-        const currentYear = new Date().getFullYear();
-        const birthYear = birthdayDate.getFullYear();
-        if (birthYear < 1900 || birthYear > currentYear) {
-          throw new BadRequestException('Birthday year must be between 1900 and current year');
-        }
+      const updatePayload: Record<string, unknown> = {
+        username: normalizedUsername,
+        name: trimmedName,
+        birthday: birthdayDate,
+        updatedAt: new Date(),
+      };
+
+      if (updateProfileDto.password) {
+        updatePayload.password = updateProfileDto.password.trim();
       }
 
-      // 验证称呼
-      if (updateProfileDto.name) {
-        const trimmedName = updateProfileDto.name.trim();
-        if (trimmedName.length < 1 || trimmedName.length > 20) {
-          throw new BadRequestException('Name length must be between 1 and 20 characters');
-        }
-      }
-
-      // 更新用户信息
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
-        data: {
-          name: updateProfileDto.name?.trim(),
-          birthday: birthdayDate,
-          updatedAt: new Date()
-        },
+        data: updatePayload,
         select: {
           id: true,
           wechatOpenId: true,
+          username: true,
           name: true,
-          birthday: true
-        }
+          birthday: true,
+        },
       });
 
-      this.logger.log(`Profile updated successfully for user ${userId}`);
+      if (updateProfileDto.nfcId) {
+        this.logger.log(
+          `Binding NFC ${updateProfileDto.nfcId} to user ${userId}`,
+        );
+        await this.braceletsService.bindToUser(updateProfileDto.nfcId, userId);
+      }
 
       return {
         id: updatedUser.id,
         wechatOpenId: updatedUser.wechatOpenId,
+        username: updatedUser.username,
         name: updatedUser.name,
-        birthday: updatedUser.birthday
+        birthday: updatedUser.birthday,
       };
     } catch (error) {
       this.logger.error(`Failed to update profile for user ${userId}`, error);
@@ -83,22 +88,19 @@ export class ProfileService {
   }
 
   /**
-   * 获取用户个人信息
-   * @param userId 用户ID
-   * @returns 用户信息
+   * ��ȡ�û�������Ϣ
    */
   async getCurrentProfile(userId: string): Promise<UserPartial | null> {
     try {
-      this.logger.log(`Getting profile for user ${userId}`);
-
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
         select: {
           id: true,
           wechatOpenId: true,
+          username: true,
           name: true,
-          birthday: true
-        }
+          birthday: true,
+        },
       });
 
       if (!user) {
@@ -109,8 +111,9 @@ export class ProfileService {
       return {
         id: user.id,
         wechatOpenId: user.wechatOpenId,
+        username: user.username,
         name: user.name,
-        birthday: user.birthday
+        birthday: user.birthday,
       };
     } catch (error) {
       this.logger.error(`Failed to get profile for user ${userId}`, error);
@@ -119,26 +122,35 @@ export class ProfileService {
   }
 
   /**
-   * 检查用户信息是否完整
-   * @param userId 用户ID
-   * @returns 是否完整
+   * �����û���Ϣ�Ƿ�����
    */
   async isProfileComplete(userId: string): Promise<boolean> {
     try {
-      const user = await this.getCurrentProfile(userId);
-      if (!user) return false;
-      
-      return !!(user.name && user.birthday);
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          name: true,
+          birthday: true,
+          username: true,
+          password: true,
+        },
+      });
+      if (!user) {
+        return false;
+      }
+
+      return !!(user.name && user.birthday && user.username && user.password);
     } catch (error) {
-      this.logger.error(`Failed to check profile completeness for user ${userId}`, error);
+      this.logger.error(
+        `Failed to check profile completeness for user ${userId}`,
+        error,
+      );
       return false;
     }
   }
 
   /**
-   * 获取用户统计信息
-   * @param userId 用户ID
-   * @returns 统计信息
+   * ��ȡ�û�ͳ����Ϣ
    */
   async getUserStats(userId: string): Promise<{
     profileComplete: boolean;
@@ -149,17 +161,67 @@ export class ProfileService {
       const [profileComplete, braceletCount, fortuneCount] = await Promise.all([
         this.isProfileComplete(userId),
         this.prisma.bracelet.count({ where: { userId } }),
-        this.prisma.dailyFortune.count({ where: { userId } })
+        this.prisma.dailyFortune.count({ where: { userId } }),
       ]);
 
       return {
         profileComplete,
         braceletCount,
-        fortuneCount
+        fortuneCount,
       };
     } catch (error) {
       this.logger.error(`Failed to get user stats for user ${userId}`, error);
       throw error;
     }
+  }
+
+  private validateBirthday(birthday: string): Date {
+    const birthdayDate = new Date(birthday);
+    if (isNaN(birthdayDate.getTime())) {
+      throw new BadRequestException(
+        'Invalid birthday format. Expected YYYY-MM-DD',
+      );
+    }
+
+    const currentYear = new Date().getFullYear();
+    const birthYear = birthdayDate.getFullYear();
+    if (birthYear < 1900 || birthYear > currentYear) {
+      throw new BadRequestException(
+        'Birthday year must be between 1900 and current year',
+      );
+    }
+
+    return birthdayDate;
+  }
+
+  private validateName(name: string): string {
+    const trimmedName = name?.trim();
+    if (!trimmedName || trimmedName.length < 1 || trimmedName.length > 20) {
+      throw new BadRequestException(
+        'Name length must be between 1 and 20 characters',
+      );
+    }
+    return trimmedName;
+  }
+
+  private async ensureUsernameAvailable(
+    userId: string,
+    username: string,
+  ): Promise<string> {
+    const normalizedUsername = username.trim();
+    if (!normalizedUsername) {
+      throw new BadRequestException('Username is required');
+    }
+
+    const existing = await this.prisma.user.findUnique({
+      where: { username: normalizedUsername },
+      select: { id: true },
+    });
+
+    if (existing && existing.id !== userId) {
+      throw new BadRequestException('Username already exists');
+    }
+
+    return normalizedUsername;
   }
 }

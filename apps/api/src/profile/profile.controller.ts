@@ -1,13 +1,13 @@
-import { 
-  Controller, 
-  Put, 
+import {
+  Controller,
+  Put,
   Get,
-  Body, 
-  HttpCode, 
-  HttpStatus, 
+  Body,
+  HttpCode,
+  HttpStatus,
   UseGuards,
   Request,
-  Logger
+  Logger,
 } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -31,36 +31,40 @@ export class ProfileController {
   @HttpCode(HttpStatus.OK)
   async updateProfile(
     @Request() request: any,
-    @Body() updateProfileDto: UpdateProfileDto
+    @Body() updateProfileDto: UpdateProfileDto,
   ): Promise<ApiResponse<UserPartial>> {
     try {
       const userId = request.user.sub;
-      
-      this.logger.log('Update profile request', { 
-        userId, 
+
+      this.logger.log('Update profile request', {
+        userId,
         name: updateProfileDto.name,
-        hasBirthday: !!updateProfileDto.birthday 
+        hasBirthday: !!updateProfileDto.birthday,
       });
 
-      const updatedUser = await this.profileService.updateProfile(userId, updateProfileDto);
-      
-      this.logger.log('Profile updated successfully', { 
-        userId, 
-        updatedFields: Object.keys(updateProfileDto) 
+      const updatedUser = await this.profileService.updateProfile(
+        userId,
+        updateProfileDto,
+      );
+
+      this.logger.log('Profile updated successfully', {
+        userId,
+        updatedFields: Object.keys(updateProfileDto),
       });
 
       return {
         success: true,
         data: updatedUser,
-        message: 'Profile updated successfully'
+        message: 'Profile updated successfully',
       };
     } catch (error) {
       this.logger.error('Profile update failed', error);
-      
+
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Profile update failed',
-        code: 'PROFILE_UPDATE_FAILED'
+        message:
+          error instanceof Error ? error.message : 'Profile update failed',
+        code: 'PROFILE_UPDATE_FAILED',
       };
     }
   }
@@ -73,34 +77,37 @@ export class ProfileController {
   @Get()
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async getCurrentProfile(@Request() request: any): Promise<ApiResponse<UserPartial>> {
+  async getCurrentProfile(
+    @Request() request: any,
+  ): Promise<ApiResponse<UserPartial>> {
     try {
       const userId = request.user.sub;
-      
+
       this.logger.log('Get current profile request', { userId });
 
       const user = await this.profileService.getCurrentProfile(userId);
-      
+
       if (!user) {
         return {
           success: false,
           message: 'User not found',
-          code: 'USER_NOT_FOUND'
+          code: 'USER_NOT_FOUND',
         };
       }
 
       return {
         success: true,
         data: user,
-        message: 'Profile retrieved successfully'
+        message: 'Profile retrieved successfully',
       };
     } catch (error) {
       this.logger.error('Get profile failed', error);
-      
+
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to get profile',
-        code: 'GET_PROFILE_FAILED'
+        message:
+          error instanceof Error ? error.message : 'Failed to get profile',
+        code: 'GET_PROFILE_FAILED',
       };
     }
   }

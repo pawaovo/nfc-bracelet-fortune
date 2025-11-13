@@ -13,7 +13,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!token.value && !!user.value);
   const isProfileComplete = computed(() => {
     if (!user.value) return false;
-    return !!(user.value.name && user.value.birthday);
+    return !!(user.value.name && user.value.birthday && user.value.username);
   });
 
   // 动作

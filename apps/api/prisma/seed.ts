@@ -68,6 +68,8 @@ async function main() {
     prisma.user.create({
       data: {
         wechatOpenId: 'dev_user_123',
+        username: 'bracelet_master',
+        password: 'bracelet123',
         name: '测试用户',
         birthday: new Date('1990-01-01'),
       },
@@ -76,6 +78,8 @@ async function main() {
     prisma.user.create({
       data: {
         wechatOpenId: 'dev_user_456',
+        username: null,
+        password: null,
         name: null,
         birthday: null,
       },
@@ -84,6 +88,8 @@ async function main() {
     prisma.user.create({
       data: {
         wechatOpenId: 'dev_other_user_789',
+        username: 'other_master',
+        password: 'bracelet456',
         name: '其他用户',
         birthday: new Date('1985-06-15'),
       },
