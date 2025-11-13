@@ -6,29 +6,9 @@
       <image class="bg-main" :src="config.images.mainBackground" mode="aspectFill" />
     </view>
 
-    <!-- PAG 资源下载等待提示 -->
-    <view v-if="showPagWaiting" class="pag-waiting-overlay">
-      <view class="pag-waiting-content">
-        <view class="pag-waiting-spinner" />
-        <text class="pag-waiting-text"> 正在下载资源... </text>
-      </view>
-    </view>
-
     <!-- 加载状态 -->
     <view v-if="isLoading" class="loading-container">
-      <!-- PAG动画 - 全屏填充，手动控制 -->
-      <view class="pag-animation-overlay">
-        <PagLoadingCDN
-          ref="pagLoadingRef"
-          :fill-width="true"
-          :auto-play="false"
-          :loop="false"
-          :manual-control="true"
-          @download-complete="onPagDownloadComplete"
-          @ready="onPagReady"
-        />
-      </view>
-
+      <view class="loading-spinner" />
       <text class="loading-text">
         {{ loadingText }}
       </text>
@@ -618,9 +598,7 @@ import { useFortuneStore } from '@/stores/fortune';
 import { fortuneService } from '@/api/fortune';
 import type { FortuneData } from '@/stores/fortune';
 import StarRating from '@/components/StarRating.vue';
-import PagLoadingCDN from '@/components/PagLoadingCDN.vue';
 import { getTheme, type FortunePageTheme } from './config';
-import { isPagCached } from '@/utils/pagPreloader';
 
 // 页面配置
 const config = ref<FortunePageTheme>(getTheme('default'));
@@ -640,69 +618,22 @@ const isPreviewMode = ref(false);
 const fromProfile = ref(false); // 标识是否从个人信息页面跳转过来
 const forceReloadToken = ref(false);
 
-// PAG 资源下载等待状态
-const showPagWaiting = ref(false);
-const pagDownloadComplete = ref(false); // PAG下载是否完成
-const aiResponseComplete = ref(false); // AI是否已返回
-
-// 弹窗状态
-// 【暂时禁用】以下弹窗状态暂时未使用，作为后续升级功能保留，请勿删除
-const detailModalVisible = ref(false);
-const adviceModalVisible = ref(false);
-const luckyModalVisible = ref(false);
-const luckyModalType = ref<'suitable' | 'unsuitable' | 'luckyElement'>('suitable');
-const luckyModalTitle = ref('详细说明');
-
-// AI重试相关状态
+// AI重试相关状态与加载提示
 const aiRetryState = ref({
   showRetry: false,
   retryCount: 0,
   maxRetries: 3,
   isRetrying: false,
 });
-
-// 加载文案
 const loadingText = ref(config.value.texts.loading.fortune);
-
-// 加载消息数组（用于轮播显示）
 const loadingMessages = ref([
-  '正在连接星象...',
+  '正在连接手链...',
   '正在分析你的运势...',
-  '正在计算幸运指数...',
+  '正在计算年度指数...',
   '正在生成专属建议...',
-  '马上就好...',
+  '握紧就会好...',
 ]);
-
-// PAG 组件引用
-const pagLoadingRef = ref<InstanceType<typeof PagLoadingCDN>>();
-
-// PAG 动画配置（根据实际动画调整）
-// 说明：
-// - PAG 文件真实时长：25 秒，帧率：24fps
-// - loopStart: 初始动画播放到此时间点后，开始循环中间段
-// - loopEnd: 循环段的结束时间点
-// - endingStart: AI 返回后，从此时间点开始播放结束动画
-//
-// 当前配置：
-// - 0s-13s: 初始动画 (52%)
-// - 13s-18s: 循环播放此段内容 (20%)，等待 AI 返回
-// - 20s-25s: AI 返回后播放结束动画 (20%)
-const PAG_CONFIG = {
-  totalDuration: 25, // 总时长 25秒（自动从 PAG 文件读取，此值仅用于参考）
-  loopStart: 13, // 循环开始时间 13秒 (52%)
-  loopEnd: 18, // 循环结束时间 18秒 (72%)
-  endingStart: 20, // 结束动画开始时间 20秒 (80%)
-  endingBufferMs: 500, // 结束动画额外缓冲时间（毫秒）
-  componentCheckIntervalMs: 100, // PAG 组件就绪检查间隔（毫秒）
-  componentInitDelayMs: 300, // PAG 组件初始化延迟（毫秒）
-};
-
-// PAG 动画控制状态
-const pagAnimationState = ref({
-  isPlaying: false, // 是否正在播放动画
-  loopTimer: null as ReturnType<typeof setTimeout> | null, // 循环定时器引用
-  hasHandledReady: false, // 是否已处理过ready事件（防止重复触发）
-});
+const loadingTimer = ref<ReturnType<typeof setInterval> | null>(null);
 
 // 计算属性
 const fortuneData = computed(() => fortuneStore.todayFortune);
@@ -779,8 +710,8 @@ onLoad((options: Record<string, unknown>) => {
     console.log('访客预览模式');
   }
 
-  // 检查是否从个人信息页面跳转过来
   const fromProfileQuery = isTrueLike(options?.fromProfile);
+  const preloadedFromAi = isTrueLike(options?.preloaded);
   let forceReloadFromStorage = false;
   try {
     const storedFlag = uni.getStorageSync(FORCE_RELOAD_FLAG_KEY);
@@ -792,10 +723,24 @@ onLoad((options: Record<string, unknown>) => {
     console.warn('读取强制刷新标记失败:', storageError);
   }
 
-  if (fromProfileQuery || forceReloadFromStorage) {
+  const cameFromProfile = fromProfileQuery || forceReloadFromStorage;
+  if (cameFromProfile) {
     fromProfile.value = true;
+  }
+
+  const shouldForceReload = cameFromProfile && !preloadedFromAi;
+  if (shouldForceReload) {
     forceReloadToken.value = true;
     fortuneStore.clearFortune();
+  }
+
+  const hasPreloadedFortune =
+    preloadedFromAi && fortuneStore.hasTodayFortune && fortuneStore.isToday;
+  if (hasPreloadedFortune) {
+    console.log('AI页面已生成数据，直接展示');
+    isLoading.value = false;
+    error.value = '';
+    return;
   }
 
   // 检查是否为历史查看模式
@@ -805,7 +750,6 @@ onLoad((options: Record<string, unknown>) => {
     console.log('历史查看模式，日期:', options.date);
   }
 
-  // 检查登录状态（从个人信息页面跳转过来的情况跳过检查）
   if (!isHistoryMode.value && !isPreviewMode.value && !fromProfile.value) {
     checkAuthStatus();
   }
@@ -816,42 +760,21 @@ onLoad((options: Record<string, unknown>) => {
 
 // 页面隐藏时清理定时器（重要：防止后台运行）
 onHide(() => {
-  console.log('🔄 页面隐藏，清理 PAG 动画定时器');
-  cleanupPagAnimation();
+  console.log('🔄 页面隐藏，重置加载状态');
+  stopLoadingAnimation();
 });
 
 // 页面卸载时清理资源
 onUnload(() => {
-  console.log('🧹 页面卸载，清理 PAG 动画资源');
-  cleanupPagAnimation();
+  console.log('🧹 页面卸载，清理加载资源');
+  stopLoadingAnimation();
 });
 
 // 页面卸载时清理资源（Vue生命周期）
 onBeforeUnmount(() => {
-  console.log('🧹 Vue组件卸载，清理 PAG 动画资源');
-  cleanupPagAnimation();
+  console.log('🧹 Vue组件卸载，清理加载资源');
+  stopLoadingAnimation();
 });
-
-/**
- * 清理 PAG 动画相关资源
- */
-function cleanupPagAnimation() {
-  // 清理循环定时器
-  if (pagAnimationState.value.loopTimer) {
-    clearTimeout(pagAnimationState.value.loopTimer);
-    pagAnimationState.value.loopTimer = null;
-  }
-
-  // 清理加载文本定时器
-  if (loadingTimer.value) {
-    clearInterval(loadingTimer.value);
-    loadingTimer.value = null;
-  }
-
-  // 重置所有状态
-  pagAnimationState.value.isPlaying = false;
-  pagAnimationState.value.hasHandledReady = false;
-}
 
 /**
  * 检查认证状态
@@ -1028,47 +951,29 @@ async function loadAuthenticatedFortune() {
   forceReloadToken.value = false;
 
   try {
-    console.log('🚀 开始加载运势（AI调用和PAG下载并行）');
-
-    // 1. 检查PAG文件下载状态
-    const pagCached = await isPagCached();
-    if (pagCached) {
-      console.log('✅ PAG文件已缓存');
-      pagDownloadComplete.value = true;
-      // PAG已缓存，但仍需等待Canvas初始化完成（通过ready事件）
-      // 不在这里调用startLoadingAnimation()，等待onPagReady事件
-    } else {
-      console.log('⏳ PAG文件未缓存，显示下载提示');
-      showPagWaiting.value = true;
-      // PAG组件会自动下载，下载完成后会触发downloadComplete事件
-    }
-
-    // 2. 立即调用AI接口（不等待PAG下载）
-    console.log('🤖 开始调用AI生成运势');
+    console.log('🚀 开始加载运势（AI调用）');
+    startLoadingAnimation();
     const response = await fortuneService.getTodayFortune();
 
     if (response.success && response.data) {
       console.log('✅ AI运势生成成功');
       fortuneStore.setFortune(response.data);
-      aiResponseComplete.value = true;
 
       // 根据API返回的isAuth字段更新访客模式状态
       if (response.data.isAuth === false) {
         isVisitorMode.value = true;
         console.log('API返回isAuth=false，切换到访客模式');
       }
-
-      // 3. AI返回后，检查PAG状态并处理动画
-      await handlePagAnimationAfterAI();
     } else {
       throw new Error(response.message || '获取运势失败');
     }
   } catch (error) {
     console.error('❌ API调用失败:', error);
     handleFortuneError(error);
-    isLoading.value = false; // 只有错误时才立即结束loading
+  } finally {
+    stopLoadingAnimation();
+    isLoading.value = false;
   }
-  // 注意：不在finally中设置isLoading=false，因为需要等待PAG动画播放完成
 }
 
 /**
@@ -1156,7 +1061,7 @@ async function handleAIRetry() {
     }
   } finally {
     // 等待结束动画播放完成
-    await stopLoadingAnimation();
+    stopLoadingAnimation();
     aiRetryState.value.isRetrying = false;
     isLoading.value = false;
   }
@@ -1205,287 +1110,33 @@ function loadFallbackFortune() {
 }
 
 /**
- * 启动加载动画（包含 PAG 动画控制）
+ * 启动加载动画文案轮播
  */
 function startLoadingAnimation() {
-  let messageIndex = 0;
+  if (loadingTimer.value) {
+    return;
+  }
 
-  const messageInterval = setInterval(() => {
+  let messageIndex = 0;
+  loadingText.value = loadingMessages.value[messageIndex];
+
+  loadingTimer.value = setInterval(() => {
     messageIndex = (messageIndex + 1) % loadingMessages.value.length;
     loadingText.value = loadingMessages.value[messageIndex];
   }, 1500);
-
-  // 保存定时器引用以便清理
-  loadingTimer.value = messageInterval;
-
-  // 启动 PAG 动画控制
-  startPagAnimation();
 }
 
 /**
- * 停止加载动画（包含 PAG 动画控制）
- * @returns Promise，等待结束动画播放完成
+ * 停止加载动画并重置提示
  */
-async function stopLoadingAnimation() {
+function stopLoadingAnimation() {
   if (loadingTimer.value) {
     clearInterval(loadingTimer.value);
     loadingTimer.value = null;
   }
   loadingText.value = loadingMessages.value[0];
-
-  // 播放 PAG 结束动画并等待完成
-  await playPagEnding();
 }
 
-/**
- * PAG文件下载完成事件处理
- */
-function onPagDownloadComplete() {
-  console.log('✅ PAG文件下载完成');
-  pagDownloadComplete.value = true;
-  showPagWaiting.value = false;
-
-  // 注意：下载完成不代表Canvas已就绪，需要等待ready事件
-}
-
-/**
- * PAG组件完全就绪事件处理（Canvas初始化完成）
- */
-async function onPagReady() {
-  console.log('✅ PAG组件完全就绪');
-
-  // 防止重复处理ready事件
-  if (pagAnimationState.value.hasHandledReady) {
-    console.log('⚠️ ready事件已处理过，跳过重复调用');
-    return;
-  }
-
-  // 标记已处理
-  pagAnimationState.value.hasHandledReady = true;
-
-  // 根据AI状态决定播放逻辑
-  if (aiResponseComplete.value) {
-    // AI已返回，直接播放结束动画
-    console.log('🎬 AI已返回，直接播放结束动画');
-    await stopLoadingAnimation();
-    // 结束动画播放完成后，结束loading状态
-    isLoading.value = false;
-  } else {
-    // AI未返回，开始播放初始动画+循环动画
-    console.log('🎬 AI未返回，开始播放加载动画');
-    startLoadingAnimation();
-  }
-}
-
-/**
- * AI返回后处理PAG动画
- */
-async function handlePagAnimationAfterAI() {
-  if (pagDownloadComplete.value) {
-    // PAG已下载完成且正在播放，跳转到结束动画
-    console.log('🎬 PAG已在播放，跳转到结束动画');
-    await stopLoadingAnimation();
-    // 结束动画播放完成后，结束loading状态
-    isLoading.value = false;
-  } else {
-    // PAG还在下载，等待下载完成后会自动播放结束动画
-    console.log('⏳ 等待PAG下载完成后播放结束动画');
-    // onPagReady事件会处理后续逻辑（播放结束动画并结束loading）
-  }
-}
-
-/**
- * 启动 PAG 动画控制
- * 播放初始动画 -> 循环中间段
- */
-function startPagAnimation() {
-  // 防止重复调用
-  if (pagAnimationState.value.isPlaying) {
-    console.log('⚠️ PAG 动画已在播放，跳过重复调用');
-    return;
-  }
-
-  if (!pagLoadingRef.value) {
-    console.warn('⚠️ PAG 组件未初始化，延迟启动');
-    // 延迟重试
-    setTimeout(() => startPagAnimation(), PAG_CONFIG.componentInitDelayMs);
-    return;
-  }
-
-  // 检查 PAG 组件是否已就绪
-  if (!pagLoadingRef.value.checkReady()) {
-    console.log('⏳ 等待 PAG 组件加载完成...');
-    // 使用更短的间隔检查
-    setTimeout(() => startPagAnimation(), PAG_CONFIG.componentCheckIntervalMs);
-    return;
-  }
-
-  // 获取 PAG 文件信息
-  const pagInfo = pagLoadingRef.value.getPagInfo();
-  if (!pagInfo) {
-    console.warn('⚠️ 无法获取 PAG 文件信息');
-    return;
-  }
-
-  console.log('📊 PAG 文件信息:', pagInfo);
-
-  // 根据实际 PAG 文件时长动态计算进度
-  const totalDuration = pagInfo.duration; // 实际总时长（秒）
-  const loopStartProgress = PAG_CONFIG.loopStart / totalDuration;
-  const loopEndProgress = PAG_CONFIG.loopEnd / totalDuration;
-
-  console.log('🎬 启动 PAG 加载动画');
-  console.log(
-    `📐 循环区间: ${(loopStartProgress * 100).toFixed(0)}% - ${(loopEndProgress * 100).toFixed(0)}%`
-  );
-
-  // 标记动画已开始播放
-  pagAnimationState.value.isPlaying = true;
-
-  // 先播放初始动画（0 到 loopStart）
-  pagLoadingRef.value.playInitialAnimation(loopStartProgress);
-
-  // loopStart 秒后开始循环中间段
-  // 保存定时器引用，以便后续清理
-  pagAnimationState.value.loopTimer = setTimeout(() => {
-    if (!pagLoadingRef.value) return;
-    // 检查是否已经停止（AI已返回）
-    if (!pagAnimationState.value.isPlaying) {
-      console.log('⚠️ 动画已停止，取消循环');
-      return;
-    }
-    console.log('🔄 开始循环中间段');
-    pagLoadingRef.value.startMiddleLoop(loopStartProgress, loopEndProgress);
-  }, PAG_CONFIG.loopStart * 1000);
-}
-
-/**
- * 播放 PAG 结束动画
- * @returns Promise，结束动画播放完成后 resolve
- */
-function playPagEnding(): Promise<void> {
-  return new Promise(resolve => {
-    // 清理循环定时器（如果存在）
-    if (pagAnimationState.value.loopTimer) {
-      console.log('🧹 清理循环定时器');
-      clearTimeout(pagAnimationState.value.loopTimer);
-      pagAnimationState.value.loopTimer = null;
-    }
-
-    // 标记动画已停止
-    pagAnimationState.value.isPlaying = false;
-
-    if (!pagLoadingRef.value) {
-      console.warn('⚠️ PAG 组件未初始化');
-      resolve();
-      return;
-    }
-
-    // 获取 PAG 文件信息
-    const pagInfo = pagLoadingRef.value.getPagInfo();
-    if (!pagInfo) {
-      console.warn('⚠️ 无法获取 PAG 文件信息');
-      resolve();
-      return;
-    }
-
-    const totalDuration = pagInfo.duration;
-    const endingStartProgress = PAG_CONFIG.endingStart / totalDuration;
-    const endingDuration = (totalDuration - PAG_CONFIG.endingStart) * 1000; // 结束动画时长（毫秒）
-
-    console.log('✅ AI 返回结果，播放结束动画');
-    console.log(`📐 结束动画起点: ${(endingStartProgress * 100).toFixed(0)}%`);
-    console.log(`⏱️ 结束动画时长: ${(endingDuration / 1000).toFixed(1)}秒`);
-
-    // 播放结束动画
-    pagLoadingRef.value.playEnding(endingStartProgress);
-
-    // 等待结束动画播放完成
-    setTimeout(() => {
-      console.log('✅ 结束动画播放完成');
-      resolve();
-    }, endingDuration + PAG_CONFIG.endingBufferMs); // 额外增加缓冲时间确保播放完成
-  });
-}
-
-// 加载定时器引用
-const loadingTimer = ref<ReturnType<typeof setInterval> | null>(null);
-
-/**
- * 显示详细运势弹窗
- * 【暂时禁用】此功能暂时禁用，作为后续升级功能交付，请勿删除
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function showDetailModal() {
-  detailModalVisible.value = true;
-}
-
-/**
- * 隐藏详细运势弹窗
- */
-function hideDetailModal() {
-  detailModalVisible.value = false;
-}
-
-/**
- * 显示建议和避免弹窗
- * 【暂时禁用】此功能暂时禁用，作为后续升级功能交付，请勿删除
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function showAdviceModal() {
-  adviceModalVisible.value = true;
-}
-
-/**
- * 隐藏建议和避免弹窗
- */
-function hideAdviceModal() {
-  adviceModalVisible.value = false;
-}
-
-/**
- * 显示"今日宜"详情弹窗
- * 【暂时禁用】此功能暂时禁用，作为后续升级功能交付，请勿删除
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function showSuitableModal() {
-  luckyModalType.value = 'suitable';
-  luckyModalTitle.value = '今日宜';
-  luckyModalVisible.value = true;
-}
-
-/**
- * 显示"今日喜用"详情弹窗
- * 【暂时禁用】此功能暂时禁用，作为后续升级功能交付，请勿删除
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function showUnsuitableModal() {
-  luckyModalType.value = 'unsuitable';
-  luckyModalTitle.value = '今日喜用';
-  luckyModalVisible.value = true;
-}
-
-/**
- * 显示"幸运元素"详情弹窗
- * 【暂时禁用】此功能暂时禁用，作为后续升级功能交付，请勿删除
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function showLuckyElementModal() {
-  luckyModalType.value = 'luckyElement';
-  luckyModalTitle.value = '幸运元素';
-  luckyModalVisible.value = true;
-}
-
-/**
- * 隐藏幸运卡片详情弹窗
- */
-function hideLuckyModal() {
-  luckyModalVisible.value = false;
-}
-
-/**
- * 处理抖音店铺按钮点击
- */
 function handleShopClick() {
   const recommendation = fortuneData.value?.recommendation;
   if (recommendation?.douyinUrl) {
@@ -1594,18 +1245,20 @@ function handleHistoryNavigation() {
 
 /* 浮动动画已在 common.scss 中定义，此处直接使用 */
 
-/* PAG动画叠加层 - 全屏填充 */
-.pag-animation-overlay {
+/* 加载动画 */
+.loading-spinner {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw; /* 全屏宽度 */
-  height: 100vh; /* 全屏高度 */
-  z-index: 3; /* 在星空背景之上，在文字之下 */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none; /* 允许点击穿透 */
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 240rpx;
+  height: 240rpx;
+  border-radius: 50%;
+  border: 8rpx solid rgba(255, 255, 255, 0.15);
+  border-top-color: #f6d365;
+  border-right-color: rgba(255, 255, 255, 0.4);
+  animation: fortune-spin 1.4s linear infinite;
+  z-index: 15;
 }
 
 /* 加载文字 */
@@ -2662,58 +2315,12 @@ function handleHistoryNavigation() {
   word-wrap: break-word;
 }
 
-/* PAG 资源下载等待提示遮罩层 */
-.pag-waiting-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* PAG 等待提示内容 */
-.pag-waiting-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60rpx 80rpx;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 20rpx;
-  backdrop-filter: blur(10px);
-}
-
-/* PAG 等待加载动画 */
-.pag-waiting-spinner {
-  width: 80rpx;
-  height: 80rpx;
-  border: 6rpx solid rgba(255, 255, 255, 0.3);
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: pag-spin 1s linear infinite;
-  margin-bottom: 40rpx;
-}
-
-@keyframes pag-spin {
-  0% {
+@keyframes fortune-spin {
+  from {
     transform: rotate(0deg);
   }
-  100% {
+  to {
     transform: rotate(360deg);
   }
-}
-
-/* PAG 等待提示文字 */
-.pag-waiting-text {
-  font-size: 28rpx;
-  color: #ffffff;
-  text-align: center;
-  line-height: 1.6;
-  max-width: 500rpx;
 }
 </style>

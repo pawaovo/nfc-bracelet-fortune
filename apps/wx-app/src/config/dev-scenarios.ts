@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/stores/auth';
+import { generateDevJWT } from '@/utils/devToken';
 
 // 用户状态枚举
 export type UserState = 'UNAUTHENTICATED' | 'AUTHENTICATED' | 'PROFILE_INCOMPLETE';
@@ -198,59 +199,3 @@ function applyAuthenticatedUserScenario(mockUserData: any, authStore: any) {
  * 生成开发环境用的真实JWT token
  * 注意：这个token只在开发环境下使用，与后端的开发模式配合
  */
-function generateDevJWT(userId: string, openid: string): string {
-  // 创建JWT payload
-  const payload = {
-    sub: userId,
-    openid: openid,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, // 7天过期
-  };
-
-  // 在开发环境下，我们使用一个简单的base64编码作为token
-  // 后端在开发模式下会特殊处理这种token
-  const header = { alg: 'DEV', typ: 'JWT' };
-  const encodedHeader = base64Encode(JSON.stringify(header));
-  const encodedPayload = base64Encode(JSON.stringify(payload));
-
-  return `DEV.${encodedHeader}.${encodedPayload}`;
-}
-
-/**
- * 微信小程序兼容的base64编码函数
- * 注意：微信小程序真机环境不支持TextEncoder，需要手动转换
- */
-function base64Encode(str: string): string {
-  // 手动将字符串转换为UTF-8字节数组
-  const utf8Bytes: number[] = [];
-  for (let i = 0; i < str.length; i++) {
-    let charCode = str.charCodeAt(i);
-
-    if (charCode < 0x80) {
-      // 单字节字符 (0x00-0x7F)
-      utf8Bytes.push(charCode);
-    } else if (charCode < 0x800) {
-      // 双字节字符 (0x80-0x7FF)
-      utf8Bytes.push(0xc0 | (charCode >> 6));
-      utf8Bytes.push(0x80 | (charCode & 0x3f));
-    } else if (charCode < 0xd800 || charCode >= 0xe000) {
-      // 三字节字符 (0x800-0xFFFF，排除代理对)
-      utf8Bytes.push(0xe0 | (charCode >> 12));
-      utf8Bytes.push(0x80 | ((charCode >> 6) & 0x3f));
-      utf8Bytes.push(0x80 | (charCode & 0x3f));
-    } else {
-      // 处理代理对 (0xD800-0xDFFF)
-      i++;
-      const nextCharCode = str.charCodeAt(i);
-      charCode = 0x10000 + (((charCode & 0x3ff) << 10) | (nextCharCode & 0x3ff));
-      utf8Bytes.push(0xf0 | (charCode >> 18));
-      utf8Bytes.push(0x80 | ((charCode >> 12) & 0x3f));
-      utf8Bytes.push(0x80 | ((charCode >> 6) & 0x3f));
-      utf8Bytes.push(0x80 | (charCode & 0x3f));
-    }
-  }
-
-  // 转换为ArrayBuffer
-  const uint8Array = new Uint8Array(utf8Bytes);
-  return uni.arrayBufferToBase64(uint8Array.buffer);
-}

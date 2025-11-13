@@ -111,6 +111,8 @@ import { useAuthStore } from '@/stores/auth';
 import { useFortuneStore } from '@/stores/fortune';
 import { getTheme } from './config';
 import type { ProfilePageTheme } from './config';
+import { generateDevJWT } from '@/utils/devToken';
+import type { UserPartial } from '@shared/types';
 
 const config = ref<ProfilePageTheme>(getTheme('default'));
 const authStore = useAuthStore();
@@ -125,6 +127,8 @@ const formData = reactive({
 const isLoading = ref(false);
 const currentNfcId = ref('');
 const isH5Platform = process.env.UNI_PLATFORM === 'h5';
+const isDevMode = import.meta.env.MODE !== 'production';
+const enableDevWebAuth = isH5Platform && isDevMode;
 const FORCE_RELOAD_FLAG_KEY = 'fortuneForceReload';
 
 const displayUsername = computed(() => {
@@ -186,26 +190,22 @@ const validateForm = (): boolean => {
   return true;
 };
 
-const checkPagAndNavigate = async () => {
-  navigateToFortune();
-};
-
-const navigateToFortune = () => {
+const navigateAfterProfileSave = () => {
   const resolvedNfcId = currentNfcId.value || uni.getStorageSync('currentNfcId');
-  if (resolvedNfcId) {
-    uni.redirectTo({ url: '/pages/fortune/index?fromProfile=true' });
-  } else {
+  if (!resolvedNfcId) {
     uni.redirectTo({ url: '/pages/fortune/index?mode=visitor' });
+    return;
   }
+
+  uni.redirectTo({
+    url: '/pages/ai-generation/index?fromProfile=true',
+  });
 };
 
 const buildSubmitPayload = () => {
   const trimmedName = formData.name.trim();
   const trimmedPassword = formData.password.trim();
-  const username =
-    authStore.user?.username?.trim() ||
-    authStore.user?.name?.trim() ||
-    trimmedName;
+  const username = authStore.user?.username?.trim() || authStore.user?.name?.trim() || trimmedName;
 
   const payload: {
     username: string;
@@ -227,16 +227,29 @@ const buildSubmitPayload = () => {
   return payload;
 };
 
-const handleProfileSuccess = async (message: string, user?: any) => {
+const ensureDevWebAuth = (user: UserPartial) => {
+  if (!enableDevWebAuth || authStore.isAuthenticated) {
+    return;
+  }
+  const openid = user.wechatOpenId || `web_${user.username || user.id}`;
+  const token = generateDevJWT(user.id, openid);
+  authStore.login(token, user);
+};
+
+const handleProfileSuccess = async (message: string, user?: UserPartial) => {
   if (user) {
-    authStore.setUser(user);
+    if (enableDevWebAuth) {
+      ensureDevWebAuth(user);
+    } else {
+      authStore.setUser(user);
+    }
   }
   fortuneStore.clearFortune();
   uni.setStorageSync(FORCE_RELOAD_FLAG_KEY, '1');
 
   uni.showToast({ title: message, icon: 'success', duration: 1500 });
   setTimeout(async () => {
-    await checkPagAndNavigate();
+    navigateAfterProfileSave();
   }, 1500);
 };
 
@@ -608,8 +621,4 @@ onLoad(options => {
   line-height: 115rpx;
   text-align: center;
 }
-
 </style>
-
-
-
