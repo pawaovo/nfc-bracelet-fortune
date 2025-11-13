@@ -10,7 +10,7 @@ export const API_CONFIG = {
   // 真机调试API地址（⚠️ 修改为你的电脑局域网IP）
   REAL_DEVICE_BASE_URL: 'http://192.168.31.217:3000',
   // 内网穿透地址（⚠️ 使用 cpolar 时，修改为生成的 HTTPS 地址）
-  TUNNEL_BASE_URL: 'https://41412356.cpolar.io',
+  TUNNEL_BASE_URL: 'https://720dcf1a.cpolar.io',
   // 生产环境API地址（⚠️ 备案通过后修改为你的域名）
   PROD_BASE_URL: 'https://your-api-domain.com',
   // 请求超时时间（120秒，因为AI生成需要较长时间）
