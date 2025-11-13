@@ -23,8 +23,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, getCurrentInstance } from 'vue';
-import { PAGInit } from 'libpag-miniprogram';
 import { loadPagFromCache, downloadPagFileWithProgress } from '@/utils/pagPreloader';
+
+const globalAny = typeof globalThis !== 'undefined' ? (globalThis as any) : {};
+const isMiniProgram = !!globalAny.wx?.getFileSystemManager;
+const H5_WASM_URL = '/static/libpag.wasm';
 
 interface Props {
   width?: number;
@@ -109,13 +112,17 @@ async function initPAGSDK() {
   if (PAG) return PAG;
 
   try {
-    console.log('🔧 初始化PAG SDK (WASM: /static/libpag.wasm.br)');
-
-    // uni-app编译时只会复制static目录下的文件
-    // WASM文件必须放在static目录，路径格式：/static/ + file
-    PAG = await PAGInit({
-      locateFile: (file: string) => '/static/' + file,
-    });
+    if (isMiniProgram) {
+      const { PAGInit } = await import('libpag-miniprogram');
+      PAG = await PAGInit({
+        locateFile: (file: string) => `/static/${file}`,
+      });
+    } else {
+      const { PAGInit } = await import('libpag');
+      PAG = await PAGInit({
+        locateFile: (file: string) => (file.endsWith('.wasm') ? H5_WASM_URL : file),
+      });
+    }
     console.log('✅ PAG SDK初始化成功');
     return PAG;
   } catch (error) {
@@ -130,15 +137,13 @@ async function initPAGSDK() {
  * 优先从缓存加载，缓存未命中时从网络下载
  */
 async function loadAndPlayPAG() {
-  // 防止重复加载
   if (isLoading.value) {
-    console.warn('⚠️ PAG 正在加载中，跳过重复调用');
+    console.warn('⚠️ PAG 正在加载中，跳过重复请求');
     return;
   }
 
-  // 防止重复初始化
   if (isReady.value) {
-    console.warn('⚠️ PAG 已初始化完成，跳过重复调用');
+    console.warn('⚠️ PAG 已准备就绪，跳过重复初始化');
     return;
   }
 
@@ -147,27 +152,20 @@ async function loadAndPlayPAG() {
     loadError.value = false;
     errorMessage.value = '';
 
-    console.log('🎬 开始加载PAG动画...');
+    console.log('🚀 开始加载PAG资源...');
 
-    // 1. 初始化PAG SDK
     await initPAGSDK();
 
-    // 2. 尝试从缓存加载 PAG 文件
     const cachedBuffer = await loadPagFromCache();
 
     if (cachedBuffer) {
-      console.log('✅ 从缓存加载成功 (', (cachedBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB)');
+      console.log('📦 命中缓存 PAG (', (cachedBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB)');
       pagBuffer = cachedBuffer;
-      // 触发下载完成事件（缓存命中也算下载完成）
       emit('downloadComplete');
     } else {
-      // 3. 缓存未命中，从网络下载并缓存
-      console.log('⚠️ 缓存未命中，开始下载...');
+      console.log('📭 缓存未命中，开始下载...');
       isDownloading.value = true;
-
-      // 使用带缓存的下载函数（会自动保存到缓存）
       pagBuffer = await downloadPagFileWithProgress();
-
       isDownloading.value = false;
 
       if (!pagBuffer) {
@@ -175,102 +173,58 @@ async function loadAndPlayPAG() {
       }
 
       console.log('✅ 下载并缓存成功 (', (pagBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB)');
-      // 触发下载完成事件
       emit('downloadComplete');
     }
 
-    // 3. 等待DOM更新
-    await nextTick();
+    const canvas = await resolveCanvasNode();
 
-    // 4. 查询canvas节点（使用动态ID）
-    // 增加延迟确保canvas已完全渲染
-    setTimeout(() => {
-      // 检查组件实例
-      if (!instance) {
-        console.error('❌ 无法获取组件实例');
-        errorMessage.value = '组件实例获取失败';
-        loadError.value = true;
-        return;
+    try {
+      const dpr = uni.getSystemInfoSync().pixelRatio || 2;
+      canvas.width = actualWidth.value * dpr;
+      canvas.height = actualHeight.value * dpr;
+      console.log(`🎯 Canvas尺寸: ${canvas.width}x${canvas.height} (dpr: ${dpr})`);
+
+      if (!isMiniProgram && typeof (canvas as any).style !== 'undefined') {
+        (canvas as HTMLCanvasElement).style.width = `${actualWidth.value}px`;
+        (canvas as HTMLCanvasElement).style.height = `${actualHeight.value}px`;
       }
 
-      // 使用官方推荐的查询方式：wx.createSelectorQuery()
-      // 参考：https://github.com/Tencent/libpag/blob/main/web/demo/wechat-miniprogram/pages/index/index.js
-      const query = uni.createSelectorQuery().in(instance.proxy);
-      query
-        .select(`#${canvasId}`)
-        .node()
-        .exec(async res => {
-          // 验证查询结果
-          if (!res || !res[0] || !res[0].node) {
-            console.error('❌ Canvas节点查询失败');
-            errorMessage.value = 'Canvas节点查询失败，请检查canvas是否正确渲染';
-            loadError.value = true;
-            return;
-          }
+      console.log('📥 开始加载PAG文件...');
+      pagFile = await PAG.PAGFile.load(pagBuffer);
+      console.log('✅ PAG文件加载成功:', pagFile.width(), 'x', pagFile.height());
 
-          const canvas = res[0].node;
+      console.log('🎬 初始化PAGView...');
+      pagView = await PAG.PAGView.init(pagFile, canvas);
+      console.log('✅ PAGView初始化成功');
 
-          // 设置canvas的实际渲染尺寸（物理像素）
-          const dpr = uni.getSystemInfoSync().pixelRatio || 2;
-          canvas.width = actualWidth.value * dpr;
-          canvas.height = actualHeight.value * dpr;
-          console.log(`🎨 Canvas尺寸: ${canvas.width}x${canvas.height} (dpr: ${dpr})`);
+      if (props.fillWidth) {
+        pagView.setScaleMode(3);
+        console.log('🖼️ 设置缩放模式: Zoom');
+      }
 
-          try {
-            // 5. 加载PAG文件（从ArrayBuffer）
-            console.log('🔄 开始加载PAG文件...');
-            pagFile = await PAG.PAGFile.load(pagBuffer);
-            console.log('✅ PAG文件加载成功:', pagFile.width(), 'x', pagFile.height());
+      if (props.loop && !props.manualControl) {
+        pagView.setRepeatCount(0);
+        console.log('🔁 已开启循环播放');
+      }
 
-            // 6. 初始化PAGView（绑定canvas）
-            console.log('🔄 开始初始化PAGView...');
-            pagView = await PAG.PAGView.init(pagFile, canvas);
-            console.log('✅ PAGView初始化成功');
+      if (props.autoPlay && !props.manualControl) {
+        await pagView.play();
+        console.log('▶️ PAG动画开始播放');
+      }
 
-            // 7. 设置缩放模式 - 让 PAG 内容填充整个 Canvas
-            // ScaleMode: 0=None, 1=Stretch, 2=LetterBox, 3=Zoom
-            if (props.fillWidth) {
-              pagView.setScaleMode(3); // Zoom 模式：等比缩放并裁剪，填充整个画布
-              console.log('✅ 设置缩放模式: Zoom');
-            }
+      isReady.value = true;
+      console.log('✨ PAG 已就绪');
 
-            // 8. 设置循环播放（仅在非手动控制模式下）
-            if (props.loop && !props.manualControl) {
-              pagView.setRepeatCount(0); // 0表示无限循环
-              console.log('✅ 设置循环播放');
-            }
+      emit('ready');
+      console.log('📢 已触发 ready 事件');
 
-            // 9. 播放动画（仅在非手动控制模式下自动播放）
-            if (props.autoPlay && !props.manualControl) {
-              await pagView.play();
-              console.log('▶️ PAG动画开始播放');
-            }
-
-            // 10. 标记组件已就绪
-            isReady.value = true;
-            console.log('✅ PAG 组件已就绪');
-
-            // 验证状态
-            console.log('🔍 验证状态:', {
-              pagFile: !!pagFile,
-              pagView: !!pagView,
-              isReady: isReady.value,
-            });
-
-            // 触发就绪事件
-            emit('ready');
-            console.log('📢 已触发ready事件');
-
-            // 标记加载完成
-            isLoading.value = false;
-          } catch (error) {
-            console.error('❌ PAG渲染失败:', error);
-            errorMessage.value = `渲染失败: ${error instanceof Error ? error.message : String(error)}`;
-            loadError.value = true;
-            isLoading.value = false;
-          }
-        });
-    }, 800); // 增加延迟到800ms，确保canvas完全渲染
+      isLoading.value = false;
+    } catch (error) {
+      console.error('⚠️ PAG渲染失败:', error);
+      errorMessage.value = `渲染失败: ${error instanceof Error ? error.message : String(error)}`;
+      loadError.value = true;
+      isLoading.value = false;
+    }
   } catch (error) {
     console.error('❌ PAG加载失败:', error);
     errorMessage.value = `加载失败: ${error instanceof Error ? error.message : String(error)}`;
@@ -285,6 +239,42 @@ async function loadAndPlayPAG() {
 function retryLoad() {
   loadError.value = false;
   loadAndPlayPAG();
+}
+
+async function resolveCanvasNode(): Promise<any> {
+  await nextTick();
+
+  if (isMiniProgram) {
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    return new Promise((resolve, reject) => {
+      if (!instance) {
+        reject(new Error('组件实例未就绪'));
+        return;
+      }
+
+      const query = uni.createSelectorQuery().in(instance.proxy);
+      query
+        .select(`#${canvasId}`)
+        .node()
+        .exec(res => {
+          if (!res || !res[0] || !res[0].node) {
+            reject(new Error('Canvas节点查询失败'));
+            return;
+          }
+          resolve(res[0].node);
+        });
+    });
+  }
+
+  if (typeof document === 'undefined') {
+    throw new Error('Document 不可用');
+  }
+  const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
+  if (!canvas) {
+    throw new Error('Canvas节点查询失败');
+  }
+  return canvas;
 }
 
 // 组件挂载时初始化
@@ -627,3 +617,5 @@ defineExpose({
   visibility: visible;
 }
 </style>
+
+

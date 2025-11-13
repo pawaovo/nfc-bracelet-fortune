@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../common/prisma.service';
 import { BraceletsService } from '../bracelets/bracelets.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { RegisterWebDto } from './dto/register-web.dto';
 import type { UserPartial } from '@shared/types';
 
 @Injectable()
@@ -40,8 +41,8 @@ export class ProfileService {
       const birthdayDate = this.validateBirthday(updateProfileDto.birthday);
       const trimmedName = this.validateName(updateProfileDto.name);
       const normalizedUsername = await this.ensureUsernameAvailable(
-        userId,
         updateProfileDto.username,
+        userId,
       );
 
       const updatePayload: Record<string, unknown> = {
@@ -85,6 +86,79 @@ export class ProfileService {
       this.logger.error(`Failed to update profile for user ${userId}`, error);
       throw error;
     }
+  }
+
+  async registerWeb(dto: RegisterWebDto): Promise<UserPartial> {
+    const username = dto.username.trim();
+    const password = dto.password.trim();
+    const name = this.validateName(dto.name);
+    const birthday = this.validateBirthday(dto.birthday);
+    const nfcId = dto.nfcId.trim();
+
+    let user = await this.prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        wechatOpenId: true,
+        username: true,
+        name: true,
+        birthday: true,
+        password: true,
+      },
+    });
+
+    if (!user) {
+      const created = await this.prisma.user.create({
+        data: {
+          wechatOpenId: `web_${username}`,
+          username,
+          password,
+          name,
+          birthday,
+        },
+        select: {
+          id: true,
+          wechatOpenId: true,
+          username: true,
+          name: true,
+          birthday: true,
+        },
+      });
+      user = { ...created, password };
+    } else {
+      if (user.password && user.password !== password) {
+        throw new BadRequestException('用户名或密码错误');
+      }
+
+      const updated = await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          password,
+          name,
+          birthday,
+          username,
+          updatedAt: new Date(),
+        },
+        select: {
+          id: true,
+          wechatOpenId: true,
+          username: true,
+          name: true,
+          birthday: true,
+        },
+      });
+      user = { ...updated, password };
+    }
+
+    await this.braceletsService.bindToUser(nfcId, user.id);
+
+    return {
+      id: user.id,
+      wechatOpenId: user.wechatOpenId,
+      username: user.username,
+      name: user.name,
+      birthday: user.birthday,
+    };
   }
 
   /**
@@ -205,8 +279,8 @@ export class ProfileService {
   }
 
   private async ensureUsernameAvailable(
-    userId: string,
     username: string,
+    currentUserId?: string,
   ): Promise<string> {
     const normalizedUsername = username.trim();
     if (!normalizedUsername) {
@@ -218,7 +292,7 @@ export class ProfileService {
       select: { id: true },
     });
 
-    if (existing && existing.id !== userId) {
+    if (existing && existing.id !== currentUserId) {
       throw new BadRequestException('Username already exists');
     }
 

@@ -29,7 +29,7 @@
         <!-- 手链图标（装饰性图片） -->
         <image class="bracelet-icon-img" :src="themeConfig.images.braceletIcon" mode="aspectFit" />
         <!-- 今日开运手链标签 -->
-        <image class="bracelet-label" src="/static/pages/bind/今日开运手链.png" mode="aspectFit" />
+        <image class="bracelet-label" :src="themeConfig.images.braceletLabel" mode="aspectFit" />
         <!-- 手链星星装饰 -->
         <image class="bracelet-star" :src="themeConfig.images.braceletStar" mode="aspectFit" />
       </view>
@@ -49,7 +49,7 @@
     <view class="bracelet-details">
       <image
         class="detail-img"
-        :src="recommendedProduct?.imageUrl || themeConfig.images.detailImage2"
+        :src="productImageSrc"
         mode="aspectFit"
         @error="handleProductImageError"
       />
@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { authService } from '@/api/auth';
 import { fortuneService } from '@/api/fortune';
 import { useAuthStore } from '@/stores/auth';
@@ -86,13 +86,24 @@ import { getTheme, type BindPageTheme } from './config';
 // 可以通过 URL 参数传入主题名称，例如：?theme=amethyst
 // 默认使用 'default' 主题
 const themeConfig = ref<BindPageTheme>(getTheme('default'));
+const authStore = useAuthStore();
 
 // 响应式数据
 const isBinding = ref(false);
 const nfcId = ref('');
+const isH5Platform = process.env.UNI_PLATFORM === 'h5';
 
 // 动态商品数据
 const recommendedProduct = ref<any>(null);
+const useFallbackProductImage = ref(false);
+
+const productImageSrc = computed(() => {
+  const fallback = themeConfig.value.images.detailImage2;
+  if (useFallbackProductImage.value) {
+    return fallback;
+  }
+  return recommendedProduct.value?.imageUrl || fallback;
+});
 
 // 页面加载时获取NFC ID和随机商品
 onMounted(async () => {
@@ -123,6 +134,7 @@ async function loadRandomRecommendation() {
     const response = await fortuneService.getRandomRecommendation();
     if (response.success && response.data) {
       recommendedProduct.value = response.data;
+      useFallbackProductImage.value = false;
     }
   } catch (error) {
     console.warn('加载随机商品失败，使用默认配置');
@@ -133,9 +145,14 @@ async function loadRandomRecommendation() {
  * 处理商品图片加载失败
  * 图片加载失败时，会自动使用 || 后的默认图片
  */
-function handleProductImageError(e: any) {
-  console.warn('商品图片加载失败，使用默认图片:', {
+function handleProductImageError() {
+  if (!useFallbackProductImage.value) {
+    useFallbackProductImage.value = true;
+  }
+
+  console.warn('��ƷͼƬ����ʧ�ܣ�ʹ��Ĭ��ͼƬ:', {
     imageUrl: recommendedProduct.value?.imageUrl,
+    fallback: themeConfig.value.images.detailImage2,
   });
 }
 
@@ -149,7 +166,7 @@ const handleBindClick = async () => {
 
   if (isH5Platform) {
     const target = nfcId.value
-      ? /pages/profile/index?nfcId=
+      ? `/pages/profile/index?nfcId=${nfcId.value}`
       : '/pages/profile/index';
     uni.navigateTo({ url: target });
     return;

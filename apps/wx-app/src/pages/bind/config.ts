@@ -1,3 +1,9 @@
+import braceletIcon from '@/static/pages/bind/bracelet-icon.png';
+import braceletStar from '@/static/pages/bind/bracelet-star.png';
+import braceletLabel from '@/static/pages/bind/今日开运手链.png';
+import detailImage2 from '@/static/pages/bind/今日开运手链.png';
+import buttonBackground from '@/static/pages/bind/button-bg.png';
+
 /**
  * 绑定页面配置文件
  * 支持多主题配置，可灵活切换不同的页面展示效果
@@ -18,6 +24,8 @@ export interface BindPageTheme {
     starsBackground: string;
     // 手链图标（装饰性）
     braceletIcon: string;
+    // ���տ�������
+    braceletLabel: string;
     // 手链星星装饰
     braceletStar: string;
     // 手链详情图片
@@ -58,10 +66,11 @@ export const defaultTheme: BindPageTheme = {
   images: {
     mainBackground: 'https://i.postimg.cc/MX248bmL/bg-main.png',
     starsBackground: 'https://i.postimg.cc/tTpjfJkk/Group-13.png',
-    braceletIcon: '../../static/pages/bind/bracelet-icon.png',
-    braceletStar: '../../static/pages/bind/bracelet-star.png',
-    detailImage2: '../../static/pages/bind/detail-image-2.png',
-    buttonBackground: '../../static/pages/bind/button-bg.png',
+    braceletIcon,
+    braceletLabel,
+    braceletStar,
+    detailImage2,
+    buttonBackground,
   },
 
   texts: {

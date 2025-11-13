@@ -53,6 +53,25 @@
       />
     </view>
 
+    <!-- 密码标签 -->
+    <text class="password-label">
+      {{ config.texts.passwordLabel }}
+    </text>
+
+    <!-- 密码输入框 -->
+    <view class="password-input-container">
+      <view class="input-bg" />
+      <input
+        v-model="formData.password"
+        class="password-input"
+        type="text"
+        password
+        :placeholder="config.texts.passwordPlaceholder"
+        placeholder-style="color: rgba(255, 255, 255, 0.5);"
+        maxlength="64"
+      />
+    </view>
+
     <!-- 生日标签 -->
     <text class="birthday-label">
       {{ config.texts.birthdayLabel }}
@@ -81,14 +100,6 @@
       </text>
       <text v-else class="button-text"> 保存中... </text>
     </view>
-
-    <!-- PAG 文件下载等待提示 -->
-    <view v-if="showPagWaiting" class="pag-waiting-overlay">
-      <view class="pag-waiting-content">
-        <view class="pag-waiting-spinner" />
-        <text class="pag-waiting-text"> 即将开启运势分析，资源下载中，完成后自动跳转 </text>
-      </view>
-    </view>
   </view>
 </template>
 
@@ -97,86 +108,77 @@ import { ref, reactive, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { profileService, validateName, validateBirthday } from '@/api/profile';
 import { useAuthStore } from '@/stores/auth';
+import { useFortuneStore } from '@/stores/fortune';
 import { getTheme } from './config';
 import type { ProfilePageTheme } from './config';
-import { preloadPagFile, isPagCached } from '@/utils/pagPreloader';
 
-// 页面配置
 const config = ref<ProfilePageTheme>(getTheme('default'));
-
-// Auth Store（统一管理，避免重复调用）
 const authStore = useAuthStore();
+const fortuneStore = useFortuneStore();
 
-// 表单数据
 const formData = reactive({
   name: '',
+  password: '',
   birthday: '',
 });
 
-// 加载状态
 const isLoading = ref(false);
+const currentNfcId = ref('');
+const isH5Platform = process.env.UNI_PLATFORM === 'h5';
+const FORCE_RELOAD_FLAG_KEY = 'fortuneForceReload';
 
-// PAG 文件下载等待状态
-const showPagWaiting = ref(false);
-
-// PAG 文件预下载 Promise（用于等待下载完成）
-let pagPreloadPromise: Promise<boolean> | null = null;
-
-// 显示的用户名（只有在用户已有名称或填写了名称时才显示）
 const displayUsername = computed(() => {
-  // 优先显示已保存的用户名，其次显示当前输入的名称
   return authStore.user?.name || formData.name || '';
 });
 
-/**
- * 生日选择器变化事件
- */
+const formatDateForInput = (value: Date | string | null): string => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().split('T')[0];
+};
+
+const initFormFromUser = () => {
+  if (!authStore.user) return;
+  formData.name = authStore.user.name || authStore.user.username || '';
+  formData.birthday = formatDateForInput(authStore.user.birthday || null);
+};
+
+const syncNfcId = (options?: Record<string, any>) => {
+  const fromQuery = (options?.nfcId as string) || '';
+  const stored = uni.getStorageSync('currentNfcId') || '';
+  const nextId = fromQuery || stored || '';
+  if (fromQuery) {
+    uni.setStorageSync('currentNfcId', fromQuery);
+  }
+  currentNfcId.value = nextId;
+};
+
 const onBirthdayChange = (event: { detail: { value: string } }) => {
   formData.birthday = event.detail.value;
 };
 
-/**
- * 表单验证
- */
 const validateForm = (): boolean => {
-  // 验证称呼
   if (!validateName(formData.name)) {
     if (!formData.name.trim()) {
-      uni.showToast({
-        title: '请输入你的称呼',
-        icon: 'none',
-        duration: 2000,
-      });
-    } else if (formData.name.trim().length < 1 || formData.name.trim().length > 20) {
-      uni.showToast({
-        title: '称呼长度应在1-20个字符之间',
-        icon: 'none',
-        duration: 2000,
-      });
+      uni.showToast({ title: '请输入用户名称', icon: 'none', duration: 2000 });
     } else {
-      uni.showToast({
-        title: '称呼格式不正确，请使用中文、英文或数字',
-        icon: 'none',
-        duration: 2000,
-      });
+      uni.showToast({ title: '用户名称格式不正确', icon: 'none', duration: 2000 });
     }
     return false;
   }
 
-  // 验证生日
+  const trimmedPassword = formData.password.trim();
+  if (trimmedPassword.length < 6) {
+    uni.showToast({ title: '密码长度需至少 6 位', icon: 'none', duration: 2000 });
+    return false;
+  }
+
   if (!validateBirthday(formData.birthday)) {
     if (!formData.birthday) {
-      uni.showToast({
-        title: '请选择你的生日',
-        icon: 'none',
-        duration: 2000,
-      });
+      uni.showToast({ title: '请选择生日', icon: 'none', duration: 2000 });
     } else {
-      uni.showToast({
-        title: '生日格式不正确，请重新选择',
-        icon: 'none',
-        duration: 2000,
-      });
+      uni.showToast({ title: '生日格式不正确', icon: 'none', duration: 2000 });
     }
     return false;
   }
@@ -184,171 +186,129 @@ const validateForm = (): boolean => {
   return true;
 };
 
-/**
- * 检查 PAG 文件并跳转到运势页面
- */
 const checkPagAndNavigate = async () => {
-  try {
-    // 1. 检查 PAG 文件是否已缓存
-    const cached = await isPagCached();
-
-    if (cached) {
-      // PAG 文件已缓存，直接跳转
-      console.log('✅ PAG 文件已缓存，直接跳转');
-      navigateToFortune();
-    } else {
-      // PAG 文件未缓存，显示等待提示
-      console.log('⏳ PAG 文件未缓存，等待下载完成...');
-      showPagWaiting.value = true;
-      isLoading.value = false; // 隐藏"保存中..."提示
-
-      // 等待 PAG 文件下载完成
-      if (pagPreloadPromise) {
-        const success = await pagPreloadPromise;
-        if (success) {
-          console.log('✅ PAG 文件下载完成，自动跳转');
-        } else {
-          console.warn('⚠️ PAG 文件下载失败，仍然跳转（将在运势页面重新下载）');
-        }
-      }
-
-      // 下载完成后自动跳转
-      showPagWaiting.value = false;
-      navigateToFortune();
-    }
-  } catch (error) {
-    console.error('❌ 检查 PAG 文件失败:', error);
-    // 即使检查失败，也继续跳转
-    showPagWaiting.value = false;
-    navigateToFortune();
-  }
+  navigateToFortune();
 };
 
-/**
- * 跳转到运势页面
- */
 const navigateToFortune = () => {
-  // 检查用户是否通过NFC绑定流程进入
-  const currentNfcId = uni.getStorageSync('currentNfcId');
-
-  if (currentNfcId) {
-    // NFC绑定用户，跳转到完整版运势页面
-    uni.redirectTo({
-      url: '/pages/fortune/index?fromProfile=true',
-    });
+  const resolvedNfcId = currentNfcId.value || uni.getStorageSync('currentNfcId');
+  if (resolvedNfcId) {
+    uni.redirectTo({ url: '/pages/fortune/index?fromProfile=true' });
   } else {
-    // 新访客用户，跳转到访客版运势页面
-    uni.redirectTo({
-      url: '/pages/fortune/index?mode=visitor',
-    });
+    uni.redirectTo({ url: '/pages/fortune/index?mode=visitor' });
   }
 };
 
-/**
- * 提交按钮点击事件
- */
-const handleSubmitClick = async () => {
-  // 表单验证
-  if (!validateForm()) {
-    return;
+const buildSubmitPayload = () => {
+  const trimmedName = formData.name.trim();
+  const trimmedPassword = formData.password.trim();
+  const username =
+    authStore.user?.username?.trim() ||
+    authStore.user?.name?.trim() ||
+    trimmedName;
+
+  const payload: {
+    username: string;
+    password: string;
+    name: string;
+    birthday: string;
+    nfcId?: string;
+  } = {
+    username,
+    password: trimmedPassword,
+    name: trimmedName,
+    birthday: formData.birthday,
+  };
+
+  if (currentNfcId.value) {
+    payload.nfcId = currentNfcId.value;
   }
+
+  return payload;
+};
+
+const handleProfileSuccess = async (message: string, user?: any) => {
+  if (user) {
+    authStore.setUser(user);
+  }
+  fortuneStore.clearFortune();
+  uni.setStorageSync(FORCE_RELOAD_FLAG_KEY, '1');
+
+  uni.showToast({ title: message, icon: 'success', duration: 1500 });
+  setTimeout(async () => {
+    await checkPagAndNavigate();
+  }, 1500);
+};
+
+const submitAsWeb = async () => {
+  if (!currentNfcId.value) {
+    uni.showToast({ title: '未获取到NFC信息', icon: 'none', duration: 2000 });
+    throw new Error('missing_nfc');
+  }
+
+  const payload = { ...buildSubmitPayload(), nfcId: currentNfcId.value };
+  const response = await profileService.registerWeb(payload);
+  if (!response.success || !response.data) {
+    throw new Error(response.message || '绑定失败');
+  }
+
+  await handleProfileSuccess('绑定成功', response.data);
+};
+
+const submitWithAuth = async () => {
+  if (!authStore.isAuthenticated) {
+    uni.showToast({ title: '请先完成绑定', icon: 'none', duration: 2000 });
+    setTimeout(() => {
+      uni.redirectTo({ url: '/pages/bind/index' });
+    }, 1500);
+    throw new Error('unauthorized');
+  }
+
+  const response = await profileService.updateProfile(buildSubmitPayload());
+  if (!response.success || !response.data) {
+    throw new Error(response.message || '保存失败');
+  }
+
+  await handleProfileSuccess('信息保存成功', response.data);
+};
+
+const handleSubmitClick = async () => {
+  if (isLoading.value) return;
+  if (!validateForm()) return;
 
   try {
     isLoading.value = true;
-
-    // 验证登录状态
-    if (!authStore.isAuthenticated) {
-      console.error('用户未登录，需要重新登录');
-      uni.showToast({
-        title: '登录已过期，请重新登录',
-        icon: 'none',
-      });
-      setTimeout(() => {
-        uni.redirectTo({
-          url: '/pages/bind/index',
-        });
-      }, 2000);
+    if (isH5Platform) {
+      await submitAsWeb();
+    } else {
+      await submitWithAuth();
+    }
+  } catch (error) {
+    if (error instanceof Error && ['missing_nfc', 'unauthorized'].includes(error.message)) {
       return;
     }
 
-    // 调用API更新用户信息
-    console.log('提交表单数据:', formData);
-
-    const response = await profileService.updateProfile({
-      name: formData.name.trim(),
-      birthday: formData.birthday,
-    });
-
-    if (response.success && response.data) {
-      console.log('用户信息更新成功:', response.data);
-
-      // 更新 authStore 中的用户信息
-      authStore.setUser(response.data);
-
-      // 显示成功提示
-      uni.showToast({
-        title: '信息保存成功',
-        icon: 'success',
-        duration: 1500,
-      });
-
-      // 延迟后检查 PAG 文件并跳转
-      setTimeout(async () => {
-        await checkPagAndNavigate();
-      }, 1500);
-    } else {
-      throw new Error(response.message || '保存失败');
-    }
-  } catch (error) {
-    console.error('提交失败:', error);
-
     let errorMessage = '保存失败，请重试';
-    if (error instanceof Error) {
+    if (error instanceof Error && error.message) {
       errorMessage = error.message;
     }
 
-    uni.showToast({
-      title: errorMessage,
-      icon: 'none',
-      duration: 2000,
-    });
+    uni.showToast({ title: errorMessage, icon: 'none', duration: 2000 });
   } finally {
     isLoading.value = false;
   }
 };
 
-// 页面生命周期
-onLoad(() => {
-  console.log('个人信息补全页面加载');
-
-  // 初始化 auth store
+onLoad(options => {
+  console.log('个人信息页加载', options);
   authStore.initFromStorage();
+  syncNfcId(options);
+  initFormFromUser();
 
-  // 验证登录状态
-  if (!authStore.isAuthenticated) {
-    console.warn('用户未登录，跳转到绑定页面');
-    uni.redirectTo({
-      url: '/pages/bind/index',
-    });
+  if (!isH5Platform && !authStore.isAuthenticated) {
+    uni.redirectTo({ url: '/pages/bind/index' });
     return;
   }
-
-  // 🎬 后台预下载 PAG 文件
-  // 在用户填写信息时，后台静默下载 PAG 动画文件
-  // 这样当用户进入运势页面时，PAG 文件已经缓存好了
-  console.log('🎬 开始后台预下载 PAG 文件...');
-  pagPreloadPromise = preloadPagFile();
-  pagPreloadPromise
-    .then(success => {
-      if (success) {
-        console.log('✅ PAG 文件预下载成功');
-      } else {
-        console.warn('⚠️ PAG 文件预下载失败，将在运势页面时重新下载');
-      }
-    })
-    .catch(error => {
-      console.error('❌ PAG 文件预下载出错:', error);
-    });
 });
 </script>
 
@@ -452,13 +412,13 @@ onLoad(() => {
 /* 用户名容器 - 隐藏头像后调整为左对齐 */
 .username-container {
   position: absolute;
-  top: 38.24%;
-  left: 26.53%; /* 保持原有左侧位置，与头像图标原位置对齐 */
-  right: 27.07%;
+  top: 32.5%;
+  left: 20%;
+  right: 20%;
   z-index: 200;
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* 左对齐 */
+  justify-content: center;
 }
 
 /* 头像图标 - 暂时隐藏，保留样式便于后续恢复 */
@@ -476,12 +436,13 @@ onLoad(() => {
   color: #ffffff;
   font-weight: 600;
   line-height: normal;
+  text-align: center;
 }
 
 /* 称呼标签 */
 .name-label {
   position: absolute;
-  top: 46.98%;
+  top: 38.5%;
   left: 21.87%;
   font-family: 'PingFang SC', sans-serif;
   font-size: 32rpx;
@@ -494,7 +455,7 @@ onLoad(() => {
 /* 称呼输入框容器 */
 .name-input-container {
   position: absolute;
-  top: 50.68%;
+  top: 41.5%;
   left: 20%;
   right: 20.53%;
   height: 82rpx;
@@ -502,6 +463,39 @@ onLoad(() => {
 }
 
 /* 输入框背景 */
+.password-label {
+  position: absolute;
+  top: 48.5%;
+  left: 21.87%;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 32rpx;
+  color: #ffffff;
+  font-weight: 600;
+  line-height: normal;
+  z-index: 200;
+}
+
+.password-input-container {
+  position: absolute;
+  top: 51.5%;
+  left: 20%;
+  right: 20.53%;
+  height: 82rpx;
+  z-index: 200;
+}
+
+.password-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0 30rpx;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 25rpx;
+  color: #ffffff;
+  line-height: 82rpx;
+}
 .input-bg {
   position: absolute;
   top: 0;
@@ -530,7 +524,7 @@ onLoad(() => {
 /* 生日标签 */
 .birthday-label {
   position: absolute;
-  top: 59.17%;
+  top: 58.5%;
   left: 21.87%;
   font-family: 'PingFang SC', sans-serif;
   font-size: 32rpx;
@@ -543,7 +537,7 @@ onLoad(() => {
 /* 生日输入框容器 */
 .birthday-input-container {
   position: absolute;
-  top: 62.93%;
+  top: 61.5%;
   left: 20%;
   right: 20.53%;
   height: 82rpx;
@@ -615,58 +609,7 @@ onLoad(() => {
   text-align: center;
 }
 
-/* PAG 文件下载等待提示遮罩层 */
-.pag-waiting-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* PAG 等待提示内容 */
-.pag-waiting-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60rpx 80rpx;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 20rpx;
-  backdrop-filter: blur(10px);
-}
-
-/* PAG 等待加载动画 */
-.pag-waiting-spinner {
-  width: 80rpx;
-  height: 80rpx;
-  border: 6rpx solid rgba(255, 255, 255, 0.3);
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: pag-spin 1s linear infinite;
-  margin-bottom: 40rpx;
-}
-
-@keyframes pag-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* PAG 等待提示文字 */
-.pag-waiting-text {
-  font-size: 28rpx;
-  color: #ffffff;
-  text-align: center;
-  line-height: 1.6;
-  max-width: 500rpx;
-}
 </style>
+
+
+
