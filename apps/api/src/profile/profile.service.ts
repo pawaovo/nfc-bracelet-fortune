@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../common/prisma.service';
 import { BraceletsService } from '../bracelets/bracelets.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { RegisterWebDto } from './dto/register-web.dto';
 import type { UserPartial } from '@shared/types';
 
 @Injectable()
@@ -83,6 +84,85 @@ export class ProfileService {
       };
     } catch (error) {
       this.logger.error(`Failed to update profile for user ${userId}`, error);
+      throw error;
+    }
+  }
+
+  async registerWeb(dto: RegisterWebDto): Promise<UserPartial> {
+    try {
+      const username = dto.username.trim();
+      const password = dto.password.trim();
+      const name = this.validateName(dto.name);
+      const birthday = this.validateBirthday(dto.birthday);
+      const nfcId = dto.nfcId.trim();
+
+      let user = await this.prisma.user.findUnique({
+        where: { username },
+        select: {
+          id: true,
+          wechatOpenId: true,
+          username: true,
+          name: true,
+          birthday: true,
+          password: true,
+        },
+      });
+
+      if (!user) {
+        const created = await this.prisma.user.create({
+          data: {
+            wechatOpenId: `web_${username}`,
+            username,
+            password,
+            name,
+            birthday,
+          },
+          select: {
+            id: true,
+            wechatOpenId: true,
+            username: true,
+            name: true,
+            birthday: true,
+          },
+        });
+        user = { ...created, password };
+      } else {
+        if (user.password && user.password !== password) {
+          throw new BadRequestException('用户名或密码错误');
+        }
+
+        const updated = await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            password,
+            name,
+            birthday,
+            username,
+            updatedAt: new Date(),
+          },
+          select: {
+            id: true,
+            wechatOpenId: true,
+            username: true,
+            name: true,
+            birthday: true,
+          },
+        });
+        user = { ...updated, password };
+      }
+
+      this.logger.log(`Binding NFC ${nfcId} to web user ${user.id}`);
+      await this.braceletsService.bindToUser(nfcId, user.id);
+
+      return {
+        id: user.id,
+        wechatOpenId: user.wechatOpenId,
+        username: user.username,
+        name: user.name,
+        birthday: user.birthday,
+      };
+    } catch (error) {
+      this.logger.error('Failed to register web user', error);
       throw error;
     }
   }

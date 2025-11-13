@@ -106,6 +106,7 @@ const formData = reactive({
 
 const currentNfcId = ref('');
 const isLoading = ref(false);
+const isH5Platform = process.env.UNI_PLATFORM === 'h5';
 let pagPreloadPromise: Promise<boolean> | null = null;
 
 const formatDateForInput = (value: Date | string | null): string => {
@@ -211,14 +212,55 @@ const handleSubmitClick = async () => {
   if (isLoading.value) return;
   if (!validateForm()) return;
 
+  if (isH5Platform) {
+    if (!currentNfcId.value) {
+      showToast('δ��ȡ�� NFC ��Ϣ�����ֶ����롣');
+      return;
+    }
+
+    try {
+      isLoading.value = true;
+      const response = await profileService.registerWeb({
+        username: formData.username.trim(),
+        password: formData.password.trim(),
+        name: formData.name.trim(),
+        birthday: formData.birthday,
+        nfcId: currentNfcId.value,
+      });
+
+      if (!response.success || !response.data) {
+        throw new Error(response.message || '����ʧ��');
+      }
+
+      uni.showToast({
+        title: '��Ϣ��������',
+        icon: 'success',
+        duration: 1500,
+      });
+
+      setTimeout(() => {
+        uni.redirectTo({ url: '/pages/fortune/index?mode=visitor' });
+      }, 1500);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '����ʧ��');
+    } finally {
+      isLoading.value = false;
+    }
+    return;
+  }
+
   try {
     isLoading.value = true;
 
     if (!authStore.isAuthenticated) {
-      showToast('登录已过期，请重新绑定');
+      console.error('�û�δ��¼����Ҫ���µ�¼');
+      uni.showToast({
+        title: '��¼�ѹ��ڣ������µ�¼',
+        icon: 'none',
+      });
       setTimeout(() => {
         uni.redirectTo({ url: '/pages/bind/index' });
-      }, 1500);
+      }, 2000);
       return;
     }
 
@@ -230,25 +272,19 @@ const handleSubmitClick = async () => {
       nfcId: currentNfcId.value || undefined,
     });
 
-    if (!response.success || !response.data) {
-      throw new Error(response.message || '提交失败');
+    if (response.success && response.data) {
+      authStore.setUser(response.data);
+      uni.showToast({ title: '��Ϣ����ɹ�', icon: 'success', duration: 1500 });
+      setTimeout(() => {
+        checkPagAndNavigate();
+      }, 1500);
+    } else {
+      throw new Error(response.message || '����ʧ��');
     }
-
-    authStore.setUser(response.data);
-    formData.password = '';
-
-    uni.showToast({
-      title: '资料更新成功',
-      icon: 'success',
-      duration: 1500,
-    });
-
-    setTimeout(() => {
-      checkPagAndNavigate();
-    }, 1500);
   } catch (error) {
-    const message = error instanceof Error ? error.message : '提交失败，请稍后再试';
-    showToast(message);
+    console.error('�ύʧ��:', error);
+    const errorMessage = error instanceof Error ? error.message : '����ʧ�ܣ�������';
+    uni.showToast({ title: errorMessage, icon: 'none', duration: 2000 });
   } finally {
     isLoading.value = false;
   }
@@ -256,16 +292,15 @@ const handleSubmitClick = async () => {
 
 onLoad(options => {
   authStore.initFromStorage();
+  syncNfcId(options);
 
-  if (!authStore.isAuthenticated) {
+  if (!isH5Platform && !authStore.isAuthenticated) {
     showToast('请先完成绑定');
     uni.redirectTo({ url: '/pages/bind/index' });
     return;
   }
 
   initFormFromUser();
-  syncNfcId(options);
-
   pagPreloadPromise = preloadPagFile();
 });
 </script>

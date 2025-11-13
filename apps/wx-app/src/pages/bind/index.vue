@@ -90,6 +90,7 @@ const themeConfig = ref<BindPageTheme>(getTheme('default'));
 // 响应式数据
 const isBinding = ref(false);
 const nfcId = ref('');
+const isH5Platform = process.env.UNI_PLATFORM === 'h5';
 
 // 动态商品数据
 const recommendedProduct = ref<any>(null);
@@ -143,10 +144,21 @@ function handleProductImageError(e: any) {
 const handleBindClick = async () => {
   if (isBinding.value) return;
 
+  if (nfcId.value) {
+    uni.setStorageSync('currentNfcId', nfcId.value);
+  }
+
+  if (isH5Platform) {
+    const target = nfcId.value
+      ? `/pages/profile/index?nfcId=${nfcId.value}`
+      : '/pages/profile/index';
+    uni.navigateTo({ url: target });
+    return;
+  }
+
   try {
     isBinding.value = true;
 
-    // 调用微信登录
     const loginResult = await new Promise<UniApp.LoginRes>((resolve, reject) => {
       uni.login({
         provider: 'weixin',
@@ -156,102 +168,52 @@ const handleBindClick = async () => {
     });
 
     if (!loginResult.code) {
-      throw new Error('微信授权失败');
+      throw new Error('΢����Ȩʧ��');
     }
 
-    // 调用后端绑定接口（如果有NFC ID则传入，否则为undefined）
     const response = await authService.login(loginResult.code, nfcId.value || undefined);
 
-    // 处理后端响应
     if (response.success) {
       const { status, token, user, previewScore, recommendation } = response.data;
 
       if (token) {
-        // 更新 auth store（会自动设置 token 到存储和 API 请求）
         const authStore = useAuthStore();
         authStore.login(token, user || {});
       }
 
       if (status === 'PROFILE_INCOMPLETE') {
-        // 跳转到个人信息补全页
         uni.redirectTo({
           url: '/pages/profile/index',
         });
       } else if (status === 'AUTHENTICATED') {
-        // 跳转到运势页面
         uni.redirectTo({
           url: '/pages/fortune/index',
         });
       } else if (status === 'VISITOR_PREVIEW') {
-        // 手链已被其他用户绑定，进入访客预览模式
-        // 保存预览数据到本地存储
         if (previewScore && recommendation) {
           uni.setStorageSync('previewData', {
             score: previewScore,
-            recommendation: recommendation,
+            recommendation,
           });
         }
 
-        // 显示友好提示
         uni.showToast({
-          title: '此手链已被绑定，为您展示访客预览',
+          title: '�������ѱ��󶨣�Ϊ��չʾ�ÿ�Ԥ��',
           icon: 'none',
           duration: 2000,
         });
 
-        // 延迟跳转到访客预览页面
-        setTimeout(() => {
-          uni.redirectTo({
-            url: '/pages/fortune/index?mode=visitor&preview=true',
-          });
-        }, 2000);
+        uni.redirectTo({
+          url: '/pages/fortune/index?mode=visitor&preview=true',
+        });
       }
-    } else {
-      throw new Error(response.message || '绑定失败');
     }
   } catch (error) {
-    console.error('绑定失败:', error);
-
-    let errorMessage = '绑定失败，请重试';
-    let showModal = false;
-
-    if (error instanceof Error) {
-      if (error.message.includes('授权')) {
-        errorMessage = '微信授权失败，请重新点击绑定按钮';
-      } else if (error.message.includes('网络') || error.message.includes('超时')) {
-        errorMessage = '网络连接失败，请检查网络后重试';
-      } else if (error.message.includes('已被绑定') || error.message.includes('已绑定')) {
-        errorMessage = '此手链已被其他用户绑定';
-        showModal = true;
-      } else if (error.message.includes('服务器')) {
-        errorMessage = '服务暂时不可用，请稍后重试';
-      }
-    }
-
-    if (showModal) {
-      // 对于手链已被绑定的情况，显示模态框提供更多信息
-      uni.showModal({
-        title: '手链已被绑定',
-        content: '此手链已被其他用户绑定。您可以尝试触碰其他未绑定的手链，或直接体验访客预览模式。',
-        showCancel: true,
-        cancelText: '返回',
-        confirmText: '访客预览',
-        success: res => {
-          if (res.confirm) {
-            // 跳转到访客预览页面
-            uni.redirectTo({
-              url: '/pages/fortune/index?mode=visitor',
-            });
-          }
-        },
-      });
-    } else {
-      uni.showToast({
-        title: errorMessage,
-        icon: 'none',
-        duration: 3000,
-      });
-    }
+    console.error('�󶨳���:', error);
+    uni.showToast({
+      title: error instanceof Error ? error.message : '�󶨳���',
+      icon: 'none',
+    });
   } finally {
     isBinding.value = false;
   }

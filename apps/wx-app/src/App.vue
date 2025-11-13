@@ -4,6 +4,22 @@ import { useAuthStore } from '@/stores/auth';
 import { useFortuneStore } from '@/stores/fortune';
 import { authService } from '@/api/auth';
 import { DEV_CONFIG, applyDevScenario, TEMP_NFC_BYPASS } from '@/config/dev-scenarios';
+import type { Product } from '@shared/types';
+
+const IS_H5 = process.env.UNI_PLATFORM === 'h5';
+
+type LaunchOptions = {
+  path?: string;
+  query?: Record<string, string>;
+  scene?: number;
+  referrerInfo?: Record<string, unknown>;
+  [key: string]: unknown;
+};
+
+interface VisitorPreviewPayload {
+  previewScore?: number;
+  recommendation?: Product;
+}
 
 onLaunch(options => {
   console.log('App Launch', options);
@@ -29,7 +45,7 @@ onHide(() => {
 /**
  * 检查隐私协议是否已同意
  */
-function checkPrivacyAgreement(options: any) {
+function checkPrivacyAgreement(options: LaunchOptions) {
   const privacyAgreed = uni.getStorageSync('privacy_agreed');
 
   if (!privacyAgreed) {
@@ -104,7 +120,7 @@ function initializeApp() {
 /**
  * 处理应用启动逻辑（NFC启动或直接启动）
  */
-async function handleAppLaunch(options: any) {
+async function handleAppLaunch(options: LaunchOptions) {
   const authStore = useAuthStore();
 
   // 应用开发场景（替换原有的开发测试代码）
@@ -135,6 +151,14 @@ async function handleAppLaunch(options: any) {
     }
 
     // 检查用户是否已登录
+    if (IS_H5) {
+      uni.setStorageSync('currentNfcId', nfcId);
+      uni.redirectTo({
+        url: `/pages/bind/index?nfcId=${nfcId}`,
+      });
+      return;
+    }
+
     if (!authStore.isAuthenticated) {
       // 未登录用户触碰NFC，先尝试自动登录判断手链状态
       console.log('未登录用户触碰NFC，尝试自动登录判断手链状态');
@@ -250,7 +274,11 @@ async function getWeChatLoginCode(timeoutMs: number): Promise<string> {
 /**
  * 处理登录响应的通用状态跳转
  */
-function handleLoginResponseNavigation(status: string, nfcId?: string, previewData?: any) {
+function handleLoginResponseNavigation(
+  status: string,
+  nfcId?: string,
+  previewData?: VisitorPreviewPayload
+) {
   switch (status) {
     case 'AUTHENTICATED':
       uni.redirectTo({ url: '/pages/fortune/index' });
