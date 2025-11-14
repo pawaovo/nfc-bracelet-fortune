@@ -113,6 +113,7 @@ import { getTheme } from './config';
 import type { ProfilePageTheme } from './config';
 import { generateDevJWT } from '@/utils/devToken';
 import type { UserPartial } from '@shared/types';
+import { preloadPagFile } from '@/utils/pagPreloader';
 
 const config = ref<ProfilePageTheme>(getTheme('default'));
 const authStore = useAuthStore();
@@ -148,7 +149,7 @@ const initFormFromUser = () => {
   formData.birthday = formatDateForInput(authStore.user.birthday || null);
 };
 
-const syncNfcId = (options?: Record<string, any>) => {
+const syncNfcId = (options?: Record<string, unknown>) => {
   const fromQuery = (options?.nfcId as string) || '';
   const stored = uni.getStorageSync('currentNfcId') || '';
   const nextId = fromQuery || stored || '';
@@ -322,6 +323,19 @@ onLoad(options => {
     uni.redirectTo({ url: '/pages/bind/index' });
     return;
   }
+
+  // 预下载PAG文件（后台下载，不阻塞用户操作）
+  preloadPagFile()
+    .then(success => {
+      if (success) {
+        console.log('✅ PAG文件预下载成功');
+      } else {
+        console.warn('⚠️ PAG文件预下载失败，将在AI生成页面重新下载');
+      }
+    })
+    .catch(error => {
+      console.error('❌ PAG文件预下载异常:', error);
+    });
 });
 </script>
 

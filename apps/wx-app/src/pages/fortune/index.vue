@@ -599,6 +599,7 @@ import { fortuneService } from '@/api/fortune';
 import type { FortuneData } from '@/stores/fortune';
 import StarRating from '@/components/StarRating.vue';
 import { getTheme, type FortunePageTheme } from './config';
+import { LOADING_MESSAGES, LOADING_MESSAGE_INTERVAL } from '@/config/pag';
 
 // 页面配置
 const config = ref<FortunePageTheme>(getTheme('default'));
@@ -625,14 +626,7 @@ const aiRetryState = ref({
   maxRetries: 3,
   isRetrying: false,
 });
-const loadingText = ref(config.value.texts.loading.fortune);
-const loadingMessages = ref([
-  '正在连接手链...',
-  '正在分析你的运势...',
-  '正在计算年度指数...',
-  '正在生成专属建议...',
-  '握紧就会好...',
-]);
+const loadingText = ref<string>(config.value.texts.loading.fortune);
 const loadingTimer = ref<ReturnType<typeof setInterval> | null>(null);
 
 // 计算属性
@@ -1118,12 +1112,12 @@ function startLoadingAnimation() {
   }
 
   let messageIndex = 0;
-  loadingText.value = loadingMessages.value[messageIndex];
+  loadingText.value = LOADING_MESSAGES[messageIndex];
 
   loadingTimer.value = setInterval(() => {
-    messageIndex = (messageIndex + 1) % loadingMessages.value.length;
-    loadingText.value = loadingMessages.value[messageIndex];
-  }, 1500);
+    messageIndex = (messageIndex + 1) % LOADING_MESSAGES.length;
+    loadingText.value = LOADING_MESSAGES[messageIndex];
+  }, LOADING_MESSAGE_INTERVAL);
 }
 
 /**
@@ -1134,7 +1128,7 @@ function stopLoadingAnimation() {
     clearInterval(loadingTimer.value);
     loadingTimer.value = null;
   }
-  loadingText.value = loadingMessages.value[0];
+  loadingText.value = LOADING_MESSAGES[0];
 }
 
 function handleShopClick() {
@@ -1153,7 +1147,7 @@ function handleShopClick() {
 /**
  * 处理手链图片加载失败
  */
-function handleBraceletImageError(e: any) {
+function handleBraceletImageError(e: Event) {
   console.error('手链图片加载失败:', {
     imageUrl: fortuneData.value?.recommendation?.imageUrl,
     error: e,

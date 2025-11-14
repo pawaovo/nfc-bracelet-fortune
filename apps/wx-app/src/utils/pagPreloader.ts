@@ -2,12 +2,19 @@
  * PAG 预加载 & 缓存工具（兼容小程序 / H5）
  */
 
-const PAG_FILE_URL = 'https://720dcf1a.cpolar.io/pag/loading-fortune.pag';
+// 小程序使用cpolar服务器，H5使用GitHub Raw URL
+const PAG_FILE_URL_MINIPROGRAM = 'https://720dcf1a.cpolar.io/pag/loading-fortune.pag';
+const PAG_FILE_URL_H5 = 'https://raw.githubusercontent.com/pawaovo/pag-files/main/loading_bmp.pag';
 const CACHE_KEY = 'loading-fortune.pag';
 const WEB_STORAGE_KEY = 'pag-cache/loading-fortune';
 const DOWNLOAD_TIMEOUT = 120000;
 
-const globalAny = typeof globalThis !== 'undefined' ? (globalThis as any) : {};
+// 根据平台选择URL（编译时确定）
+const IS_H5 = process.env.UNI_PLATFORM === 'h5';
+const PAG_FILE_URL = IS_H5 ? PAG_FILE_URL_H5 : PAG_FILE_URL_MINIPROGRAM;
+
+const globalAny =
+  typeof globalThis !== 'undefined' ? (globalThis as typeof globalThis & { wx?: unknown }) : {};
 const wxApi = globalAny.wx;
 const isMiniProgram = !!wxApi?.getFileSystemManager;
 
@@ -125,7 +132,7 @@ export async function preloadPagFile(): Promise<boolean> {
 }
 
 export async function downloadPagFileWithProgress(
-  onProgress?: (progress: number) => void,
+  onProgress?: (progress: number) => void
 ): Promise<ArrayBuffer | null> {
   if (isMiniProgram) {
     try {
@@ -192,6 +199,7 @@ export async function downloadPagFileWithProgress(
     const chunks: Uint8Array[] = [];
     let received = 0;
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;

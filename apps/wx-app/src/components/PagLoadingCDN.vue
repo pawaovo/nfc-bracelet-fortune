@@ -25,9 +25,21 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, getCurrentInstance } from 'vue';
 import { loadPagFromCache, downloadPagFileWithProgress } from '@/utils/pagPreloader';
 
-const globalAny = typeof globalThis !== 'undefined' ? (globalThis as any) : {};
+interface GlobalWithWx {
+  wx?: {
+    getFileSystemManager?: () => unknown;
+  };
+  libpag?: {
+    PAGInit: (config: { locateFile: (file: string) => string }) => Promise<unknown>;
+  };
+}
+
+const globalAny =
+  typeof globalThis !== 'undefined' ? (globalThis as GlobalWithWx) : ({} as GlobalWithWx);
 const isMiniProgram = !!globalAny.wx?.getFileSystemManager;
-const H5_WASM_URL = '/static/libpag.wasm';
+// H5环境使用CDN的WASM文件，小程序使用本地WASM文件
+const H5_WASM_URL = 'https://cdn.jsdelivr.net/npm/libpag@4.5.1/lib/libpag.wasm';
+const MINIPROGRAM_WASM_URL = '/static/libpag.wasm';
 
 interface Props {
   width?: number;
@@ -102,7 +114,9 @@ const isLoading = ref(false); // 是否正在加载中（防止重复加载）
 
 /**
  * 初始化PAG SDK
- * 使用本地WASM文件
+ *
+ * 小程序环境：使用 libpag-miniprogram npm包
+ * H5环境：使用 CDN加载的全局变量 window.libpag
  *
  * 注意：uni-app编译时会自动复制static目录下的文件到编译输出目录
  * 官方示例使用 /utils/ 路径，但在uni-app中需要使用 /static/ 路径
@@ -113,17 +127,44 @@ async function initPAGSDK() {
 
   try {
     if (isMiniProgram) {
+      // 小程序环境：使用npm包
       const { PAGInit } = await import('libpag-miniprogram');
       PAG = await PAGInit({
         locateFile: (file: string) => `/static/${file}`,
       });
+      console.log('✅ PAG SDK初始化成功（小程序）');
     } else {
-      const { PAGInit } = await import('libpag');
-      PAG = await PAGInit({
-        locateFile: (file: string) => (file.endsWith('.wasm') ? H5_WASM_URL : file),
+      // H5环境：使用CDN加载的全局变量
+      const windowWithLibpag = window as typeof window & { libpag?: GlobalWithWx['libpag'] };
+      console.log('🔍 检查 window.libpag:', typeof windowWithLibpag.libpag);
+
+      // 等待CDN脚本加载完成
+      let retryCount = 0;
+      const maxRetries = 50; // 最多等待5秒
+      while (!windowWithLibpag.libpag && retryCount < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retryCount++;
+      }
+
+      if (!windowWithLibpag.libpag) {
+        throw new Error('PAG SDK CDN加载失败，请检查网络连接');
+      }
+
+      console.log('✅ 找到 window.libpag');
+
+      // 使用全局变量初始化，WASM文件也从CDN加载
+      PAG = await windowWithLibpag.libpag.PAGInit({
+        locateFile: (file: string) => {
+          // H5环境：所有文件都从CDN加载，确保版本一致
+          if (file.endsWith('.wasm')) {
+            console.log(`📦 加载WASM文件: ${H5_WASM_URL}`);
+            return H5_WASM_URL;
+          }
+          return `https://cdn.jsdelivr.net/npm/libpag@4.5.1/lib/${file}`;
+        },
       });
+      console.log('✅ PAG SDK初始化成功（H5）');
     }
-    console.log('✅ PAG SDK初始化成功');
     return PAG;
   } catch (error) {
     console.error('❌ PAG SDK初始化失败:', error);
@@ -194,6 +235,14 @@ async function loadAndPlayPAG() {
       console.log('✅ PAG文件加载成功:', pagFile.width(), 'x', pagFile.height());
 
       console.log('🎬 初始化PAGView...');
+      console.log('Canvas信息:', {
+        id: canvas.id,
+        width: canvas.width,
+        height: canvas.height,
+        tagName: canvas.tagName,
+        hasWebGL: !!(canvas.getContext('webgl') || canvas.getContext('webgl2')),
+      });
+
       pagView = await PAG.PAGView.init(pagFile, canvas);
       console.log('✅ PAGView初始化成功');
 
@@ -257,7 +306,7 @@ async function resolveCanvasNode(): Promise<any> {
       query
         .select(`#${canvasId}`)
         .node()
-        .exec(res => {
+        .exec((res: Array<{ node?: HTMLCanvasElement }>) => {
           if (!res || !res[0] || !res[0].node) {
             reject(new Error('Canvas节点查询失败'));
             return;
@@ -267,14 +316,75 @@ async function resolveCanvasNode(): Promise<any> {
     });
   }
 
+  // H5环境：创建原生canvas元素（不使用uni-app封装的canvas）
+  // 原因：uni-app的canvas组件在H5环境下可能不支持WebGL上下文
+  // 参考：https://ask.dcloud.net.cn/question/88998
   if (typeof document === 'undefined') {
     throw new Error('Document 不可用');
   }
-  const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
-  if (!canvas) {
-    throw new Error('Canvas节点查询失败');
+
+  console.log('🎨 H5环境：创建原生canvas元素');
+
+  // 获取uni-app的canvas容器
+  let wrapper: HTMLElement | null = null;
+  let retryCount = 0;
+  const maxRetries = 20;
+
+  while (!wrapper && retryCount < maxRetries) {
+    wrapper = document.getElementById(canvasId);
+    if (!wrapper) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      retryCount++;
+    }
   }
-  return canvas;
+
+  if (!wrapper) {
+    throw new Error(`Canvas容器查询失败: #${canvasId}`);
+  }
+
+  console.log('🔍 找到canvas容器:', wrapper.tagName, wrapper.className);
+
+  // 清空容器内容
+  wrapper.innerHTML = '';
+
+  // 创建原生canvas元素
+  const canvasElement = document.createElement('canvas');
+  canvasElement.id = `${canvasId}-native`;
+  canvasElement.className = 'pag-native-canvas';
+
+  // 设置canvas尺寸（稍后会在loadAndPlayPAG中设置实际尺寸）
+  canvasElement.width = 100;
+  canvasElement.height = 100;
+
+  // 设置样式
+  canvasElement.style.width = '100%';
+  canvasElement.style.height = '100%';
+  canvasElement.style.display = 'block';
+
+  // 添加到容器
+  wrapper.appendChild(canvasElement);
+
+  console.log('✅ 原生canvas创建成功:', canvasElement.id);
+
+  // 验证canvas是否支持WebGL
+  const gl =
+    canvasElement.getContext('webgl', {
+      alpha: true,
+      antialias: true,
+      preserveDrawingBuffer: true,
+    }) ||
+    canvasElement.getContext('webgl2', {
+      alpha: true,
+      antialias: true,
+      preserveDrawingBuffer: true,
+    });
+
+  if (!gl) {
+    throw new Error('Canvas不支持WebGL，请检查浏览器兼容性');
+  }
+
+  console.log('✅ WebGL上下文创建成功:', gl.constructor.name);
+  return canvasElement;
 }
 
 // 组件挂载时初始化
@@ -617,5 +727,3 @@ defineExpose({
   visibility: visible;
 }
 </style>
-
-

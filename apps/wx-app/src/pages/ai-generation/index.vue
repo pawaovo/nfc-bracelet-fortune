@@ -76,6 +76,7 @@ import { useFortuneStore } from '@/stores/fortune';
 import { fortuneService } from '@/api/fortune';
 import { isPagCached } from '@/utils/pagPreloader';
 import { getTheme, type FortunePageTheme } from '../fortune/config';
+import { PAG_CONFIG, LOADING_MESSAGES, LOADING_MESSAGE_INTERVAL } from '@/config/pag';
 
 const config = ref<FortunePageTheme>(getTheme('default'));
 const FORCE_RELOAD_FLAG_KEY = 'fortuneForceReload';
@@ -97,26 +98,10 @@ const aiRetryState = ref({
   isRetrying: false,
 });
 
-const loadingText = ref('正在连接手链...');
-const loadingMessages = ref([
-  '正在连接手链...',
-  '正在分析你的运势...',
-  '正在计算年度指数...',
-  '正在生成专属建议...',
-  '握紧就会好...',
-]);
+const loadingText = ref<string>(LOADING_MESSAGES[0]);
 const loadingTimer = ref<ReturnType<typeof setInterval> | null>(null);
 
 const pagLoadingRef = ref<InstanceType<typeof PagLoadingCDN>>();
-const PAG_CONFIG = {
-  totalDuration: 25,
-  loopStart: 13,
-  loopEnd: 18,
-  endingStart: 20,
-  endingBufferMs: 500,
-  componentCheckIntervalMs: 100,
-  componentInitDelayMs: 300,
-};
 
 const pagAnimationState = ref({
   isPlaying: false,
@@ -187,7 +172,10 @@ async function triggerGeneration() {
     }, 150);
   } catch (error) {
     console.error('AI 生成失败:', error);
-    await stopLoadingAnimation();
+    // 停止动画（如果PAG组件已就绪）
+    if (pagLoadingRef.value?.checkReady()) {
+      await stopLoadingAnimation();
+    }
     showPagWaiting.value = false;
     isLoading.value = false;
     errorMessage.value =
@@ -235,12 +223,12 @@ function startLoadingAnimation() {
   if (loadingTimer.value) return;
 
   let messageIndex = 0;
-  loadingText.value = loadingMessages.value[messageIndex];
+  loadingText.value = LOADING_MESSAGES[messageIndex];
 
   loadingTimer.value = setInterval(() => {
-    messageIndex = (messageIndex + 1) % loadingMessages.value.length;
-    loadingText.value = loadingMessages.value[messageIndex];
-  }, 1500);
+    messageIndex = (messageIndex + 1) % LOADING_MESSAGES.length;
+    loadingText.value = LOADING_MESSAGES[messageIndex];
+  }, LOADING_MESSAGE_INTERVAL);
 
   startPagAnimation();
 }
@@ -250,9 +238,14 @@ async function stopLoadingAnimation() {
     clearInterval(loadingTimer.value);
     loadingTimer.value = null;
   }
-  loadingText.value = loadingMessages.value[0];
+  loadingText.value = LOADING_MESSAGES[0];
 
-  await playPagEnding();
+  // 只有在PAG组件就绪时才播放结束动画
+  if (pagLoadingRef.value?.checkReady()) {
+    await playPagEnding();
+  } else {
+    console.warn('⚠️ PAG组件未就绪，跳过结束动画');
+  }
 }
 
 function onPagDownloadComplete() {
@@ -268,17 +261,23 @@ async function onPagReady() {
   pagAnimationState.value.hasHandledReady = true;
 
   if (aiResponseComplete.value) {
+    // AI已完成，播放结束动画
+    // 注意：不要在这里设置 isLoading = false，会导致组件卸载
+    // 让 navigateToFortune 中的路由跳转自然触发组件卸载
     await stopLoadingAnimation();
-    isLoading.value = false;
   } else {
+    // AI未完成，开始播放循环动画
     startLoadingAnimation();
   }
 }
 
 async function handlePagAnimationAfterAI() {
   if (pagDownloadComplete.value) {
+    // 等待结束动画播放完成后再卸载组件
     await stopLoadingAnimation();
-    isLoading.value = false;
+    // 延迟卸载组件，确保动画播放完成
+    // stopLoadingAnimation 内部已经等待了结束动画播放完成
+    // 这里不需要立即设置 isLoading = false，让 navigateToFortune 中的跳转自然触发卸载
   } else {
     console.log('等待 PAG 下载完成后播放结束动画');
   }
@@ -322,29 +321,50 @@ function startPagAnimation() {
 
 function playPagEnding(): Promise<void> {
   return new Promise(resolve => {
+    console.log('🎬 准备播放结束动画...');
+
+    // 清除循环定时器
     if (pagAnimationState.value.loopTimer) {
       clearTimeout(pagAnimationState.value.loopTimer);
       pagAnimationState.value.loopTimer = null;
     }
 
+    // 检查PAG组件引用
     if (!pagLoadingRef.value) {
+      console.warn('⚠️ PAG组件引用不存在，跳过结束动画');
+      resolve();
+      return;
+    }
+
+    // 检查PAG组件是否就绪
+    if (!pagLoadingRef.value.checkReady()) {
+      console.warn('⚠️ PAG组件未就绪，跳过结束动画');
       resolve();
       return;
     }
 
     pagAnimationState.value.isPlaying = false;
+
+    // 获取PAG信息
     const pagInfo = pagLoadingRef.value.getPagInfo();
     if (!pagInfo) {
+      console.warn('⚠️ 无法获取PAG信息，跳过结束动画');
       resolve();
       return;
     }
 
+    console.log('✅ PAG组件就绪，开始播放结束动画');
     const totalDuration = pagInfo.duration;
     const endingStartProgress = PAG_CONFIG.endingStart / totalDuration;
     const endingDuration = (totalDuration - PAG_CONFIG.endingStart) * 1000;
 
     pagLoadingRef.value.playEnding(endingStartProgress);
-    setTimeout(() => resolve(), endingDuration + PAG_CONFIG.endingBufferMs);
+    console.log(`⏱️ 结束动画时长: ${endingDuration}ms`);
+
+    setTimeout(() => {
+      console.log('✅ 结束动画播放完成');
+      resolve();
+    }, endingDuration + PAG_CONFIG.endingBufferMs);
   });
 }
 
@@ -361,7 +381,7 @@ function cleanupPagAnimation() {
 
   pagAnimationState.value.isPlaying = false;
   pagAnimationState.value.hasHandledReady = false;
-  loadingText.value = loadingMessages.value[0];
+  loadingText.value = LOADING_MESSAGES[0];
 }
 </script>
 
@@ -419,7 +439,7 @@ function cleanupPagAnimation() {
 
 .loading-text {
   position: fixed;
-  bottom: 100rpx;
+  bottom: 250rpx;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
