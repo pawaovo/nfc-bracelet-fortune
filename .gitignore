@@ -230,9 +230,6 @@ platforms/
 # Docker
 .dockerignore
 
-# Prisma
-apps/api/prisma/migrations/
-
 # Deployment artifacts
 *.zip
 h5-latest/
