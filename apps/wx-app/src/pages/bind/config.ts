@@ -1,9 +1,9 @@
 import braceletIcon from '@/static/pages/bind/bracelet-icon.png';
 import braceletStar from '@/static/pages/bind/bracelet-star.png';
-import braceletLabel from '@/static/pages/bind/今日开运手链.png';
+import braceletLabel from '@/static/pages/bind/bracelet-label.png';
 // 注意：detailImage2 暂时使用与 braceletLabel 相同的图片
 // 如果有专门的手链详情图，请替换为正确的路径
-import detailImage2 from '@/static/pages/bind/今日开运手链.png';
+import detailImage2 from '@/static/pages/bind/bracelet-label.png';
 import buttonBackground from '@/static/pages/bind/button-bg.png';
 
 /**

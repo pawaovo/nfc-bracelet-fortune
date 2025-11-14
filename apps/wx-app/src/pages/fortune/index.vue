@@ -373,7 +373,7 @@
         <!-- 今日开运手链标签 -->
         <image
           class="recommendation-card-title-image"
-          src="../../static/pages/bind/今日开运手链.png"
+          src="../../static/pages/bind/bracelet-label.png"
           mode="aspectFit"
         />
         <!-- 手链星星装饰 -->

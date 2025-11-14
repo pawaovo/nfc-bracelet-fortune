@@ -13,9 +13,9 @@ export const API_CONFIG = {
   // 真机调试时使用的局域网地址（请按需修改）
   REAL_DEVICE_BASE_URL: 'http://192.168.31.217:3000',
   // 内网穿透地址（cpolar / ngrok 等）
-  TUNNEL_BASE_URL: 'https://720dcf1a.cpolar.io',
-  // 生产环境 API 地址
-  PROD_BASE_URL: 'https://your-api-domain.com',
+  TUNNEL_BASE_URL: 'https://4473789e.r9.cpolar.cn',
+  // 生产环境 API 地址（使用服务器IP和端口）
+  PROD_BASE_URL: 'http://47.239.179.9:43122',
   // 请求超时时间（120s，兼容 AI 渲染）
   TIMEOUT: 120000,
   // API 版本
@@ -25,9 +25,7 @@ export const API_CONFIG = {
 function normalizeEnv(value?: string | null): EnvType | null {
   if (!value) return null;
   const normalized = value.trim().toLowerCase();
-  return ENV_VALUES.includes(normalized as EnvType)
-    ? (normalized as EnvType)
-    : null;
+  return ENV_VALUES.includes(normalized as EnvType) ? (normalized as EnvType) : null;
 }
 
 function getEnvFromUrl(): EnvType | null {
@@ -61,9 +59,7 @@ function persistEnv(env: EnvType) {
 function getEnvFromVite(): EnvType | null {
   try {
     return normalizeEnv(
-      (import.meta as Record<string, any>)?.env?.VITE_API_ENV as
-        | string
-        | undefined,
+      (import.meta as Record<string, any>)?.env?.VITE_API_ENV as string | undefined
     );
   } catch {
     return null;
@@ -92,8 +88,7 @@ function detectCurrentEnv(): EnvType {
 
   if (
     typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1')
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ) {
     console.log('[API] 检测到本地开发环境，使用 dev');
     return 'dev';
