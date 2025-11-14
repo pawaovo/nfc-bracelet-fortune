@@ -172,6 +172,39 @@ export class BraceletsService {
   }
 
   /**
+   * 检查nfcId是否在数据库中存在（真实nfcId）
+   * @param nfcId NFC ID
+   * @returns 是否存在
+   */
+  async exists(nfcId: string): Promise<boolean> {
+    const bracelet = await this.findByNfcId(nfcId);
+    return !!bracelet;
+  }
+
+  /**
+   * 获取nfcId的绑定状态
+   * @param nfcId NFC ID
+   * @returns { exists: boolean, isBound: boolean, userId?: string }
+   */
+  async getBindingStatus(nfcId: string): Promise<{
+    exists: boolean;
+    isBound: boolean;
+    userId?: string;
+  }> {
+    const bracelet = await this.findByNfcId(nfcId);
+
+    if (!bracelet) {
+      return { exists: false, isBound: false };
+    }
+
+    return {
+      exists: true,
+      isBound: !!bracelet.userId,
+      userId: bracelet.userId || undefined,
+    };
+  }
+
+  /**
    * 删除手链记录
    * @param nfcId NFC ID
    * @returns 删除结果

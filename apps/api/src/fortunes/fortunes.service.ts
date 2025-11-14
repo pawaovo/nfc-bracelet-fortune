@@ -19,6 +19,37 @@ export class FortunesService {
   ) {}
 
   /**
+   * 检查今日运势是否存在（不生成）
+   * @param userId 用户ID
+   * @returns 是否存在今日运势
+   */
+  async checkTodayFortuneExists(
+    userId: string,
+  ): Promise<{ exists: boolean; date?: string }> {
+    const today = new Date().toISOString().split('T')[0];
+
+    const existingFortune = await this.prisma.dailyFortune.findUnique({
+      where: {
+        userId_date: {
+          userId,
+          date: today,
+        },
+      },
+      select: {
+        date: true,
+      },
+    });
+
+    if (existingFortune) {
+      this.logger.log(`Fortune exists for user ${userId} on ${today}`);
+      return { exists: true, date: existingFortune.date };
+    }
+
+    this.logger.log(`Fortune does not exist for user ${userId} on ${today}`);
+    return { exists: false };
+  }
+
+  /**
    * 获取今日运势
    * @param userId 用户ID
    * @returns 今日运势数据

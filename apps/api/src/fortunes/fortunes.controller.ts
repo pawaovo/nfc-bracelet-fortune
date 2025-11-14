@@ -26,6 +26,42 @@ export class FortunesController {
   constructor(private readonly fortunesService: FortunesService) {}
 
   /**
+   * 检查今日运势是否存在（不生成）
+   * @param req 请求对象（包含用户信息）
+   * @returns 是否存在今日运势
+   */
+  @Get('today/exists')
+  @UseGuards(JwtAuthGuard)
+  async checkTodayFortuneExists(
+    @Request() req: JwtRequest,
+  ): Promise<ApiResponse<{ exists: boolean; date?: string }>> {
+    try {
+      const userId = req.user.sub;
+      this.logger.log(`Checking if today's fortune exists for user ${userId}`);
+
+      const result = await this.fortunesService.checkTodayFortuneExists(userId);
+
+      return {
+        success: true,
+        data: result,
+        message: result.exists ? '今日运势已存在' : '今日运势不存在',
+        code: '200',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to check today's fortune: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : '',
+      );
+      return {
+        success: false,
+        data: undefined,
+        message: error instanceof Error ? error.message : '检查今日运势失败',
+        code: '500',
+      };
+    }
+  }
+
+  /**
    * 获取今日运势
    * @param req 请求对象（包含用户信息）
    * @returns 今日运势数据

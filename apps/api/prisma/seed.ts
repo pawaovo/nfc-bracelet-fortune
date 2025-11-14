@@ -64,7 +64,7 @@ async function main() {
 
   // 创建开发场景测试用户
   const users = await Promise.all([
-    // 用户1：已认证用户（信息完整）
+    // 用户1：已认证用户（信息完整）- 小程序用户
     prisma.user.create({
       data: {
         wechatOpenId: 'dev_user_123',
@@ -94,12 +94,33 @@ async function main() {
         birthday: new Date('1985-06-15'),
       },
     }),
+    // 用户4：网页版测试用户A（用于场景B测试）
+    prisma.user.create({
+      data: {
+        wechatOpenId: 'web_zhangsan',
+        username: 'zhangsan',
+        password: '123456',
+        name: '张三',
+        birthday: new Date('1990-01-01'),
+      },
+    }),
+    // 用户5：网页版测试用户B（用于场景B测试）
+    prisma.user.create({
+      data: {
+        wechatOpenId: 'web_lisi',
+        username: 'lisi',
+        password: '654321',
+        name: '李四',
+        birthday: new Date('1995-05-05'),
+      },
+    }),
   ]);
 
   console.log(`✅ 创建了 ${users.length} 个测试用户`);
 
   // 创建开发场景测试手链
   const braceletConfigs = [
+    // ========== 小程序测试手链 ==========
     // 已绑定手链
     {
       nfcId: 'NFC_OWNED_BY_USER_123',
@@ -131,6 +152,48 @@ async function main() {
       nfcId: 'NFC_FRESH_2025_003',
       userId: null,
       comment: '未绑定手链（用于测试"触碰未绑定手链"场景）',
+    },
+
+    // ========== 网页版测试手链 ==========
+    // 场景A：真实nfcId + 未绑定（首次绑定）
+    {
+      nfcId: 'LOCAL_TEST1000',
+      userId: null,
+      comment: '【网页版-场景A】未绑定手链，用于测试首次绑定流程',
+    },
+    {
+      nfcId: 'LOCAL_TEST1001',
+      userId: null,
+      comment: '【网页版-场景A】未绑定手链，用于测试首次绑定流程',
+    },
+    {
+      nfcId: 'LOCAL_TEST1002',
+      userId: null,
+      comment: '【网页版-场景A】未绑定手链，用于测试首次绑定流程',
+    },
+
+    // 场景B：真实nfcId + 已绑定（需要登录）
+    {
+      nfcId: 'LOCAL_TEST2000',
+      userId: users[3].id, // 绑定给用户4（张三）
+      comment: '【网页版-场景B】已绑定给张三，用于测试登录验证流程',
+    },
+    {
+      nfcId: 'LOCAL_TEST2001',
+      userId: users[4].id, // 绑定给用户5（李四）
+      comment: '【网页版-场景B】已绑定给李四，用于测试登录验证流程',
+    },
+
+    // 额外的未绑定手链（用于测试一个用户绑定多个手链）
+    {
+      nfcId: 'LOCAL_TEST3000',
+      userId: null,
+      comment: '【网页版-扩展】未绑定手链，用于测试同一用户绑定多个手链',
+    },
+    {
+      nfcId: 'LOCAL_TEST3001',
+      userId: null,
+      comment: '【网页版-扩展】未绑定手链，用于测试同一用户绑定多个手链',
     },
   ];
 
@@ -222,8 +285,8 @@ async function main() {
     '🤖 注意：用户1（dev_user_123）没有今日运势记录，将触发AI生成功能',
   );
 
-  // 输出AI测试场景说明
-  console.log('\n🧪 AI生成测试场景配置:');
+  // 输出小程序测试场景说明
+  console.log('\n🧪 小程序AI生成测试场景配置:');
   console.log('   场景2: 新访客触碰未绑定手链 (NFC_FRESH_2025_001)');
   console.log('   → 用户登录并绑定手链后，因无今日运势记录，将调用AI生成');
   console.log('   场景6: 已认证用户触碰自己手链 (NFC_OWNED_BY_USER_123)');
@@ -234,7 +297,69 @@ async function main() {
   console.log('   → 用户1因无今日运势记录，将调用AI生成');
   console.log('\n💡 其他场景将使用预览模式或现有运势记录');
 
+  // 输出网页版测试场景说明
+  console.log('\n\n🌐 网页版测试场景配置:');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+  console.log('\n📌 场景A：真实nfcId + 未绑定（首次绑定）');
+  console.log('   测试URL: http://localhost:5173/?nfcId=LOCAL_TEST1000');
+  console.log('   操作步骤:');
+  console.log('     1. 访问上述URL');
+  console.log('     2. 填写表单（用户名、密码、生日）');
+  console.log('     3. 点击保存');
+  console.log('   预期结果:');
+  console.log('     ✅ 创建新用户');
+  console.log('     ✅ 绑定nfcId到bracelets表');
+  console.log('     ✅ 保存登录状态（userType: bound）');
+  console.log('     ✅ 跳转到AI生成页面');
+  console.log('   可用nfcId: LOCAL_TEST1000, LOCAL_TEST1001, LOCAL_TEST1002');
+
+  console.log('\n📌 场景B：真实nfcId + 已绑定（需要登录）');
+  console.log('   测试URL: http://localhost:5173/?nfcId=LOCAL_TEST2000');
+  console.log('   测试账号:');
+  console.log('     用户名: zhangsan');
+  console.log('     密码: 123456');
+  console.log('     生日: 1990-01-01');
+  console.log('   操作步骤:');
+  console.log('     1. 访问上述URL');
+  console.log('     2. 填写张三的用户名和密码');
+  console.log('     3. 点击保存');
+  console.log('   预期结果:');
+  console.log('     ✅ 验证用户名+密码+nfcId匹配');
+  console.log('     ✅ 登录成功');
+  console.log('     ✅ 保存登录状态（userType: bound）');
+  console.log('     ✅ 跳转到AI生成页面');
+  console.log('   已绑定nfcId:');
+  console.log('     - LOCAL_TEST2000 → 张三 (zhangsan/123456)');
+  console.log('     - LOCAL_TEST2001 → 李四 (lisi/654321)');
+
+  console.log('\n📌 场景C：虚假nfcId或无nfcId（访客用户）');
+  console.log('   测试URL: http://localhost:5173/?nfcId=FAKE_ID_999');
+  console.log('   或: http://localhost:5173/');
+  console.log('   操作步骤:');
+  console.log('     1. 访问上述URL');
+  console.log('     2. 填写表单（用户名、密码、生日）');
+  console.log('     3. 点击保存');
+  console.log('   预期结果:');
+  console.log('     ✅ 创建新用户');
+  console.log('     ❌ 不绑定到bracelets表');
+  console.log('     ✅ 保存登录状态（userType: visitor）');
+  console.log('     ✅ 跳转到访客版运势页面（跳过AI生成）');
+
+  console.log('\n📌 扩展测试：同一用户绑定多个手链');
+  console.log('   操作步骤:');
+  console.log('     1. 先用张三绑定 LOCAL_TEST1000');
+  console.log('     2. 清除浏览器缓存');
+  console.log('     3. 访问 http://localhost:5173/?nfcId=LOCAL_TEST3000');
+  console.log('     4. 填写张三的用户名和密码');
+  console.log('   预期结果:');
+  console.log('     ✅ 张三可以绑定多个不同的nfcId');
+  console.log('     ✅ 每个nfcId只能绑定一个用户');
+
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
   console.log('\n🎉 种子数据填充完成！');
+  console.log('\n💡 提示：运行 cd apps/api && pnpm db:seed 可重新初始化数据库');
 }
 
 main()

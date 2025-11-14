@@ -14,6 +14,7 @@ import { ProfileService } from './profile.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { RegisterWebDto } from './dto/register-web.dto';
+import { WebLoginDto } from './dto/web-login.dto';
 import type { ApiResponse, UserPartial, JwtRequest } from '@shared/types';
 
 @Controller('profile')
@@ -52,11 +53,39 @@ export class ProfileController {
     }
   }
 
+  @Post('web-login')
+  @HttpCode(HttpStatus.OK)
+  async loginWeb(
+    @Body() webLoginDto: WebLoginDto,
+  ): Promise<ApiResponse<UserPartial & { userType: 'bound' }>> {
+    try {
+      const result = await this.profileService.loginWeb(
+        webLoginDto.username,
+        webLoginDto.password,
+        webLoginDto.name,
+        webLoginDto.birthday,
+        webLoginDto.nfcId,
+      );
+      return {
+        success: true,
+        data: result,
+        message: 'Web login success',
+      };
+    } catch (error) {
+      this.logger.error('Web login failed', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Web login failed',
+        code: 'WEB_LOGIN_FAILED',
+      };
+    }
+  }
+
   @Post('web-register')
   @HttpCode(HttpStatus.CREATED)
   async registerWeb(
     @Body() registerWebDto: RegisterWebDto,
-  ): Promise<ApiResponse<UserPartial>> {
+  ): Promise<ApiResponse<UserPartial & { userType: 'bound' | 'visitor' }>> {
     try {
       const result = await this.profileService.registerWeb(registerWebDto);
       return {
@@ -68,8 +97,7 @@ export class ProfileController {
       this.logger.error('Web register failed', error);
       return {
         success: false,
-        message:
-          error instanceof Error ? error.message : 'Web register failed',
+        message: error instanceof Error ? error.message : 'Web register failed',
         code: 'WEB_REGISTER_FAILED',
       };
     }
