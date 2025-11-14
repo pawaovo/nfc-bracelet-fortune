@@ -127,6 +127,11 @@ export class FortunesService {
     // 重新生成运势数据
     const fortuneData = await this.generateFortuneData(user, today, isAuth);
 
+    // 获取商品推荐（重新生成时也需要更新推荐）
+    const recommendation = await this.getRecommendation(
+      fortuneData.overallScore,
+    );
+
     // 准备运势数据（使用辅助方法避免重复代码）
     const fortuneDataPayload = this.prepareFortuneDataPayload(fortuneData);
 
@@ -138,10 +143,14 @@ export class FortunesService {
           date: today,
         },
       },
-      update: fortuneDataPayload,
+      update: {
+        ...fortuneDataPayload,
+        recommendationId: recommendation?.id,
+      },
       create: {
         userId,
         date: today,
+        recommendationId: recommendation?.id,
         ...fortuneDataPayload,
       },
       include: {

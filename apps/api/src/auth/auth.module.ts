@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -13,6 +13,7 @@ import { WeChatService } from '../common/wechat.service';
 import { JwtService as CustomJwtService } from '../common/jwt.service';
 import { UsersService } from '../users/users.service';
 import { BraceletsService } from '../bracelets/bracelets.service';
+import { FortunesModule } from '../fortunes/fortunes.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { BraceletsService } from '../bracelets/bracelets.service';
       }),
       inject: [ConfigService],
     }),
+    forwardRef(() => FortunesModule), // 导入 FortunesModule 以使用 FortunesService
   ],
   controllers: [AuthController],
   providers: [

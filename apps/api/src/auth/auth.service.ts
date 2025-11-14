@@ -3,12 +3,15 @@ import {
   Logger,
   UnauthorizedException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { WeChatService } from '../common/wechat.service';
 import { JwtService } from '../common/jwt.service';
 import { UsersService } from '../users/users.service';
 import { BraceletsService } from '../bracelets/bracelets.service';
 import { PrismaService } from '../common/prisma.service';
+import { FortunesService } from '../fortunes/fortunes.service';
 import type { LoginRequest, LoginResponse, User } from '@shared/types';
 
 @Injectable()
@@ -21,6 +24,8 @@ export class AuthService {
     private usersService: UsersService,
     private braceletsService: BraceletsService,
     private prisma: PrismaService,
+    @Inject(forwardRef(() => FortunesService))
+    private fortunesService: FortunesService,
   ) {}
 
   /**
@@ -238,47 +243,10 @@ export class AuthService {
   }
 
   /**
-   * 获取随机商品推荐
+   * 获取随机商品推荐（复用 FortunesService 的方法，避免重复代码）
    * @returns 随机商品
    */
   private async getRandomRecommendation(): Promise<any> {
-    try {
-      // 从数据库获取随机商品
-      const products = await this.prisma.product.findMany({
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          imageUrl: true,
-          price: true,
-          douyinUrl: true,
-        },
-        take: 5, // 获取5个商品
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-
-      if (products.length > 0) {
-        // 随机选择一个商品
-        const randomIndex = Math.floor(Math.random() * products.length);
-        return products[randomIndex];
-      }
-    } catch (error) {
-      this.logger.warn(
-        'Failed to get random recommendation from database, using fallback',
-        error,
-      );
-    }
-
-    // 如果数据库查询失败或没有商品，返回默认推荐
-    return {
-      id: 'sample-product-id',
-      name: '开运水晶手链',
-      description: '提升整体运势，带来好运',
-      imageUrl: '/static/sample-product.jpg',
-      price: 299,
-      douyinUrl: 'https://v.douyin.com/sample',
-    };
+    return await this.fortunesService.getRandomRecommendation();
   }
 }

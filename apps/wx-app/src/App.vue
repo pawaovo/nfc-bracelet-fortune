@@ -8,6 +8,9 @@ import type { Product } from '@shared/types';
 
 const IS_H5 = process.env.UNI_PLATFORM === 'h5';
 
+// H5环境下，防止onShow重复执行启动逻辑
+let hasLaunched = false;
+
 type LaunchOptions = {
   path?: string;
   query?: Record<string, string>;
@@ -27,6 +30,9 @@ onLaunch((options: LaunchOptions) => {
   // 初始化应用状态
   initializeApp();
 
+  // 标记已启动
+  hasLaunched = true;
+
   // 检查隐私协议
   checkPrivacyAgreement(options);
 });
@@ -34,7 +40,13 @@ onLaunch((options: LaunchOptions) => {
 onShow((options: LaunchOptions) => {
   console.log('App Show', options);
 
-  // 检查隐私协议
+  // H5环境下，如果已经启动过，不再执行启动逻辑（避免标签页切换时重置路由）
+  if (IS_H5 && hasLaunched) {
+    console.log('H5环境：已启动过，跳过onShow启动逻辑');
+    return;
+  }
+
+  // 小程序环境下，每次onShow都需要检查隐私协议和启动逻辑
   checkPrivacyAgreement(options);
 });
 
@@ -275,7 +287,7 @@ async function getWeChatLoginCode(timeoutMs: number): Promise<string> {
 function handleLoginResponseNavigation(
   status: string,
   nfcId?: string,
-  previewData?: VisitorPreviewPayload,
+  previewData?: VisitorPreviewPayload
 ) {
   switch (status) {
     case 'AUTHENTICATED':
