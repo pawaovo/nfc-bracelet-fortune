@@ -1,9 +1,15 @@
 <template>
   <view class="fortune-container">
     <!-- 主背景容器 -->
-    <view class="main-background">
+    <view class="main-background" :class="{ 'background-ready': backgroundReady }">
       <!-- 主背景图片 -->
-      <image class="bg-main" :src="config.images.mainBackground" mode="aspectFill" />
+      <image
+        class="bg-main"
+        :src="config.images.mainBackground"
+        mode="aspectFill"
+        @load="handleBackgroundComplete"
+        @error="handleBackgroundComplete"
+      />
     </view>
 
     <!-- 加载状态 -->
@@ -619,6 +625,16 @@ const isPreviewMode = ref(false);
 const fromProfile = ref(false); // 标识是否从个人信息页面跳转过来
 const forceReloadToken = ref(false);
 
+// 背景图片加载状态
+const backgroundReady = ref(false);
+
+/**
+ * 处理背景图片加载完成或失败
+ */
+function handleBackgroundComplete() {
+  backgroundReady.value = true;
+}
+
 // AI重试相关状态与加载提示
 const aiRetryState = ref({
   showRetry: false,
@@ -1199,13 +1215,15 @@ function handleHistoryNavigation() {
 <style lang="scss" scoped>
 @import '@/styles/common.scss';
 
+/* 页面容器 - 始终显示渐变背景色 */
 .fortune-container {
   position: relative;
   height: 100vh; /* 固定高度为一屏 */
   overflow: hidden; /* 禁止滚动 */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-/* 主背景容器 - 全屏覆盖 */
+/* 主背景容器 - 初始状态透明 */
 .main-background {
   position: fixed;
   top: 0;
@@ -1213,6 +1231,8 @@ function handleHistoryNavigation() {
   width: 100%;
   height: 100%;
   z-index: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease-in;
 
   .bg-main {
     position: absolute;
@@ -1222,6 +1242,11 @@ function handleHistoryNavigation() {
     height: 100%;
     z-index: 1;
   }
+}
+
+/* 背景图片加载完成 - 淡入显示 */
+.main-background.background-ready {
+  opacity: 1;
 }
 
 .loading-container,

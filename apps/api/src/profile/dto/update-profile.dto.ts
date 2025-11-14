@@ -12,27 +12,27 @@ import { Transform } from 'class-transformer';
 export class UpdateProfileDto {
   @IsString()
   @IsNotEmpty()
-  @Length(4, 32, { message: '�û����붼��4-32���ַ�' })
+  @Length(1, 32, { message: '用户名长度需在1-32个字符之间' })
   @Transform(({ value }) => value?.trim())
   username: string;
 
   @IsString()
   @IsNotEmpty()
-  @MinLength(6, { message: '�������볤�Ȳ���С��6λ' })
+  @MinLength(6, { message: '密码长度不能小于6位' })
   password: string;
 
   @IsString()
   @IsNotEmpty()
-  @Length(1, 20, { message: '�ƺ�����Ӧ��1-20���ַ�֮��' })
+  @Length(1, 20, { message: '昵称长度应在1-20个字符之间' })
   @Transform(({ value }) => value?.trim())
   @Matches(/^[\u4e00-\u9fa5a-zA-Z0-9\s]+$/, {
-    message: '�ƺ�ֻ�ܰ������ġ�Ӣ�ġ����ֺͿո�',
+    message: '昵称只能包含中文、英文、数字和空格',
   })
   name: string;
 
   @IsString()
   @IsNotEmpty()
-  @IsDateString({}, { message: '���ո�ʽ����ȷ����ʹ��YYYY-MM-DD��ʽ' })
+  @IsDateString({}, { message: '生日格式不正确，请使用YYYY-MM-DD格式' })
   birthday: string;
 
   @IsOptional()

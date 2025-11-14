@@ -10,7 +10,7 @@ import { Transform } from 'class-transformer';
 export class RegisterWebDto {
   @IsString()
   @IsNotEmpty()
-  @Length(4, 32, { message: '账户名长度需在4-32个字符之间' })
+  @Length(1, 32, { message: '账户名长度需在1-32个字符之间' })
   @Transform(({ value }) => value?.trim())
   username: string;
 

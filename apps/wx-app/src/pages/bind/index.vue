@@ -64,11 +64,12 @@
         :disabled="isBinding"
         @click="handleBindClick"
       >
-        <text v-if="!isBinding">
-          {{ themeConfig.texts.button.normal }}
-        </text>
+        <view v-if="isBinding" class="button-loading">
+          <view class="button-loading-spinner" />
+          <text>{{ themeConfig.texts.button.loading }}</text>
+        </view>
         <text v-else>
-          {{ themeConfig.texts.button.loading }}
+          {{ themeConfig.texts.button.normal }}
         </text>
       </button>
     </view>
@@ -121,8 +122,8 @@ onMounted(async () => {
     themeConfig.value = getTheme(options.theme as string);
   }
 
-  // 加载随机商品推荐
-  await loadRandomRecommendation();
+  // 加载随机商品推荐（异步加载，不阻塞页面）
+  loadRandomRecommendation();
 });
 
 /**
@@ -146,11 +147,9 @@ async function loadRandomRecommendation() {
  * 图片加载失败时，会自动使用 || 后的默认图片
  */
 function handleProductImageError() {
-  if (!useFallbackProductImage.value) {
-    useFallbackProductImage.value = true;
-  }
+  useFallbackProductImage.value = true;
 
-  console.warn('��ƷͼƬ����ʧ�ܣ�ʹ��Ĭ��ͼƬ:', {
+  console.warn('商品图片加载失败，使用默认图片:', {
     imageUrl: recommendedProduct.value?.imageUrl,
     fallback: themeConfig.value.images.detailImage2,
   });
@@ -165,6 +164,7 @@ const handleBindClick = async () => {
   }
 
   if (isH5Platform) {
+    // H5平台：直接跳转到个人信息页
     const target = nfcId.value
       ? `/pages/profile/index?nfcId=${nfcId.value}`
       : '/pages/profile/index';
@@ -184,7 +184,7 @@ const handleBindClick = async () => {
     });
 
     if (!loginResult.code) {
-      throw new Error('΢����Ȩʧ��');
+      throw new Error('微信授权失败');
     }
 
     const response = await authService.login(loginResult.code, nfcId.value || undefined);
@@ -193,18 +193,16 @@ const handleBindClick = async () => {
       const { status, token, user, previewScore, recommendation } = response.data;
 
       if (token) {
-        const authStore = useAuthStore();
         authStore.login(token, user || {});
       }
 
+      // 根据状态跳转到不同页面
       if (status === 'PROFILE_INCOMPLETE') {
-        uni.redirectTo({
-          url: '/pages/profile/index',
-        });
+        // 跳转到个人信息页
+        uni.redirectTo({ url: '/pages/profile/index' });
       } else if (status === 'AUTHENTICATED') {
-        uni.redirectTo({
-          url: '/pages/fortune/index',
-        });
+        // 跳转到运势页
+        uni.redirectTo({ url: '/pages/fortune/index' });
       } else if (status === 'VISITOR_PREVIEW') {
         if (previewScore && recommendation) {
           uni.setStorageSync('previewData', {
@@ -214,7 +212,7 @@ const handleBindClick = async () => {
         }
 
         uni.showToast({
-          title: '�������ѱ��󶨣�Ϊ��չʾ�ÿ�Ԥ��',
+          title: '该手链已被绑定，为您展示访客预览',
           icon: 'none',
           duration: 2000,
         });
@@ -223,12 +221,34 @@ const handleBindClick = async () => {
           url: '/pages/fortune/index?mode=visitor&preview=true',
         });
       }
+    } else {
+      throw new Error(response.message || '登录失败');
     }
   } catch (error) {
-    console.error('�󶨳���:', error);
+    console.error('绑定出错:', error);
+
+    // 根据错误类型显示友好提示
+    let errorMessage = '绑定失败，请重试';
+
+    if (error instanceof Error && error.message) {
+      const message = error.message;
+
+      if (message.includes('网络') || message.includes('network')) {
+        errorMessage = '网络连接失败，请检查网络';
+      } else if (message.includes('超时') || message.includes('timeout')) {
+        errorMessage = '请求超时，请重试';
+      } else if (message.includes('授权') || message.includes('auth')) {
+        errorMessage = '微信授权失败，请重试';
+      } else {
+        // 其他错误直接使用原始错误信息
+        errorMessage = message;
+      }
+    }
+
     uni.showToast({
-      title: error instanceof Error ? error.message : '�󶨳���',
+      title: errorMessage,
       icon: 'none',
+      duration: 2500,
     });
   } finally {
     isBinding.value = false;
@@ -445,6 +465,21 @@ const handleBindClick = async () => {
       opacity: 0.8;
     }
   }
+
+  .button-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+  }
+
+  .button-loading-spinner {
+    width: 32rpx;
+    height: 32rpx;
+    border: 3rpx solid rgba(255, 255, 255, 0.3);
+    border-top: 3rpx solid #ffffff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
 }
 </style>
-

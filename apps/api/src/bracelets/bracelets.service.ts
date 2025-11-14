@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import type { Bracelet } from '@shared/types';
 
@@ -98,7 +98,7 @@ export class BraceletsService {
         bracelet = await this.create(nfcId, userId);
       } else if (bracelet.userId && bracelet.userId !== userId) {
         // 如果手链已被其他用户绑定，抛出错误
-        throw new Error('Bracelet is already bound to another user');
+        throw new BadRequestException('该手链已被其他用户绑定');
       } else if (!bracelet.userId) {
         // 如果手链存在但未绑定，更新绑定信息
         bracelet = await this.prisma.bracelet.update({

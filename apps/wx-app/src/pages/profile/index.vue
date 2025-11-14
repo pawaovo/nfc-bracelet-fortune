@@ -1,12 +1,24 @@
 <template>
   <view class="profile-container">
     <!-- 主背景容器 -->
-    <view class="main-background">
+    <view class="main-background" :class="{ 'background-ready': backgroundReady }">
       <!-- 主背景图片 -->
-      <image class="bg-main" :src="config.images.mainBackground" mode="scaleToFill" />
+      <image
+        class="bg-main"
+        :src="config.images.mainBackground"
+        mode="scaleToFill"
+        @load="handleBackgroundComplete"
+        @error="handleBackgroundComplete"
+      />
 
       <!-- 星空背景图片 -->
-      <image class="bg-stars" :src="config.images.starsBackground" mode="scaleToFill" />
+      <image
+        class="bg-stars"
+        :src="config.images.starsBackground"
+        mode="scaleToFill"
+        @load="handleBackgroundComplete"
+        @error="handleBackgroundComplete"
+      />
 
       <!-- 星空卡片淡暗色遮罩层 -->
       <view class="stars-overlay" />
@@ -95,10 +107,13 @@
     <!-- 提交按钮 -->
     <view class="submit-button-container" @click="handleSubmitClick">
       <image class="button-bg" :src="config.images.buttonBackground" mode="aspectFit" />
-      <text v-if="!isLoading" class="button-text">
+      <view v-if="isLoading" class="button-loading">
+        <view class="button-loading-spinner" />
+        <text class="button-text"> 保存中... </text>
+      </view>
+      <text v-else class="button-text">
         {{ config.texts.submitButton }}
       </text>
-      <text v-else class="button-text"> 保存中... </text>
     </view>
   </view>
 </template>
@@ -128,6 +143,20 @@ const formData = reactive({
 const isLoading = ref(false);
 const currentNfcId = ref('');
 const isH5Platform = process.env.UNI_PLATFORM === 'h5';
+
+// 背景图片加载状态
+const backgroundReady = ref(false);
+let loadedCount = 0;
+
+/**
+ * 处理背景图片加载完成或失败
+ */
+function handleBackgroundComplete() {
+  loadedCount++;
+  if (loadedCount >= 2) {
+    backgroundReady.value = true;
+  }
+}
 const isDevMode = import.meta.env.MODE !== 'production';
 const enableDevWebAuth = isH5Platform && isDevMode;
 const FORCE_RELOAD_FLAG_KEY = 'fortuneForceReload';
@@ -206,7 +235,12 @@ const navigateAfterProfileSave = () => {
 const buildSubmitPayload = () => {
   const trimmedName = formData.name.trim();
   const trimmedPassword = formData.password.trim();
-  const username = authStore.user?.username?.trim() || authStore.user?.name?.trim() || trimmedName;
+
+  // 网页版：使用表单输入的用户名（formData.name）
+  // 小程序版：使用已登录用户的username，如果没有则使用表单输入
+  const username = isH5Platform
+    ? trimmedName // 网页版直接使用表单输入的昵称作为用户名
+    : authStore.user?.username?.trim() || authStore.user?.name?.trim() || trimmedName;
 
   const payload: {
     username: string;
@@ -260,7 +294,8 @@ const submitAsWeb = async () => {
     throw new Error('missing_nfc');
   }
 
-  const payload = { ...buildSubmitPayload(), nfcId: currentNfcId.value };
+  const payload = buildSubmitPayload();
+
   const response = await profileService.registerWeb(payload);
   if (!response.success || !response.data) {
     throw new Error(response.message || '绑定失败');
@@ -302,9 +337,22 @@ const handleSubmitClick = async () => {
       return;
     }
 
+    // 根据错误类型显示友好提示
     let errorMessage = '保存失败，请重试';
+
     if (error instanceof Error && error.message) {
-      errorMessage = error.message;
+      const message = error.message;
+
+      if (message.includes('网络') || message.includes('network')) {
+        errorMessage = '网络连接失败，请检查网络';
+      } else if (message.includes('超时') || message.includes('timeout')) {
+        errorMessage = '请求超时，请重试';
+      } else if (message.includes('验证') || message.includes('validate')) {
+        errorMessage = '信息格式不正确，请检查';
+      } else {
+        // 其他错误直接使用原始错误信息
+        errorMessage = message;
+      }
     }
 
     uni.showToast({ title: errorMessage, icon: 'none', duration: 2000 });
@@ -346,6 +394,7 @@ onLoad(options => {
  * 转换比例: 750 / 402.118 ≈ 1.865
  */
 
+/* 页面容器 - 始终显示渐变背景色 */
 .profile-container {
   position: relative;
   min-height: 100vh;
@@ -354,7 +403,7 @@ onLoad(options => {
   overflow: hidden;
 }
 
-/* 主背景容器 */
+/* 主背景容器 - 初始状态透明 */
 .main-background {
   position: fixed;
   top: 0;
@@ -362,6 +411,8 @@ onLoad(options => {
   width: 100%;
   height: 100%;
   z-index: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease-in;
 
   .bg-main {
     position: absolute;
@@ -392,6 +443,11 @@ onLoad(options => {
     z-index: 101;
     pointer-events: none;
   }
+}
+
+/* 背景图片加载完成 - 淡入显示 */
+.main-background.background-ready {
+  opacity: 1;
 }
 
 /* 头像占位图 */
@@ -634,5 +690,33 @@ onLoad(options => {
   color: #ffffff;
   line-height: 115rpx;
   text-align: center;
+}
+
+/* 按钮loading状态 */
+.button-loading {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+}
+
+.button-loading-spinner {
+  width: 32rpx;
+  height: 32rpx;
+  border: 3rpx solid rgba(255, 255, 255, 0.3);
+  border-top: 3rpx solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>
