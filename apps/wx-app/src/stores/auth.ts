@@ -8,6 +8,8 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref<string>('');
   const user = ref<UserPartial | null>(null);
   const isLoading = ref(false);
+  const nfcId = ref<string>(''); // 当前绑定的nfcId
+  const userType = ref<'bound' | 'visitor' | ''>(''); // 用户类型
 
   // 计算属性
   const isAuthenticated = computed(() => !!token.value && !!user.value);
@@ -31,21 +33,46 @@ export const useAuthStore = defineStore('auth', () => {
     uni.setStorageSync('user', newUser);
   };
 
+  const setNfcId = (newNfcId: string) => {
+    nfcId.value = newNfcId;
+    uni.setStorageSync('nfcId', newNfcId);
+  };
+
+  const setUserType = (newUserType: 'bound' | 'visitor') => {
+    userType.value = newUserType;
+    uni.setStorageSync('userType', newUserType);
+  };
+
   const setLoading = (loading: boolean) => {
     isLoading.value = loading;
   };
 
-  const login = (authToken: string, userData: UserPartial) => {
+  const login = (
+    authToken: string,
+    userData: UserPartial,
+    nfcIdValue?: string,
+    userTypeValue?: 'bound' | 'visitor'
+  ) => {
     setToken(authToken);
     setUser(userData);
+    if (nfcIdValue) {
+      setNfcId(nfcIdValue);
+    }
+    if (userTypeValue) {
+      setUserType(userTypeValue);
+    }
   };
 
   const logout = () => {
     token.value = '';
     user.value = null;
+    nfcId.value = '';
+    userType.value = '';
     // 清除本地存储
     uni.removeStorageSync('token');
     uni.removeStorageSync('user');
+    uni.removeStorageSync('nfcId');
+    uni.removeStorageSync('userType');
     // 清除 API 请求的 token
     apiRequest.clearAuthToken();
   };
@@ -54,6 +81,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const storedToken = uni.getStorageSync('token');
       const storedUser = uni.getStorageSync('user');
+      const storedNfcId = uni.getStorageSync('nfcId');
+      const storedUserType = uni.getStorageSync('userType');
 
       if (storedToken) {
         token.value = storedToken;
@@ -63,6 +92,14 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (storedUser) {
         user.value = storedUser;
+      }
+
+      if (storedNfcId) {
+        nfcId.value = storedNfcId;
+      }
+
+      if (storedUserType) {
+        userType.value = storedUserType;
       }
     } catch (error) {
       console.error('Failed to init auth from storage:', error);
@@ -81,6 +118,8 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     user,
     isLoading,
+    nfcId,
+    userType,
 
     // 计算属性
     isAuthenticated,
@@ -89,6 +128,8 @@ export const useAuthStore = defineStore('auth', () => {
     // 动作
     setToken,
     setUser,
+    setNfcId,
+    setUserType,
     setLoading,
     login,
     logout,

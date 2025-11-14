@@ -113,8 +113,26 @@ onMounted(async () => {
   const options = currentPage.options || {};
 
   // 获取 NFC ID
-  if (options.nfcId) {
-    nfcId.value = options.nfcId;
+  // H5环境：优先从 URL 查询参数获取（因为 hash 路由的问题）
+  if (isH5Platform) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const nfcIdFromUrl = urlParams.get('nfcId');
+    if (nfcIdFromUrl) {
+      nfcId.value = nfcIdFromUrl;
+      console.log('[Bind] 从 URL 获取 nfcId:', nfcIdFromUrl);
+    } else {
+      // 尝试从 localStorage 获取
+      const storedNfcId = uni.getStorageSync('currentNfcId');
+      if (storedNfcId) {
+        nfcId.value = storedNfcId;
+        console.log('[Bind] 从 localStorage 获取 nfcId:', storedNfcId);
+      }
+    }
+  } else {
+    // 小程序环境：从 options 获取
+    if (options.nfcId) {
+      nfcId.value = options.nfcId;
+    }
   }
 
   // 获取主题配置（支持通过 URL 参数切换主题）

@@ -41,8 +41,8 @@ export const defaultTheme: ProfilePageTheme = {
     avatarIcon: '../../static/pages/profile/icon-avatar.svg',
   },
   texts: {
-    mainTitle: '欢迎来到灵感之境',
-    subtitle: '完成信息以解锁今日能量',
+    mainTitle: '注入灵魂',
+    subtitle: '解锁今日运势',
     usernameLabel: '账户名*',
     usernamePlaceholder: '请设置 4-32 位账户名',
     passwordLabel: '密码*',

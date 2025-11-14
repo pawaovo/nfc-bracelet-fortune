@@ -30,7 +30,19 @@ export interface WebRegisterRequest {
   password: string;
   name: string;
   birthday: string; // YYYY-MM-DD
-  nfcId: string;
+  nfcId?: string; // 可选：访客用户没有nfcId
+}
+
+export interface WebLoginRequest {
+  username: string;
+  password: string;
+  name: string; // 昵称（登录时可更新）
+  birthday: string; // 生日（登录时可更新）
+  nfcId: string; // 必需：用于验证用户是否绑定该nfcId
+}
+
+export interface WebAuthResponse extends UserPartial {
+  userType: 'bound' | 'visitor';
 }
 
 export interface UserForFortune {

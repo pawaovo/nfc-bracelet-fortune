@@ -88,7 +88,7 @@ export const defaultTheme: BindPageTheme = {
     },
 
     button: {
-      normal: '微信授权并绑定',
+      normal: '绑定我的手链',
       loading: '绑定中...',
     },
   },

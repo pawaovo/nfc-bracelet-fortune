@@ -58,6 +58,12 @@ onHide(() => {
  * 检查隐私协议是否已同意
  */
 function checkPrivacyAgreement(options: LaunchOptions) {
+  // H5网页端不显示隐私弹窗
+  if (IS_H5) {
+    handleAppLaunch(options);
+    return;
+  }
+
   const privacyAgreed = uni.getStorageSync('privacy_agreed');
 
   if (!privacyAgreed) {
@@ -141,9 +147,9 @@ async function handleAppLaunch(options: LaunchOptions) {
     options = applyDevScenario(DEV_CONFIG.currentScenario, options);
   }
 
-  // 🚨 临时NFC绕过逻辑：如果启用，为用户生成虚拟NFC ID
-  if (TEMP_NFC_BYPASS.enabled && !options.query?.nfcId) {
-    console.log('🔧 临时NFC绕过模式已启用，生成虚拟NFC ID');
+  // 🚨 临时NFC绕过逻辑：仅在小程序平台生效，H5平台不生成虚拟NFC ID
+  if (TEMP_NFC_BYPASS.enabled && !IS_H5 && !options.query?.nfcId) {
+    console.log('🔧 临时NFC绕过模式已启用（仅小程序），生成虚拟NFC ID');
     const virtualNfcId = generateVirtualNfcId();
     if (!options.query) {
       options.query = {};
@@ -157,18 +163,16 @@ async function handleAppLaunch(options: LaunchOptions) {
     const nfcId = options.query.nfcId;
     console.log('NFC启动，nfcId:', nfcId);
 
-    // 存储当前NFC ID（如果开发场景没有设置的话）
-    if (!uni.getStorageSync('currentNfcId')) {
-      uni.setStorageSync('currentNfcId', nfcId);
-    }
+    // 存储当前NFC ID
+    uni.setStorageSync('currentNfcId', nfcId);
 
-    // 检查用户是否已登录
+    // H5平台特殊处理
     if (IS_H5) {
-      uni.setStorageSync('currentNfcId', nfcId);
-      uni.redirectTo({ url: `/pages/bind/index?nfcId=${nfcId}` });
+      await handleH5NfcLaunch(nfcId);
       return;
     }
 
+    // 小程序平台逻辑
     if (!authStore.isAuthenticated) {
       // 未登录用户触碰NFC，先尝试自动登录判断手链状态
       console.log('未登录用户触碰NFC，尝试自动登录判断手链状态');
@@ -179,8 +183,72 @@ async function handleAppLaunch(options: LaunchOptions) {
     }
   } else {
     // 直接启动（无NFC参数）
-    console.log('直接启动小程序');
-    await handleDirectLaunch();
+    console.log('直接启动');
+
+    if (IS_H5) {
+      await handleH5DirectLaunch();
+    } else {
+      await handleDirectLaunch();
+    }
+  }
+}
+
+/**
+ * H5平台：处理NFC启动
+ */
+async function handleH5NfcLaunch(nfcId: string) {
+  const authStore = useAuthStore();
+
+  console.log('[H5] NFC启动，nfcId:', nfcId);
+
+  // 检查是否有该nfcId的登录状态
+  const storedNfcId = authStore.nfcId;
+  const storedUserType = authStore.userType;
+
+  if (authStore.isAuthenticated && storedNfcId === nfcId) {
+    // 场景A或B：已登录且是同一个nfcId，直接进入AI生成页面
+    console.log('[H5] 检测到已登录状态，nfcId匹配，跳转到运势页面');
+
+    if (storedUserType === 'bound') {
+      // 绑定用户：跳转到运势页面（会自动触发AI生成）
+      uni.redirectTo({ url: '/pages/fortune/index' });
+    } else {
+      // 访客用户：跳转到访客版运势页面
+      uni.redirectTo({ url: '/pages/fortune/index?mode=visitor' });
+    }
+    return;
+  }
+
+  // 未登录或不同的nfcId：跳转到绑定页面
+  console.log('[H5] 未登录或nfcId不匹配，跳转到绑定页面');
+  uni.redirectTo({ url: `/pages/bind/index?nfcId=${nfcId}` });
+}
+
+/**
+ * H5平台：处理直接启动（无NFC参数）
+ */
+async function handleH5DirectLaunch() {
+  const authStore = useAuthStore();
+
+  console.log('[H5] 直接启动（无NFC参数）');
+
+  // 检查是否有登录状态
+  if (authStore.isAuthenticated) {
+    const storedUserType = authStore.userType;
+
+    if (storedUserType === 'bound') {
+      // 绑定用户：跳转到运势页面
+      console.log('[H5] 检测到绑定用户登录状态，跳转到运势页面');
+      uni.redirectTo({ url: '/pages/fortune/index' });
+    } else {
+      // 访客用户：跳转到访客版运势页面
+      console.log('[H5] 检测到访客用户登录状态，跳转到访客版运势页面');
+      uni.redirectTo({ url: '/pages/fortune/index?mode=visitor' });
+    }
+  } else {
+    // 未登录：跳转到绑定页面
+    console.log('[H5] 未登录，跳转到绑定页面');
+    uni.redirectTo({ url: '/pages/bind/index' });
   }
 }
 

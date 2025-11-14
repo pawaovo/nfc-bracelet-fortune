@@ -7,6 +7,14 @@ import type { FortuneData } from '@/stores/fortune';
  */
 export class FortuneService {
   /**
+   * 检查今日运势是否存在（不生成）
+   * @returns 是否存在今日运势
+   */
+  async checkTodayFortuneExists(): Promise<ApiResponse<{ exists: boolean; date?: string }>> {
+    return apiRequest.get('fortune/today/exists');
+  }
+
+  /**
    * 获取今日运势
    * @returns 今日运势数据
    */

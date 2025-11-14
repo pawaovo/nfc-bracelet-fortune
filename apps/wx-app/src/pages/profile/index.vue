@@ -122,6 +122,7 @@
 import { ref, reactive, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { profileService, validateName, validateBirthday } from '@/api/profile';
+import { fortuneService } from '@/api/fortune';
 import { useAuthStore } from '@/stores/auth';
 import { useFortuneStore } from '@/stores/fortune';
 import { getTheme } from './config';
@@ -143,6 +144,7 @@ const formData = reactive({
 const isLoading = ref(false);
 const currentNfcId = ref('');
 const isH5Platform = process.env.UNI_PLATFORM === 'h5';
+const pageHint = ref(''); // 页面提示信息（用于场景B）
 
 // 背景图片加载状态
 const backgroundReady = ref(false);
@@ -179,13 +181,27 @@ const initFormFromUser = () => {
 };
 
 const syncNfcId = (options?: Record<string, unknown>) => {
-  const fromQuery = (options?.nfcId as string) || '';
+  let fromQuery = (options?.nfcId as string) || '';
+
+  // H5环境：优先从 URL 查询参数获取（因为 hash 路由的问题）
+  if (isH5Platform && !fromQuery) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const nfcIdFromUrl = urlParams.get('nfcId');
+    if (nfcIdFromUrl) {
+      fromQuery = nfcIdFromUrl;
+      console.log('[Profile] 从 URL 获取 nfcId:', nfcIdFromUrl);
+    }
+  }
+
   const stored = uni.getStorageSync('currentNfcId') || '';
   const nextId = fromQuery || stored || '';
+
   if (fromQuery) {
     uni.setStorageSync('currentNfcId', fromQuery);
   }
+
   currentNfcId.value = nextId;
+  console.log('[Profile] syncNfcId 结果:', { fromQuery, stored, nextId });
 };
 
 const onBirthdayChange = (event: { detail: { value: string } }) => {
@@ -218,18 +234,6 @@ const validateForm = (): boolean => {
   }
 
   return true;
-};
-
-const navigateAfterProfileSave = () => {
-  const resolvedNfcId = currentNfcId.value || uni.getStorageSync('currentNfcId');
-  if (!resolvedNfcId) {
-    uni.redirectTo({ url: '/pages/fortune/index?mode=visitor' });
-    return;
-  }
-
-  uni.redirectTo({
-    url: '/pages/ai-generation/index?fromProfile=true',
-  });
 };
 
 const buildSubmitPayload = () => {
@@ -271,37 +275,157 @@ const ensureDevWebAuth = (user: UserPartial) => {
   authStore.login(token, user);
 };
 
-const handleProfileSuccess = async (message: string, user?: UserPartial) => {
+const handleProfileSuccess = async (
+  message: string,
+  user?: UserPartial,
+  userType?: 'bound' | 'visitor',
+  isNewUser: boolean = false // 新增参数：是否为新用户（首次注册/绑定）
+) => {
   if (user) {
     if (enableDevWebAuth) {
       ensureDevWebAuth(user);
     } else {
       authStore.setUser(user);
     }
+
+    // 保存用户类型
+    if (userType) {
+      authStore.setUserType(userType);
+    }
+
+    // 保存nfcId（如果是绑定用户）
+    if (userType === 'bound' && currentNfcId.value) {
+      authStore.setNfcId(currentNfcId.value);
+    }
   }
   fortuneStore.clearFortune();
   uni.setStorageSync(FORCE_RELOAD_FLAG_KEY, '1');
 
+  // 先检查跳转目标，再显示提示和跳转
+  const finalUserType = userType || 'visitor';
+  let targetUrl = '';
+
+  if (finalUserType === 'visitor') {
+    // 访客用户：直接跳转到访客版运势页面
+    targetUrl = '/pages/fortune/index?mode=visitor';
+  } else {
+    // 绑定用户
+    if (isNewUser) {
+      // 新用户（首次注册/绑定）：直接跳转到AI生成页面，不检查今日运势
+      console.log('[Profile] 新用户，直接跳转到AI生成页面');
+      targetUrl = '/pages/ai-generation/index?fromProfile=true';
+    } else {
+      // 老用户（登录）：检查是否已有今日运势
+      console.log('[Profile] 老用户登录，检查是否已有今日运势');
+      try {
+        // 使用新的 checkTodayFortuneExists API，只检查不生成
+        const checkResponse = await fortuneService.checkTodayFortuneExists();
+
+        if (checkResponse.success && checkResponse.data?.exists) {
+          // 已有今日运势：获取运势数据并跳转到运势页面
+          console.log('[Profile] 检测到已有今日运势，获取数据并跳转到运势页面');
+          const fortuneResponse = await fortuneService.getTodayFortune();
+          if (fortuneResponse.success && fortuneResponse.data) {
+            fortuneStore.setFortune(fortuneResponse.data);
+            targetUrl = '/pages/fortune/index?preloaded=true';
+          } else {
+            // 获取失败，跳转到AI生成页面
+            console.log('[Profile] 获取运势数据失败，跳转到AI生成页面');
+            targetUrl = '/pages/ai-generation/index?fromProfile=true';
+          }
+        } else {
+          // 没有今日运势：跳转到AI生成页面
+          console.log('[Profile] 没有今日运势，跳转到AI生成页面');
+          targetUrl = '/pages/ai-generation/index?fromProfile=true';
+        }
+      } catch (error) {
+        console.log('[Profile] 检查今日运势失败，跳转到AI生成页面:', error);
+        targetUrl = '/pages/ai-generation/index?fromProfile=true';
+      }
+    }
+  }
+
+  // 显示成功提示，然后跳转
   uni.showToast({ title: message, icon: 'success', duration: 1500 });
-  setTimeout(async () => {
-    navigateAfterProfileSave();
+  setTimeout(() => {
+    console.log('[Profile] 跳转到:', targetUrl);
+    uni.redirectTo({ url: targetUrl });
   }, 1500);
 };
 
 const submitAsWeb = async () => {
-  if (!currentNfcId.value) {
-    uni.showToast({ title: '未获取到NFC信息', icon: 'none', duration: 2000 });
-    throw new Error('missing_nfc');
-  }
-
+  const nfcId = currentNfcId.value;
   const payload = buildSubmitPayload();
 
-  const response = await profileService.registerWeb(payload);
+  console.log('[submitAsWeb] nfcId:', nfcId);
+  console.log('[submitAsWeb] payload:', { ...payload, password: '***' });
+
+  // 场景判断：检查是否需要登录验证
+  // 如果有nfcId，先尝试登录验证（场景B）
+  if (nfcId) {
+    try {
+      // 尝试登录验证（同时更新昵称和生日）
+      const loginResponse = await profileService.loginWeb({
+        username: payload.username,
+        password: payload.password,
+        name: payload.name,
+        birthday: payload.birthday,
+        nfcId: nfcId,
+      });
+
+      if (loginResponse.success && loginResponse.data) {
+        // 登录成功（场景B：已绑定nfcId的用户登录）
+        console.log('[submitAsWeb] 登录成功，用户类型:', loginResponse.data.userType);
+
+        // 生成开发环境JWT token
+        if (enableDevWebAuth) {
+          const openid = loginResponse.data.wechatOpenId || `web_${loginResponse.data.username}`;
+          const token = generateDevJWT(loginResponse.data.id, openid);
+          authStore.login(token, loginResponse.data, nfcId, loginResponse.data.userType);
+        }
+
+        // 登录成功：老用户，isNewUser = false
+        await handleProfileSuccess(
+          '登录成功',
+          loginResponse.data,
+          loginResponse.data.userType,
+          false
+        );
+        return;
+      }
+    } catch (loginError) {
+      // 登录失败，可能是：
+      // 1. 该nfcId未绑定任何用户（场景A）
+      // 2. 用户名或密码错误
+      // 3. 该nfcId不存在（虚假nfcId，场景C）
+      console.log('[submitAsWeb] 登录验证失败，尝试注册:', loginError);
+
+      // 继续执行注册流程
+    }
+  }
+
+  // 场景A或C：注册/绑定流程
+  const registerPayload = {
+    ...payload,
+    nfcId: nfcId || undefined, // 如果没有nfcId，传undefined
+  };
+
+  const response = await profileService.registerWeb(registerPayload);
   if (!response.success || !response.data) {
     throw new Error(response.message || '绑定失败');
   }
 
-  await handleProfileSuccess('绑定成功', response.data);
+  console.log('[submitAsWeb] 注册成功，用户类型:', response.data.userType);
+
+  // 生成开发环境JWT token
+  if (enableDevWebAuth) {
+    const openid = response.data.wechatOpenId || `web_${response.data.username}`;
+    const token = generateDevJWT(response.data.id, openid);
+    authStore.login(token, response.data, nfcId, response.data.userType);
+  }
+
+  // 注册成功：新用户，isNewUser = true
+  await handleProfileSuccess('绑定成功', response.data, response.data.userType, true);
 };
 
 const submitWithAuth = async () => {
@@ -318,7 +442,8 @@ const submitWithAuth = async () => {
     throw new Error(response.message || '保存失败');
   }
 
-  await handleProfileSuccess('信息保存成功', response.data);
+  // 更新个人信息：老用户，isNewUser = false
+  await handleProfileSuccess('信息保存成功', response.data, undefined, false);
 };
 
 const handleSubmitClick = async () => {
@@ -370,6 +495,14 @@ onLoad(options => {
   if (!isH5Platform && !authStore.isAuthenticated) {
     uni.redirectTo({ url: '/pages/bind/index' });
     return;
+  }
+
+  // H5平台：检查是否需要显示登录提示
+  if (isH5Platform && currentNfcId.value) {
+    // 如果有nfcId，可能是场景B（需要登录）
+    // 这里可以添加一个API调用来检查nfcId的绑定状态
+    // 暂时不实现，让用户直接填写表单，后端会自动判断
+    console.log('[Profile] H5平台，nfcId:', currentNfcId.value);
   }
 
   // 预下载PAG文件（后台下载，不阻塞用户操作）

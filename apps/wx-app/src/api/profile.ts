@@ -4,19 +4,21 @@ import type {
   UpdateProfileDto,
   UserPartial,
   WebRegisterRequest,
+  WebLoginRequest,
+  WebAuthResponse,
 } from '@shared/types';
 
 export class ProfileService {
-  async updateProfile(
-    profileData: UpdateProfileDto,
-  ): Promise<ApiResponse<UserPartial>> {
+  async updateProfile(profileData: UpdateProfileDto): Promise<ApiResponse<UserPartial>> {
     return apiRequest.put<UserPartial>('profile', profileData);
   }
 
-  async registerWeb(
-    payload: WebRegisterRequest,
-  ): Promise<ApiResponse<UserPartial>> {
-    return apiRequest.post<UserPartial>('profile/web-register', payload);
+  async registerWeb(payload: WebRegisterRequest): Promise<ApiResponse<WebAuthResponse>> {
+    return apiRequest.post<WebAuthResponse>('profile/web-register', payload);
+  }
+
+  async loginWeb(payload: WebLoginRequest): Promise<ApiResponse<WebAuthResponse>> {
+    return apiRequest.post<WebAuthResponse>('profile/web-login', payload);
   }
 
   async getCurrentProfile(): Promise<ApiResponse<UserPartial>> {
