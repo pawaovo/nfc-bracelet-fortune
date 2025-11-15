@@ -46,7 +46,7 @@
       />
 
       <!-- 副标题 -->
-      <text class="sub-title"> 最近更新 {{ formatDateDisplay(latestUpdateDate) }} </text>
+      <text class="sub-title"> 最近更新 {{ latestUpdateDate }} </text>
     </view>
 
     <!-- 主内容 -->
