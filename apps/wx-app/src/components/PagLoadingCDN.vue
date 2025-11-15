@@ -197,24 +197,34 @@ async function loadAndPlayPAG() {
 
     await initPAGSDK();
 
-    const cachedBuffer = await loadPagFromCache();
-
-    if (cachedBuffer) {
-      console.log('📦 命中缓存 PAG (', (cachedBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB)');
-      pagBuffer = cachedBuffer;
+    // H5环境：直接加载本地文件，不使用缓存
+    // 小程序环境：使用缓存机制
+    if (!isMiniProgram) {
+      console.log('📥 加载本地PAG文件...');
+      pagBuffer = await downloadPagFileWithProgress();
+      if (!pagBuffer) {
+        throw new Error('PAG文件加载失败');
+      }
       emit('downloadComplete');
     } else {
-      console.log('📭 缓存未命中，开始下载...');
-      isDownloading.value = true;
-      pagBuffer = await downloadPagFileWithProgress();
-      isDownloading.value = false;
+      const cachedBuffer = await loadPagFromCache();
+      if (cachedBuffer) {
+        console.log('📦 命中缓存 PAG (', (cachedBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB)');
+        pagBuffer = cachedBuffer;
+        emit('downloadComplete');
+      } else {
+        console.log('📭 缓存未命中，开始下载...');
+        isDownloading.value = true;
+        pagBuffer = await downloadPagFileWithProgress();
+        isDownloading.value = false;
 
-      if (!pagBuffer) {
-        throw new Error('PAG文件下载失败');
+        if (!pagBuffer) {
+          throw new Error('PAG文件下载失败');
+        }
+
+        console.log('✅ 下载并缓存成功 (', (pagBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB)');
+        emit('downloadComplete');
       }
-
-      console.log('✅ 下载并缓存成功 (', (pagBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB)');
-      emit('downloadComplete');
     }
 
     const canvas = await resolveCanvasNode();

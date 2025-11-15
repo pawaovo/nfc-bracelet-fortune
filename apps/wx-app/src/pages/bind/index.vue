@@ -45,11 +45,11 @@
       </view>
     </view>
 
-    <!-- 手链详情图片区域 -->
-    <view class="bracelet-details">
+    <!-- 手链详情图片区域 - 只在有商品图片时显示 -->
+    <view v-if="shouldShowProductImage" class="bracelet-details">
       <image
         class="detail-img"
-        :src="productImageSrc"
+        :src="recommendedProduct?.imageUrl"
         mode="aspectFit"
         @error="handleProductImageError"
       />
@@ -98,12 +98,9 @@ const isH5Platform = process.env.UNI_PLATFORM === 'h5';
 const recommendedProduct = ref<any>(null);
 const useFallbackProductImage = ref(false);
 
-const productImageSrc = computed(() => {
-  const fallback = themeConfig.value.images.detailImage2;
-  if (useFallbackProductImage.value) {
-    return fallback;
-  }
-  return recommendedProduct.value?.imageUrl || fallback;
+// 是否显示商品图片：只有当商品数据加载成功且图片未加载失败时才显示
+const shouldShowProductImage = computed(() => {
+  return recommendedProduct.value?.imageUrl && !useFallbackProductImage.value;
 });
 
 // 页面加载时获取NFC ID和随机商品
@@ -162,14 +159,13 @@ async function loadRandomRecommendation() {
 
 /**
  * 处理商品图片加载失败
- * 图片加载失败时，会自动使用 || 后的默认图片
+ * 图片加载失败时，隐藏图片区域（不显示占位图）
  */
 function handleProductImageError() {
   useFallbackProductImage.value = true;
 
-  console.warn('商品图片加载失败，使用默认图片:', {
+  console.warn('商品图片加载失败，隐藏图片区域:', {
     imageUrl: recommendedProduct.value?.imageUrl,
-    fallback: themeConfig.value.images.detailImage2,
   });
 }
 

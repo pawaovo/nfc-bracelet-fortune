@@ -125,9 +125,9 @@ export const defaultTheme: FortunePageTheme = {
   name: '默认主题',
 
   images: {
-    // 背景图片 - 使用CDN链接
-    mainBackground: 'https://i.postimg.cc/HsjPcY23/fortune.png',
-    starsBackground: 'https://i.postimg.cc/FHZ9D7hW/bg-stars.png',
+    // 背景图片 - 使用本地资源
+    mainBackground: '../../static/pages/fortune/bg-main.png',
+    starsBackground: '../../static/pages/fortune/bg-stars.png',
 
     // 其他
     shopIcon: '../../static/pages/fortune/shop-icon.png',

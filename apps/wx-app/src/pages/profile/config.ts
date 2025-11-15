@@ -34,8 +34,8 @@ export interface ProfilePageTheme {
 export const defaultTheme: ProfilePageTheme = {
   name: '默认主题',
   images: {
-    mainBackground: 'https://i.postimg.cc/MX248bmL/bg-main.png',
-    starsBackground: 'https://i.postimg.cc/76bYZf8D/Group-15.png',
+    mainBackground: '../../static/pages/profile/bg-main.png',
+    starsBackground: '../../static/pages/profile/bg-stars.png',
     avatarPlaceholder: '../../static/pages/profile/avatar-placeholder.png',
     buttonBackground: '../../static/pages/profile/button-bg.png',
     avatarIcon: '../../static/pages/profile/icon-avatar.svg',
