@@ -1215,17 +1215,20 @@ function handleHistoryNavigation() {
 <style lang="scss" scoped>
 @import '@/styles/common.scss';
 
-/* 页面容器 - 始终显示渐变背景色 */
+/* 页面容器 - 设置明确的高度，支持滚动 */
 .fortune-container {
   position: relative;
-  height: 100vh; /* 固定高度为一屏 */
-  overflow: hidden; /* 禁止滚动 */
+  /* 设置明确的高度，确保所有内容都能正确显示 */
+  min-height: 100vh;
+  height: 1700rpx; /* 调整总高度：历史按钮底部1310rpx + 间距40rpx + 底部卡片330rpx + 底部间距20rpx */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* 禁止容器本身滚动，让页面自然滚动 */
+  overflow: visible;
 }
 
-/* 主背景容器 - 初始状态透明 */
+/* 主背景容器 - 改为绝对定位，随页面一起滚动 */
 .main-background {
-  position: fixed;
+  position: absolute; /* 从 fixed 改为 absolute，背景随页面滚动 */
   top: 0;
   left: 0;
   width: 100%;
@@ -1233,6 +1236,8 @@ function handleHistoryNavigation() {
   z-index: 0;
   opacity: 0;
   transition: opacity 0.4s ease-in;
+  /* 确保背景覆盖整个容器 */
+  min-height: 1700rpx;
 
   .bg-main {
     position: absolute;
@@ -1307,13 +1312,14 @@ function handleHistoryNavigation() {
   font-size: 28rpx;
 }
 
-/* 运势内容容器 - 固定高度，使用绝对定位 */
+/* 运势内容容器 - 设置明确高度，确保所有内容都能正确显示 */
 .fortune-content {
   position: relative;
   z-index: 10;
   width: 100%;
-  height: 100vh; /* 固定高度为一屏 */
-  overflow: hidden; /* 禁止滚动 */
+  min-height: 1700rpx; /* 与容器高度一致，确保所有内容都能正确显示 */
+  padding-bottom: 40rpx; /* 底部留出安全距离 */
+  /* 移除 overflow: hidden，允许内容自然流动 */
 }
 
 /* 卡片通用样式 - 居中对齐和圆角 */
@@ -1327,20 +1333,22 @@ function handleHistoryNavigation() {
   overflow: hidden;
 }
 
-/* 运势卡片背景图 - 对应Figma node 1:307-310 */
-.card-bg-image {
+/* 运势卡片共同样式 - 位置和尺寸 */
+.card-bg-image,
+.card-decoration-layer {
   top: 420rpx;
   width: 701rpx;
-  height: 800rpx; /* 从 780rpx 增加到 800rpx，稍微增加底部高度 */
+  height: 800rpx;
+}
+
+/* 运势卡片背景图 - 对应Figma node 1:307-310 */
+.card-bg-image {
   z-index: 1;
   opacity: 0.9;
 }
 
 /* 卡片装饰背景层 - Rectangle 4 */
 .card-decoration-layer {
-  top: 420rpx;
-  width: 701rpx;
-  height: 800rpx; /* 从 780rpx 增加到 800rpx，稍微增加底部高度 */
   z-index: 2;
   opacity: 0.8;
 }
@@ -1358,7 +1366,7 @@ function handleHistoryNavigation() {
 
 /* 底部装饰图 - 推荐商品卡片背景 */
 .bottom-decoration {
-  bottom: 20rpx;
+  top: 1350rpx; /* 改用top定位，与历史按钮保持40rpx间距 */
   width: 701rpx;
   height: 330rpx;
   z-index: 2;
@@ -1830,7 +1838,7 @@ function handleHistoryNavigation() {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 1220rpx; /* 稍微下移，从1210rpx调整为1220rpx */
+  top: 1260rpx; /* 下移至1260rpx，与运势卡片保持40rpx间距 */
   width: 701rpx; /* 与运势卡片宽度保持一致 */
   min-height: 50rpx; /* 调整为50rpx，使按钮更紧凑 */
   z-index: 12;
@@ -1945,16 +1953,20 @@ function handleHistoryNavigation() {
   }
 }
 
-/* 右下角手链图片 */
+/* 右下角手链图片 - 确保在卡片边界内 */
 .bottom-right-bracelet-image {
   position: absolute;
   right: 30rpx;
-  bottom: 25rpx;
-  width: 320rpx;
-  height: 320rpx;
-  z-index: 50;
+  bottom: 30rpx; /* 调整为30rpx，确保在卡片内（卡片bottom: 20rpx，图片相对卡片底部10rpx） */
+  width: 300rpx; /* 从320rpx减小到300rpx，确保不超出卡片边界 */
+  height: 300rpx; /* 从320rpx减小到300rpx，确保不超出卡片边界 */
+  max-width: 300rpx; /* 限制最大宽度 */
+  max-height: 300rpx; /* 限制最大高度 */
+  z-index: 11; /* 降低z-index，确保在卡片层级内（卡片z-index: 2，内容z-index: 11） */
   display: block;
   background-color: transparent;
+  /* 确保图片不会溢出 */
+  object-fit: contain;
 }
 
 /* 抖音店铺按钮 */

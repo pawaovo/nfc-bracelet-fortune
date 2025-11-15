@@ -277,20 +277,24 @@ const handleBindClick = async () => {
 <style lang="scss" scoped>
 .bind-container {
   position: relative;
+  /* 设置明确的高度，确保所有内容都能显示 */
   min-height: 100vh;
-  height: 1627rpx;
+  height: 1550rpx; /* 设置足够的高度容纳所有内容（按钮底部约1495rpx） */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  overflow: hidden;
+  /* 禁止容器本身滚动 */
+  overflow: visible;
 }
 
-/* 主背景容器 */
+/* 主背景容器 - 改为绝对定位，随页面一起滚动 */
 .main-background {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   z-index: 0;
+  /* 确保背景覆盖整个容器 */
+  min-height: 1550rpx;
 
   .bg-main {
     position: absolute;

@@ -493,4 +493,60 @@ function generateVirtualNfcId(): string {
 }
 </script>
 
-<style></style>
+<style>
+/* 全局样式 - 确保页面正确适配移动设备 */
+
+/* uni-app 页面根元素样式 */
+page {
+  /* 确保页面可以滚动 */
+  height: 100%;
+  /* 使用系统字体 */
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  /* 优化文本渲染 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* 禁止文本选择（提升移动端体验） */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 确保所有元素使用border-box */
+* {
+  box-sizing: border-box;
+}
+
+/* 移除默认的margin和padding */
+page,
+view,
+text,
+image {
+  margin: 0;
+  padding: 0;
+}
+
+/* 图片默认样式 */
+image {
+  display: block;
+  /* 防止图片拖拽 */
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+/* 按钮默认样式重置 */
+button {
+  border: none;
+  outline: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* 输入框默认样式 */
+input,
+textarea {
+  outline: none;
+  border: none;
+  background: none;
+}
+</style>

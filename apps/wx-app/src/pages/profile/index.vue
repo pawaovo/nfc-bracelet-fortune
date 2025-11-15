@@ -159,8 +159,8 @@ function handleBackgroundComplete() {
     backgroundReady.value = true;
   }
 }
-const isDevMode = import.meta.env.MODE !== 'production';
-const enableDevWebAuth = isH5Platform && isDevMode;
+// H5 平台始终启用 Web 认证（开发和生产环境都需要）
+const enableDevWebAuth = isH5Platform;
 const FORCE_RELOAD_FLAG_KEY = 'fortuneForceReload';
 
 const displayUsername = computed(() => {
@@ -527,18 +527,20 @@ onLoad(options => {
  * 转换比例: 750 / 402.118 ≈ 1.865
  */
 
-/* 页面容器 - 始终显示渐变背景色 */
+/* 页面容器 - 使用固定高度，防止键盘弹出时被挤压 */
 .profile-container {
   position: relative;
+  /* 使用固定高度，不使用vh单位，避免键盘弹出时重新计算 */
   min-height: 100vh;
-  height: 1627rpx;
+  height: 1627rpx; /* 调整为与bind页面一致的高度，确保所有内容都能正确显示 */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  overflow: hidden;
+  /* 禁止容器本身滚动 */
+  overflow: visible;
 }
 
-/* 主背景容器 - 初始状态透明 */
+/* 主背景容器 - 改为绝对定位，随页面一起滚动 */
 .main-background {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
@@ -546,6 +548,8 @@ onLoad(options => {
   z-index: 0;
   opacity: 0;
   transition: opacity 0.4s ease-in;
+  /* 确保背景覆盖整个容器 */
+  min-height: 1627rpx;
 
   .bg-main {
     position: absolute;
@@ -583,20 +587,23 @@ onLoad(options => {
   opacity: 1;
 }
 
-/* 头像占位图 */
+/* 头像占位图（卡片背景） - 使用固定rpx值，避免键盘弹出时位置变化 */
 .avatar-placeholder {
   position: absolute;
-  top: 29.5%;
+  top: 480rpx; /* 向下移动，增加与顶部引导文字的间距 */
   left: 10.27%;
   width: 78.53%;
-  height: 49.04%;
+  height: 798rpx; /* 使用固定高度，确保卡片在所有设备上高度一致 */
   z-index: 150;
+  /* 添加圆角，确保在所有设备上显示圆角 */
+  border-radius: 30rpx;
+  overflow: hidden; /* 确保图片内容不会超出圆角边界 */
 }
 
-/* 引导文字容器 */
+/* 引导文字容器 - 使用固定rpx值 */
 .guide-text-container {
   position: absolute;
-  top: 19.03%;
+  top: 310rpx; /* 调整位置，确保与卡片有合理的间距 */
   left: 14.8%;
   right: 14.8%;
   z-index: 200;
@@ -625,10 +632,10 @@ onLoad(options => {
   text-align: center;
 }
 
-/* 用户名容器 - 隐藏头像后调整为左对齐 */
+/* 用户名容器 - 使用固定rpx值 */
 .username-container {
   position: absolute;
-  top: 32.5%;
+  top: 530rpx; /* 调整位置，位于卡片顶部内侧 */
   left: 20%;
   right: 20%;
   z-index: 200;
@@ -655,10 +662,10 @@ onLoad(options => {
   text-align: center;
 }
 
-/* 称呼标签 */
+/* 称呼标签 - 使用固定rpx值 */
 .name-label {
   position: absolute;
-  top: 38.5%;
+  top: 625rpx; /* 调整位置，位于卡片内部，与卡片顶部有合理间距 */
   left: 21.87%;
   font-family: 'PingFang SC', sans-serif;
   font-size: 32rpx;
@@ -668,20 +675,20 @@ onLoad(options => {
   z-index: 200;
 }
 
-/* 称呼输入框容器 */
+/* 称呼输入框容器 - 使用固定rpx值 */
 .name-input-container {
   position: absolute;
-  top: 41.5%;
+  top: 675rpx; /* 标签下方50rpx，确保有足够的间距 */
   left: 20%;
   right: 20.53%;
   height: 82rpx;
   z-index: 200;
 }
 
-/* 输入框背景 */
+/* 密码标签 - 使用固定rpx值 */
 .password-label {
   position: absolute;
-  top: 48.5%;
+  top: 800rpx; /* 与昵称输入框间距约43rpx（800 - 675 - 82 = 43） */
   left: 21.87%;
   font-family: 'PingFang SC', sans-serif;
   font-size: 32rpx;
@@ -691,9 +698,10 @@ onLoad(options => {
   z-index: 200;
 }
 
+/* 密码输入框容器 - 使用固定rpx值 */
 .password-input-container {
   position: absolute;
-  top: 51.5%;
+  top: 850rpx; /* 标签下方50rpx */
   left: 20%;
   right: 20.53%;
   height: 82rpx;
@@ -737,10 +745,10 @@ onLoad(options => {
   box-sizing: border-box;
 }
 
-/* 生日标签 */
+/* 生日标签 - 使用固定rpx值 */
 .birthday-label {
   position: absolute;
-  top: 58.5%;
+  top: 975rpx; /* 与密码输入框间距约43rpx（975 - 850 - 82 = 43） */
   left: 21.87%;
   font-family: 'PingFang SC', sans-serif;
   font-size: 32rpx;
@@ -750,10 +758,10 @@ onLoad(options => {
   z-index: 200;
 }
 
-/* 生日输入框容器 */
+/* 生日输入框容器 - 使用固定rpx值 */
 .birthday-input-container {
   position: absolute;
-  top: 61.5%;
+  top: 1025rpx; /* 标签下方50rpx */
   left: 20%;
   right: 20.53%;
   height: 82rpx;
@@ -789,12 +797,15 @@ onLoad(options => {
   }
 }
 
-/* 提交按钮容器 */
+/* 提交按钮容器 - 与绑定页面按钮保持一致的样式 */
 .submit-button-container {
   position: absolute;
-  top: 1140rpx;
-  left: 143rpx;
-  width: 458rpx;
+  top: 1380rpx; /* 与绑定页面按钮位置一致 */
+  /* 卡片顶部480rpx + 卡片高度798rpx = 1278rpx（卡片底部） */
+  /* 按钮顶部1380rpx，按钮高度115rpx，按钮底部1495rpx */
+  /* 按钮顶部距离卡片底部：1380 - 1278 = 102rpx（合理的间距） */
+  left: 42rpx; /* 与绑定页面按钮左边距一致 */
+  width: 668rpx; /* 与绑定页面按钮宽度一致 */
   height: 115rpx;
   z-index: 200;
   cursor: pointer;

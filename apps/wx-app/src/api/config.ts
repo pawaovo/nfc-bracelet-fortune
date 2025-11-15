@@ -14,8 +14,8 @@ export const API_CONFIG = {
   REAL_DEVICE_BASE_URL: 'http://192.168.31.217:3000',
   // 内网穿透地址（cpolar / ngrok 等）
   TUNNEL_BASE_URL: 'https://4473789e.r9.cpolar.cn',
-  // 生产环境 API 地址（使用服务器IP和端口）
-  PROD_BASE_URL: 'http://47.239.179.9:43122',
+  // 生产环境 API 地址（使用 HTTPS 域名）
+  PROD_BASE_URL: 'https://yunshi.autopia.chat',
   // 请求超时时间（120s，兼容 AI 渲染）
   TIMEOUT: 120000,
   // API 版本
@@ -86,14 +86,24 @@ function detectCurrentEnv(): EnvType {
     return fromEnv;
   }
 
-  if (
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-  ) {
-    console.log('[API] 检测到本地开发环境，使用 dev');
-    return 'dev';
+  // 根据域名自动检测环境
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+
+    // 本地开发环境
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      console.log('[API] 检测到本地开发环境，使用 dev');
+      return 'dev';
+    }
+
+    // 生产环境域名
+    if (hostname === 'yunshi.autopia.chat') {
+      console.log('[API] 检测到生产域名，使用 prod');
+      return 'prod';
+    }
   }
 
+  // 默认使用内网穿透环境（用于开发调试）
   console.log('[API] 默认使用 tunnel 环境');
   return 'tunnel';
 }
