@@ -1968,7 +1968,7 @@ function handleHistoryNavigation() {
 .bottom-right-bracelet-image {
   position: absolute;
   right: 30rpx;
-  bottom: 10rpx; /* 从30rpx减小到10rpx，与卡片背景同步下移20rpx */
+  bottom: 25rpx; /* 向上微调3rpx（从10rpx增加到25rpx），优化视觉平衡 */
   width: 300rpx; /* 从320rpx减小到300rpx，确保不超出卡片边界 */
   height: 300rpx; /* 从320rpx减小到300rpx，确保不超出卡片边界 */
   max-width: 300rpx; /* 限制最大宽度 */
@@ -1984,7 +1984,7 @@ function handleHistoryNavigation() {
 .shop-button-wrapper {
   position: absolute;
   left: 40rpx;
-  bottom: 20rpx; /* 从40rpx减小到20rpx，与卡片背景同步下移20rpx */
+  bottom: 25rpx; /* 向上微调3rpx（从20rpx增加到25rpx），优化视觉平衡 */
   display: flex;
   align-items: center;
   z-index: 11;

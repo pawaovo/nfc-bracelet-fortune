@@ -46,7 +46,7 @@
       />
 
       <!-- 副标题 -->
-      <text class="sub-title"> 最近更新 {{ latestUpdateDate }} 历史记录 </text>
+      <text class="sub-title"> 最近更新 {{ formatDateDisplay(latestUpdateDate) }} </text>
     </view>
 
     <!-- 主内容 -->
@@ -82,7 +82,7 @@
                   <view class="dot-inner" />
                 </view>
                 <text class="timeline-date">
-                  {{ item.date }}
+                  {{ formatDateDisplay(item.date) }}
                 </text>
                 <view class="fortune-card">
                   <image
@@ -138,7 +138,7 @@
                   <view class="dot-inner" />
                 </view>
                 <text class="timeline-date">
-                  {{ item.date }}
+                  {{ formatDateDisplay(item.date) }}
                 </text>
                 <view class="fortune-card">
                   <image
@@ -209,6 +209,21 @@ onLoad(() => {
   console.log('历史记录页面加载');
   loadHistory();
 });
+
+/**
+ * 格式化日期显示（去掉年份，只显示月-日）
+ * @param dateStr 日期字符串，格式为 YYYY-MM-DD
+ * @returns 格式化后的日期，格式为 MM-DD
+ */
+function formatDateDisplay(dateStr: string): string {
+  if (!dateStr) return '';
+  // 从 "YYYY-MM-DD" 提取 "MM-DD" 部分
+  const parts = dateStr.split('-');
+  if (parts.length >= 3) {
+    return `${parts[1]}-${parts[2]}`; // 返回 MM-DD
+  }
+  return dateStr; // 如果格式不对，返回原始字符串
+}
 
 /**
  * 返回上一页
@@ -603,6 +618,7 @@ function getFlowerStyle(date: string, index: number): string {
   display: block;
   flex-shrink: 0;
   margin-bottom: 16rpx; /* 与时间轴的间距 */
+  margin-left: 0; /* 确保标签从左边缘开始 */
   pointer-events: auto; /* 恢复点击事件 */
 }
 
@@ -649,7 +665,7 @@ function getFlowerStyle(date: string, index: number): string {
 /* 垂直连续线 */
 .timeline-line {
   position: absolute;
-  left: 24rpx; /* 从 14rpx 右移到 24rpx */
+  left: 13rpx; /* 左移至与"当日运势"的"当"字居中对齐 */
   top: 0;
   bottom: 0;
   width: 4rpx;
@@ -663,7 +679,7 @@ function getFlowerStyle(date: string, index: number): string {
   display: flex;
   align-items: center;
   margin-bottom: 24rpx;
-  padding-left: 10rpx;
+  padding-left: 0; /* 左移至与"当日运势"的"当"字居中对齐 */
   z-index: 1;
 }
 
