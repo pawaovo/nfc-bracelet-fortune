@@ -1150,7 +1150,8 @@ function stopLoadingAnimation() {
 function handleShopClick() {
   const recommendation = fortuneData.value?.recommendation;
   if (recommendation?.douyinUrl) {
-    copyDouyinLink(recommendation.douyinUrl);
+    // 网页版：直接打开链接
+    openDouyinShop(recommendation.douyinUrl);
   } else {
     uni.showToast({
       title: '暂无店铺链接',
@@ -1172,9 +1173,18 @@ function handleBraceletImageError(e: Event) {
 }
 
 /**
- * 复制抖音链接到剪贴板
+ * 打开抖音商城页面
+ * 网页版：直接在新窗口打开
+ * 小程序版：复制链接到剪贴板
  */
-function copyDouyinLink(url: string) {
+function openDouyinShop(url: string) {
+  // #ifdef H5
+  // 网页版：直接在新窗口打开
+  window.open(url, '_blank');
+  // #endif
+
+  // #ifdef MP-WEIXIN
+  // 小程序版：复制链接到剪贴板
   uni.setClipboardData({
     data: url,
     success: () => {
@@ -1192,6 +1202,7 @@ function copyDouyinLink(url: string) {
       });
     },
   });
+  // #endif
 }
 
 /**
@@ -1220,7 +1231,7 @@ function handleHistoryNavigation() {
   position: relative;
   /* 设置明确的高度，确保所有内容都能正确显示 */
   min-height: 100vh;
-  height: 1700rpx; /* 调整总高度：历史按钮底部1310rpx + 间距40rpx + 底部卡片330rpx + 底部间距20rpx */
+  height: 1770rpx; /* 优化后总高度：商品推荐卡片底部1760rpx + 底部间距10rpx */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   /* 禁止容器本身滚动，让页面自然滚动 */
   overflow: visible;
@@ -1237,7 +1248,7 @@ function handleHistoryNavigation() {
   opacity: 0;
   transition: opacity 0.4s ease-in;
   /* 确保背景覆盖整个容器 */
-  min-height: 1700rpx;
+  min-height: 1770rpx;
 
   .bg-main {
     position: absolute;
@@ -1317,7 +1328,7 @@ function handleHistoryNavigation() {
   position: relative;
   z-index: 10;
   width: 100%;
-  min-height: 1700rpx; /* 与容器高度一致，确保所有内容都能正确显示 */
+  min-height: 1770rpx; /* 与容器高度一致，确保所有内容都能正确显示 */
   padding-bottom: 40rpx; /* 底部留出安全距离 */
   /* 移除 overflow: hidden，允许内容自然流动 */
 }
@@ -1338,7 +1349,7 @@ function handleHistoryNavigation() {
 .card-decoration-layer {
   top: 420rpx;
   width: 701rpx;
-  height: 800rpx;
+  height: 920rpx; /* 从800rpx增加到920rpx，增加120rpx高度，解决内容紧凑问题 */
 }
 
 /* 运势卡片背景图 - 对应Figma node 1:307-310 */
@@ -1366,7 +1377,7 @@ function handleHistoryNavigation() {
 
 /* 底部装饰图 - 推荐商品卡片背景 */
 .bottom-decoration {
-  top: 1350rpx; /* 改用top定位，与历史按钮保持40rpx间距 */
+  top: 1430rpx; /* 优化布局：从1410rpx下移到1430rpx，与历史按钮保持20rpx间距（与运势卡片间距一致） */
   width: 701rpx;
   height: 330rpx;
   z-index: 2;
@@ -1590,7 +1601,7 @@ function handleHistoryNavigation() {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 780rpx; /* 向上移动8rpx，原值815rpx */
+  top: 820rpx; /* 优化布局：从780rpx下移到820rpx，增加与上方内容的间距 */
   display: flex;
   gap: 40rpx;
   z-index: 11;
@@ -1657,7 +1668,7 @@ function handleHistoryNavigation() {
   position: absolute;
   left: 50%;
   transform: translate(-50%);
-  top: 880rpx; /* 向上移动8rpx，原值910rpx */
+  top: 940rpx; /* 优化布局：从880rpx下移到940rpx，增加与三项运势的间距 */
   width: 580rpx;
   height: 140rpx;
   z-index: 11;
@@ -1753,7 +1764,7 @@ function handleHistoryNavigation() {
 .lucky-cards-container {
   position: absolute;
   left: 86rpx;
-  top: 1030rpx; /* 从1040rpx上移到990rpx，向上移动50rpx，避免与卡片底部重合 */
+  top: 1120rpx; /* 优化布局：从1030rpx下移到1120rpx，增加与建议区域的间距 */
   width: 580rpx;
   display: flex;
   justify-content: center;
@@ -1838,7 +1849,7 @@ function handleHistoryNavigation() {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 1260rpx; /* 下移至1260rpx，与运势卡片保持40rpx间距 */
+  top: 1360rpx; /* 优化布局：从1260rpx下移到1360rpx，与运势卡片保持20rpx间距 */
   width: 701rpx; /* 与运势卡片宽度保持一致 */
   min-height: 50rpx; /* 调整为50rpx，使按钮更紧凑 */
   z-index: 12;
@@ -1884,7 +1895,7 @@ function handleHistoryNavigation() {
 .recommendation-card-title-wrapper {
   position: absolute;
   left: 60rpx;
-  bottom: 230rpx; /* 向下移动，确保在卡片内部（卡片顶部350rpx，标题顶部230+114=344rpx） */
+  bottom: 210rpx; /* 从230rpx减小到210rpx，与卡片背景同步下移20rpx */
   width: 240rpx; /* 缩小版：bind页面380rpx缩小到240rpx，比例约0.63 */
   height: 114rpx; /* 缩小版：bind页面180rpx缩小到114rpx，比例约0.63 */
   z-index: 11;
@@ -1927,7 +1938,7 @@ function handleHistoryNavigation() {
 .recommendation-bracelet-info {
   position: absolute;
   left: 60rpx;
-  bottom: 105rpx; /* 从130rpx下移到105rpx，下移25rpx */
+  bottom: 85rpx; /* 从105rpx减小到85rpx，与卡片背景同步下移20rpx */
   width: 320rpx;
   display: flex;
   flex-direction: column;
@@ -1957,7 +1968,7 @@ function handleHistoryNavigation() {
 .bottom-right-bracelet-image {
   position: absolute;
   right: 30rpx;
-  bottom: 30rpx; /* 调整为30rpx，确保在卡片内（卡片bottom: 20rpx，图片相对卡片底部10rpx） */
+  bottom: 10rpx; /* 从30rpx减小到10rpx，与卡片背景同步下移20rpx */
   width: 300rpx; /* 从320rpx减小到300rpx，确保不超出卡片边界 */
   height: 300rpx; /* 从320rpx减小到300rpx，确保不超出卡片边界 */
   max-width: 300rpx; /* 限制最大宽度 */
@@ -1973,7 +1984,7 @@ function handleHistoryNavigation() {
 .shop-button-wrapper {
   position: absolute;
   left: 40rpx;
-  bottom: 40rpx; /* 上移到40rpx，与卡片底部保持适当间距 */
+  bottom: 20rpx; /* 从40rpx减小到20rpx，与卡片背景同步下移20rpx */
   display: flex;
   align-items: center;
   z-index: 11;
@@ -1983,12 +1994,12 @@ function handleHistoryNavigation() {
   background: #000000;
   border: 2rpx solid rgba(0, 229, 250, 0.6); /* 从 0.2 提升到 0.6，增强亮蓝色外框效果 */
   border-radius: 40rpx;
-  padding: 4rpx 40rpx 4rpx 8rpx; /* 右侧padding从64rpx减少到40rpx，补偿字符间距增加带来的长度变化 */
+  padding: 6rpx 40rpx 6rpx 8rpx; /* 上下内边距从4rpx微调到6rpx，让文字与边框有一点点间距 */
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12rpx;
-  height: 30rpx;
+  height: 34rpx; /* 从30rpx微调到34rpx，配合padding增加 */
   box-shadow:
     0 0 16rpx rgba(0, 229, 250, 0.5),
     /* 增强外发光效果 */ inset 0 0 10rpx rgba(0, 229, 250, 0.25); /* 增强内发光效果 */
