@@ -812,11 +812,14 @@ function checkAuthStatus() {
  */
 async function loadFortune() {
   try {
-    isLoading.value = true;
+    // 历史查看模式不显示loading，直接加载数据
+    if (!isHistoryMode.value) {
+      isLoading.value = true;
+    }
     error.value = '';
 
     if (isHistoryMode.value) {
-      // 历史查看模式，加载指定日期的运势
+      // 历史查看模式，加载指定日期的运势（不显示loading动效）
       await loadHistoryFortune();
     } else if (isPreviewMode.value) {
       // 访客预览模式，使用登录接口返回的预览数据
