@@ -58,20 +58,27 @@
         <!-- 当日运势标签 -->
         <text class="section-label"> 当日运势 </text>
 
-        <!-- 时间轴列表 -->
-        <scroll-view
-          v-if="shouldEnableScroll"
+        <!-- 时间轴列表（动态组件：可滚动或不可滚动） -->
+        <component
+          :is="shouldEnableScroll ? 'scroll-view' : 'view'"
           class="timeline-scroll"
-          scroll-y
-          :refresher-enabled="true"
-          :refresher-triggered="isRefreshing"
-          @scrolltolower="loadMoreHistory"
-          @refresherrefresh="onRefresh"
-          @refresherrestore="onRefreshRestore"
+          :scroll-y="shouldEnableScroll"
+          :refresher-enabled="shouldEnableScroll"
+          :refresher-triggered="shouldEnableScroll && isRefreshing"
+          @scrolltolower="shouldEnableScroll && loadMoreHistory()"
+          @refresherrefresh="shouldEnableScroll && onRefresh()"
+          @refresherrestore="shouldEnableScroll && onRefreshRestore()"
         >
           <view class="timeline-container">
             <view class="timeline-line" />
             <template v-for="(item, index) in historyList" :key="item.date">
+              <!-- 年份分组标题 -->
+              <view v-if="shouldShowYearDivider(item, index)" class="year-divider">
+                <text class="year-text">
+                  {{ getYearFromDate(item.date) }}
+                </text>
+              </view>
+
               <view class="timeline-item" @click="handleItemClick(item)">
                 <view class="timeline-dot">
                   <view class="dot-outer" />
@@ -121,53 +128,7 @@
               <text class="scroll-hint"> 向下滚动查看更多 </text>
             </view>
           </view>
-        </scroll-view>
-
-        <!-- 时间轴列表（不可滚动） -->
-        <view v-else class="timeline-scroll">
-          <view class="timeline-container">
-            <view class="timeline-line" />
-            <template v-for="(item, index) in historyList" :key="item.date">
-              <view class="timeline-item" @click="handleItemClick(item)">
-                <view class="timeline-dot">
-                  <view class="dot-outer" />
-                  <view class="dot-inner" />
-                </view>
-                <text class="timeline-date">
-                  {{ formatDateDisplay(item.date) }}
-                </text>
-                <view class="fortune-card">
-                  <image
-                    class="fortune-card-bg"
-                    src="/static/pages/history/border.png"
-                    mode="scaleToFill"
-                  />
-                  <image
-                    class="fortune-card-flower"
-                    src="/static/pages/history/flower.png"
-                    mode="aspectFit"
-                    :style="getFlowerStyle(item.date, index)"
-                  />
-                  <!-- 顶部标题行：左侧评语 + 右侧分数 -->
-                  <view class="fortune-card-header">
-                    <text class="fortune-card-title" :class="getTimeColorClass(item)">
-                      {{ formatFortuneComment(item) }}
-                    </text>
-                    <text class="fortune-card-score">
-                      {{ calculateOverallScore(item) }}
-                    </text>
-                  </view>
-                  <!-- 底部总结信息 -->
-                  <view class="fortune-card-info">
-                    <text class="fortune-time">
-                      {{ formatFortuneSummary(item) }}
-                    </text>
-                  </view>
-                </view>
-              </view>
-            </template>
-          </view>
-        </view>
+        </component>
       </view>
     </view>
   </view>
@@ -207,17 +168,59 @@ onLoad(() => {
 });
 
 /**
- * 格式化日期显示（去掉年份，只显示月-日）
+ * 从日期字符串中提取年份
  * @param dateStr 日期字符串，格式为 YYYY-MM-DD
- * @returns 格式化后的日期，格式为 MM-DD
+ * @returns 年份字符串，如 "2025"
+ */
+function getYearFromDate(dateStr: string): string {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  return parts.length >= 1 ? parts[0] : '';
+}
+
+/**
+ * 判断是否应该显示年份分隔符
+ * @param item 当前历史记录项
+ * @param index 当前项的索引
+ * @returns 是否显示年份标题
+ */
+function shouldShowYearDivider(item: FortuneData, index: number): boolean {
+  // 第一条记录总是显示年份
+  if (index === 0) return true;
+
+  // 获取当前项和上一项的年份
+  const currentYear = getYearFromDate(item.date);
+  const previousYear = getYearFromDate(historyList.value[index - 1]?.date || '');
+
+  // 如果年份不同，显示年份标题
+  return currentYear !== previousYear;
+}
+
+/**
+ * 格式化日期显示（显示月-日+星期）
+ * @param dateStr 日期字符串，格式为 YYYY-MM-DD
+ * @returns 格式化后的日期，格式为 MM-DD 周X
  */
 function formatDateDisplay(dateStr: string): string {
   if (!dateStr) return '';
-  // 从 "YYYY-MM-DD" 提取 "MM-DD" 部分
-  const parts = dateStr.split('-');
-  if (parts.length >= 3) {
-    return `${parts[1]}-${parts[2]}`; // 返回 MM-DD
+
+  try {
+    // 从 "YYYY-MM-DD" 提取 "MM-DD" 部分
+    const parts = dateStr.split('-');
+    if (parts.length >= 3) {
+      const monthDay = `${parts[1]}-${parts[2]}`; // MM-DD
+
+      // 计算星期
+      const date = new Date(dateStr);
+      const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+      const weekDay = weekDays[date.getDay()];
+
+      return `${monthDay} ${weekDay}`; // 返回 MM-DD 周X
+    }
+  } catch (error) {
+    console.error('日期格式化失败:', error);
   }
+
   return dateStr; // 如果格式不对，返回原始字符串
 }
 
@@ -401,7 +404,7 @@ function getFlowerStyle(date: string, index: number): string {
 
   // 限制水平偏移范围：12rpx 到 120rpx（从右边缘向左偏移）
   // 12rpx 是最小边距，120rpx 确保图标在卡片右半段
-  // 图标宽度40rpx，所以 right: 12rpx 时图标右边缘距离卡片边缘12rpx
+  // 图标宽度52rpx，所以 right: 12rpx 时图标右边缘距离卡片边缘12rpx
   const minRight = 12;
   const maxRight = 120;
   const offsetRange = maxRight - minRight; // 108rpx的偏移范围
@@ -669,6 +672,32 @@ function getFlowerStyle(date: string, index: number): string {
   z-index: 0;
 }
 
+/* 年份分组标题 */
+.year-divider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 12rpx; /* 年份标题与时间信息之间的间距 */
+  margin-top: 32rpx; /* 与上一个年份组的间距（第一个除外） */
+  padding-left: 0;
+  z-index: 1;
+}
+
+/* 第一个年份标题不需要上边距 */
+.timeline-container > .year-divider:first-child {
+  margin-top: 0;
+}
+
+.year-text {
+  color: #ffffff; /* 白色 */
+  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
+  font-size: 30rpx; /* 比时间信息（24rpx）稍大 */
+  font-weight: 700; /* 粗体 */
+  line-height: 40rpx;
+  padding-left: 48rpx; /* 与时间信息左对齐（32rpx圆点 + 16rpx间距） */
+  opacity: 0.9;
+}
+
 /* 时间轴项目 */
 .timeline-item {
   position: relative;
@@ -715,21 +744,24 @@ function getFlowerStyle(date: string, index: number): string {
 .timeline-date {
   color: rgba(187, 187, 187, 1);
   font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
-  font-size: 26rpx;
+  font-size: 24rpx; /* 从 26rpx 减小到 24rpx，让文字更紧凑 */
   font-weight: 400;
   line-height: 36rpx;
-  width: 140rpx; /* 从 180rpx 减小到 140rpx，为卡片腾出更多空间 */
+  width: 160rpx; /* 从 140rpx 增加到 160rpx，为星期信息留出空间 */
   flex-shrink: 0;
-  padding: 0 16rpx; /* 调整内边距 */
+  padding: 0 12rpx; /* 从 16rpx 减小到 12rpx，节省空间 */
+  white-space: nowrap; /* 确保不换行 */
+  overflow: hidden; /* 隐藏溢出内容 */
+  text-overflow: ellipsis; /* 如果内容过长显示省略号 */
 }
 
 /* 运势卡片 */
 .fortune-card {
   flex: 1;
   position: relative;
-  border-radius: 16rpx;
-  padding: 20rpx 28rpx;
-  min-height: 100rpx;
+  border-radius: 24rpx; /* 从 16rpx 增加到 24rpx，更圆润 */
+  padding: 16rpx 24rpx; /* 从 20rpx 28rpx 减小到 16rpx 24rpx，减少内边距 */
+  min-height: 88rpx; /* 从 100rpx 减小到 88rpx，降低卡片高度 */
   display: flex;
   flex-direction: column; /* 纵向布局 */
   justify-content: center;
@@ -747,8 +779,8 @@ function getFlowerStyle(date: string, index: number): string {
 
 .fortune-card-flower {
   position: absolute;
-  width: 60rpx; /* 从40rpx放大到60rpx */
-  height: 60rpx; /* 从40rpx放大到60rpx */
+  width: 52rpx; /* 从 60rpx 减小到 52rpx，适应新的卡片尺寸 */
+  height: 52rpx; /* 从 60rpx 减小到 52rpx，适应新的卡片尺寸 */
   z-index: 2;
   opacity: 0.9;
 }
@@ -761,15 +793,15 @@ function getFlowerStyle(date: string, index: number): string {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10rpx;
+  margin-bottom: 8rpx; /* 从 10rpx 减小到 8rpx，减少间距 */
 }
 
 .fortune-card-title {
   color: #ffffff;
   font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-  font-size: 30rpx;
+  font-size: 28rpx; /* 从 30rpx 减小到 28rpx */
   font-weight: 600;
-  line-height: 40rpx;
+  line-height: 36rpx; /* 从 40rpx 减小到 36rpx */
   flex: 1;
 
   /* 上上运势：90-100分 */
@@ -801,14 +833,14 @@ function getFlowerStyle(date: string, index: number): string {
 /* 右侧分数 */
 .fortune-card-score {
   font-family: 'ABeeZee', sans-serif;
-  font-size: 72rpx; /* 放大字体 */
+  font-size: 64rpx; /* 从 72rpx 减小到 64rpx */
   font-weight: 700; /* 加粗 */
   font-style: italic; /* 斜体 */
   line-height: 1;
   flex-shrink: 0;
-  margin-left: 20rpx;
+  margin-left: 16rpx; /* 从 20rpx 减小到 16rpx */
   align-self: flex-start; /* 允许独立定位 */
-  transform: translateY(60rpx); /* 下移20rpx */
+  transform: translateY(52rpx); /* 从 60rpx 减小到 52rpx，适应新的卡片高度 */
   color: #ffffff; /* 白色文字 */
   text-shadow: 0 0 20rpx rgba(255, 255, 255, 0.8); /* 白色高亮发光效果 */
 }
@@ -817,16 +849,16 @@ function getFlowerStyle(date: string, index: number): string {
   position: relative;
   z-index: 1;
   background: rgba(250, 226, 255, 0.05);
-  border-radius: 12rpx;
-  padding: 12rpx 20rpx;
-  width: 65%; /* 宽度限制为80% */
+  border-radius: 10rpx; /* 从 12rpx 减小到 10rpx */
+  padding: 10rpx 16rpx; /* 从 12rpx 20rpx 减小到 10rpx 16rpx */
+  width: 65%; /* 宽度限制为65% */
 }
 
 .fortune-time {
   font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
-  font-size: 26rpx;
+  font-size: 24rpx; /* 从 26rpx 减小到 24rpx */
   font-weight: 400;
-  line-height: 36rpx;
+  line-height: 32rpx; /* 从 36rpx 减小到 32rpx */
   color: #bbbbbb;
   display: block;
   overflow: hidden;

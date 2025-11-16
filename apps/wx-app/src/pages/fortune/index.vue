@@ -347,7 +347,7 @@
         </view>
       </view>
 
-      <!-- 历史记录按钮 - 独立于卡片外，访客模式下模糊 -->
+      <!-- 历史记录按钮 - 与绑定页面和个人信息页面按钮样式保持一致 -->
       <view
         class="history-button"
         :class="{ 'visitor-blur': isVisitorMode }"
@@ -355,8 +355,8 @@
       >
         <image
           class="history-button-bg"
-          src="../../static/pages/fortune/button-bg.png"
-          mode="scaleToFill"
+          src="../../static/pages/profile/button-bg.png"
+          mode="aspectFit"
         />
         <!-- 文字 -->
         <text class="history-button-text"> 查看历史记录 </text>
@@ -1231,7 +1231,7 @@ function handleHistoryNavigation() {
   position: relative;
   /* 设置明确的高度，确保所有内容都能正确显示 */
   min-height: 100vh;
-  height: 1770rpx; /* 优化后总高度：商品推荐卡片底部1760rpx + 底部间距10rpx */
+  height: 1865rpx; /* 调整后总高度：历史按钮底部1825rpx（1710 + 115）+ 底部间距40rpx = 1865rpx */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   /* 禁止容器本身滚动，让页面自然滚动 */
   overflow: visible;
@@ -1248,7 +1248,7 @@ function handleHistoryNavigation() {
   opacity: 0;
   transition: opacity 0.4s ease-in;
   /* 确保背景覆盖整个容器 */
-  min-height: 1770rpx;
+  min-height: 1865rpx;
 
   .bg-main {
     position: absolute;
@@ -1328,7 +1328,7 @@ function handleHistoryNavigation() {
   position: relative;
   z-index: 10;
   width: 100%;
-  min-height: 1770rpx; /* 与容器高度一致，确保所有内容都能正确显示 */
+  min-height: 1865rpx; /* 与容器高度一致，确保所有内容都能正确显示 */
   padding-bottom: 40rpx; /* 底部留出安全距离 */
   /* 移除 overflow: hidden，允许内容自然流动 */
 }
@@ -1377,7 +1377,7 @@ function handleHistoryNavigation() {
 
 /* 底部装饰图 - 推荐商品卡片背景 */
 .bottom-decoration {
-  top: 1430rpx; /* 优化布局：从1410rpx下移到1430rpx，与历史按钮保持20rpx间距（与运势卡片间距一致） */
+  top: 1360rpx; /* 上移到原历史按钮位置，与运势卡片保持20rpx间距 */
   width: 701rpx;
   height: 330rpx;
   z-index: 2;
@@ -1844,58 +1844,49 @@ function handleHistoryNavigation() {
   padding: 0 4rpx; /* 添加左右内边距，防止文字贴边 */
 }
 
-/* 历史记录按钮 - 独立于卡片外，使用flex布局实现自适应 */
+/* 历史记录按钮 - 与绑定页面和个人信息页面按钮样式保持一致 */
 .history-button {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: 1360rpx; /* 优化布局：从1260rpx下移到1360rpx，与运势卡片保持20rpx间距 */
-  width: 701rpx; /* 与运势卡片宽度保持一致 */
-  min-height: 50rpx; /* 调整为50rpx，使按钮更紧凑 */
-  z-index: 12;
-  -webkit-tap-highlight-color: transparent;
-  overflow: hidden; /* 确保内容不溢出 */
-  display: flex; /* 添加flex布局，实现内容自适应 */
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0; /* 防止被压缩 */
-}
-
-.history-button-bg {
-  position: absolute; /* 背景图使用绝对定位，覆盖整个按钮区域 */
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%; /* 填充整个容器高度 */
-  z-index: 1; /* 确保背景在文字下方 */
-}
-
-.history-button-text {
-  position: relative; /* 改为相对定位，配合flex布局 */
-  padding: 12rpx 0; /* 调整padding为12rpx，配合50rpx高度 */
+  top: 1710rpx; /* 商品推荐卡片下方：1360rpx（商品卡片top）+ 330rpx（商品卡片height）+ 20rpx（间距）= 1710rpx */
+  left: 42rpx; /* 与绑定页面和个人信息页面按钮左边距一致 */
+  width: 668rpx; /* 与绑定页面和个人信息页面按钮宽度一致 */
+  height: 115rpx; /* 与绑定页面和个人信息页面按钮高度一致 */
+  z-index: 200;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+}
+
+.history-button-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.history-button-text {
+  position: relative;
+  z-index: 2;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 36rpx; /* 与绑定页面和个人信息页面按钮字体大小一致 */
+  font-weight: 400; /* 与绑定页面和个人信息页面按钮字体粗细一致 */
   color: #ffffff;
-  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-  font-size: 24rpx; /* 调整为24rpx，与50rpx高度匹配 */
-  font-weight: 400; /* 使用正常粗细，与其他按钮保持一致 */
-  white-space: nowrap;
-  z-index: 3; /* 确保文字在背景之上 */
-  pointer-events: none;
+  line-height: 115rpx;
+  text-align: center;
 }
 
 .history-button:active {
   opacity: 0.8;
-  transform: translateX(-50%) scale(0.98);
 }
 
 /* 手链标题区域 - 包含装饰图标（缩小版bind页面样式） */
 .recommendation-card-title-wrapper {
   position: absolute;
   left: 60rpx;
-  bottom: 210rpx; /* 从230rpx减小到210rpx，与卡片背景同步下移20rpx */
+  bottom: 375rpx; /* 保持相对卡片背景130rpx的距离：1865 - (1360 + 130) = 375rpx */
   width: 240rpx; /* 缩小版：bind页面380rpx缩小到240rpx，比例约0.63 */
   height: 114rpx; /* 缩小版：bind页面180rpx缩小到114rpx，比例约0.63 */
   z-index: 11;
@@ -1938,7 +1929,7 @@ function handleHistoryNavigation() {
 .recommendation-bracelet-info {
   position: absolute;
   left: 60rpx;
-  bottom: 85rpx; /* 从105rpx减小到85rpx，与卡片背景同步下移20rpx */
+  bottom: 250rpx; /* 保持相对卡片背景255rpx的距离：1865 - (1360 + 255) = 250rpx */
   width: 320rpx;
   display: flex;
   flex-direction: column;
@@ -1968,7 +1959,7 @@ function handleHistoryNavigation() {
 .bottom-right-bracelet-image {
   position: absolute;
   right: 30rpx;
-  bottom: 25rpx; /* 向上微调3rpx（从10rpx增加到25rpx！），优化视觉平衡 */
+  bottom: 190rpx; /* 保持相对卡片背景315rpx的距离：1865 - (1360 + 315) = 190rpx */
   width: 300rpx; /* 从320rpx减小到300rpx，确保不超出卡片边界 */
   height: 300rpx; /* 从320rpx减小到300rpx，确保不超出卡片边界 */
   max-width: 300rpx; /* 限制最大宽度 */
@@ -1984,7 +1975,7 @@ function handleHistoryNavigation() {
 .shop-button-wrapper {
   position: absolute;
   left: 40rpx;
-  bottom: 25rpx; /* 向上微调3rpx（从20rpx增加到25rpx），优化视觉平衡 */
+  bottom: 190rpx; /* 保持相对卡片背景315rpx的距离：1865 - (1360 + 315) = 190rpx */
   display: flex;
   align-items: center;
   z-index: 11;
