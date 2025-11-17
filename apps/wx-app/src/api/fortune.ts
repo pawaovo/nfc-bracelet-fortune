@@ -26,6 +26,7 @@ export class FortuneService {
       response.data.careerStars = Number(response.data.careerStars);
       response.data.wealthStars = Number(response.data.wealthStars);
       response.data.loveStars = Number(response.data.loveStars);
+      response.data.healthStars = Number(response.data.healthStars);
     }
 
     return response;
@@ -43,6 +44,7 @@ export class FortuneService {
       response.data.careerStars = Number(response.data.careerStars);
       response.data.wealthStars = Number(response.data.wealthStars);
       response.data.loveStars = Number(response.data.loveStars);
+      response.data.healthStars = Number(response.data.healthStars);
     }
 
     return response;
@@ -82,6 +84,7 @@ export class FortuneService {
       response.data.careerStars = Number(response.data.careerStars);
       response.data.wealthStars = Number(response.data.wealthStars);
       response.data.loveStars = Number(response.data.loveStars);
+      response.data.healthStars = Number(response.data.healthStars);
     }
 
     return response;
