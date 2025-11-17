@@ -70,9 +70,11 @@ model DailyFortune {
   careerAnalysis        String?  @map("career_analysis") @db.Text // 事业运分析
   wealthAnalysis        String?  @map("wealth_analysis") @db.Text // 财富运分析
   loveAnalysis          String?  @map("love_analysis") @db.Text // 爱情运分析
+  healthAnalysis        String?  @map("health_analysis") @db.Text // 健康运分析
   careerStars           Float?   @map("career_stars") @db.DoublePrecision // 事业运星数(0-5)
   wealthStars           Float?   @map("wealth_stars") @db.DoublePrecision // 财富运星数(0-5)
   loveStars             Float?   @map("love_stars") @db.DoublePrecision // 爱情运星数(0-5)
+  healthStars           Float?   @map("health_stars") @db.DoublePrecision // 健康运星数(0-5)
   avoidance             String?  @db.Text // 避免事项
   suitable              String?  @db.VarChar(50) // 今日宜
   unsuitable            String?  @db.VarChar(50) // 今日喜用

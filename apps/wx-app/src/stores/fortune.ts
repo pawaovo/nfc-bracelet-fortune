@@ -13,11 +13,13 @@ export interface FortuneData {
   careerAnalysis?: string; // 事业运分析
   wealthAnalysis?: string; // 财富运分析
   loveAnalysis?: string; // 爱情运分析
+  healthAnalysis?: string; // 健康运分析
 
   // 星级评分（支持小数）
   careerStars?: number; // 事业运星数 (0-5)
   wealthStars?: number; // 财富运星数 (0-5)
   loveStars?: number; // 爱情运星数 (0-5)
+  healthStars?: number; // 健康运星数 (0-5)
 
   // 建议和避免
   suggestion?: string; // 建议事项
@@ -41,7 +43,9 @@ export interface FortuneData {
   wealthLuck?: number; // 旧版财运分数（0-100）
   loveLuck?: number; // 旧版爱情运分数（0-100）
 
-  recommendation?: Product;
+  // 商品推荐
+  recommendation?: Product; // 单个推荐商品（用于数据库关联，向后兼容）
+  recommendationList?: Product[]; // 商品列表（用于轮播展示）
 }
 
 export const useFortuneStore = defineStore('fortune', () => {

@@ -155,59 +155,83 @@
 
         <!-- 运势详情区域 - 访客模式下此区域会被模糊 -->
         <view class="fortune-details-area" :class="{ 'visitor-blur': isVisitorMode }">
-          <!-- 三项运势容器 - 对应Figma设计图 -->
-          <view class="luck-sections-container">
-            <!-- 事业运区域 - 使用星数而非分数 -->
-            <view class="luck-section">
-              <view class="luck-title-row">
-                <text class="luck-name-text luck-name-career"> 事业运 </text>
-                <text class="luck-score-text luck-score-career">
-                  {{ Math.round((fortuneData?.careerStars ?? 3) * 20) }}
-                </text>
+          <!-- 四项运势容器 - 2行梯形布局 -->
+          <view class="luck-sections-wrapper">
+            <!-- 第1行：事业运和财富运 -->
+            <view class="luck-sections-row luck-sections-row-top">
+              <!-- 事业运区域 - 使用星数而非分数 -->
+              <view class="luck-section">
+                <view class="luck-title-row">
+                  <text class="luck-name-text luck-name-career"> 事业运 </text>
+                  <text class="luck-score-text luck-score-career">
+                    {{ Math.round((fortuneData?.careerStars ?? 3) * 20) }}
+                  </text>
+                </view>
+                <view class="luck-stars-row">
+                  <star-rating
+                    :key="`career-${fortuneData?.careerStars || 0}`"
+                    :stars="fortuneData?.careerStars ?? 3"
+                    size="small"
+                    color="#46DAFF"
+                  />
+                </view>
               </view>
-              <view class="luck-stars-row">
-                <star-rating
-                  :key="`career-${fortuneData?.careerStars || 0}`"
-                  :stars="fortuneData?.careerStars ?? 3"
-                  size="small"
-                  color="#46DAFF"
-                />
+
+              <!-- 财富运区域 - 使用星数而非分数 -->
+              <view class="luck-section">
+                <view class="luck-title-row">
+                  <text class="luck-name-text luck-name-wealth"> 财富运 </text>
+                  <text class="luck-score-text luck-score-wealth">
+                    {{ Math.round((fortuneData?.wealthStars ?? 3) * 20) }}
+                  </text>
+                </view>
+                <view class="luck-stars-row">
+                  <star-rating
+                    :key="`wealth-${fortuneData?.wealthStars || 0}`"
+                    :stars="fortuneData?.wealthStars ?? 3"
+                    size="small"
+                    color="#F5DD4E"
+                  />
+                </view>
               </view>
             </view>
 
-            <!-- 财富运区域 - 使用星数而非分数 -->
-            <view class="luck-section">
-              <view class="luck-title-row">
-                <text class="luck-name-text luck-name-wealth"> 财富运 </text>
-                <text class="luck-score-text luck-score-wealth">
-                  {{ Math.round((fortuneData?.wealthStars ?? 3) * 20) }}
-                </text>
+            <!-- 第2行：健康运和爱情运 -->
+            <view class="luck-sections-row luck-sections-row-bottom">
+              <!-- 健康运区域 - 使用星数而非分数 -->
+              <view class="luck-section">
+                <view class="luck-title-row">
+                  <text class="luck-name-text luck-name-health"> 健康运 </text>
+                  <text class="luck-score-text luck-score-health">
+                    {{ Math.round((fortuneData?.healthStars ?? 3) * 20) }}
+                  </text>
+                </view>
+                <view class="luck-stars-row">
+                  <star-rating
+                    :key="`health-${fortuneData?.healthStars || 0}`"
+                    :stars="fortuneData?.healthStars ?? 3"
+                    size="small"
+                    color="#FF9F66"
+                  />
+                </view>
               </view>
-              <view class="luck-stars-row">
-                <star-rating
-                  :key="`wealth-${fortuneData?.wealthStars || 0}`"
-                  :stars="fortuneData?.wealthStars ?? 3"
-                  size="small"
-                  color="#F5DD4E"
-                />
-              </view>
-            </view>
 
-            <!-- 爱情运区域 - 使用星数而非分数 -->
-            <view class="luck-section">
-              <view class="luck-title-row">
-                <text class="luck-name-text luck-name-love"> 爱情运 </text>
-                <text class="luck-score-text luck-score-love">
-                  {{ Math.round((fortuneData?.loveStars ?? 3) * 20) }}
-                </text>
-              </view>
-              <view class="luck-stars-row">
-                <star-rating
-                  :key="`love-${fortuneData?.loveStars || 0}`"
-                  :stars="fortuneData?.loveStars ?? 3"
-                  size="small"
-                  color="#FF97C6"
-                />
+              <!-- 爱情运区域 - 使用星数而非分数 -->
+              <view class="luck-section">
+                <view class="luck-title-row">
+                  <text class="luck-name-text luck-name-love"> 爱情运 </text>
+                  <text class="luck-score-text luck-score-love">
+                    {{ Math.round((fortuneData?.loveStars ?? 3) * 20) }}
+                  </text>
+                </view>
+                <view class="luck-stars-row">
+                  <star-rating
+                    :key="`love-${fortuneData?.loveStars || 0}`"
+                    :stars="fortuneData?.loveStars ?? 3"
+                    size="small"
+                    color="#FF97C6"
+                  />
+                </view>
               </view>
             </view>
           </view>
@@ -362,53 +386,81 @@
         <text class="history-button-text"> 查看历史记录 </text>
       </view>
 
-      <!-- 手链标题区域 - 包含装饰图标 -->
-      <view class="recommendation-card-title-wrapper">
-        <!-- 手链图标（装饰性图片） -->
-        <image
-          class="recommendation-title-icon"
-          src="../../static/pages/bind/bracelet-icon.png"
-          mode="aspectFit"
-        />
-        <!-- 今日开运手链标签 -->
-        <image
-          class="recommendation-card-title-image"
-          src="../../static/pages/bind/bracelet-label.png"
-          mode="aspectFit"
-        />
-        <!-- 手链星星装饰 -->
-        <image
-          class="recommendation-title-star"
-          src="../../static/pages/bind/bracelet-star.png"
-          mode="aspectFit"
-        />
-      </view>
+      <!-- 商品推荐卡片容器 - 包含所有商品推荐相关元素，点击整个区域触发跳转 -->
+      <view class="recommendation-card-container" @click="handleShopClick">
+        <!-- 手链标题区域 - 包含装饰图标（固定位置） -->
+        <view class="recommendation-card-title-wrapper">
+          <!-- 手链图标（装饰性图片） -->
+          <image
+            class="recommendation-title-icon"
+            src="../../static/pages/bind/bracelet-icon.png"
+            mode="aspectFit"
+          />
+          <!-- 今日开运手链标签 -->
+          <image
+            class="recommendation-card-title-image"
+            src="../../static/pages/bind/bracelet-label.png"
+            mode="aspectFit"
+          />
+          <!-- 手链星星装饰 -->
+          <image
+            class="recommendation-title-star"
+            src="../../static/pages/bind/bracelet-star.png"
+            mode="aspectFit"
+          />
+        </view>
 
-      <!-- 手链信息 -->
-      <view class="recommendation-bracelet-info">
-        <text class="recommendation-bracelet-name">
-          {{ fortuneData?.recommendation?.name || config.texts.bracelet.name }}
-        </text>
-        <text class="recommendation-bracelet-desc">
-          {{ fortuneData?.recommendation?.description || config.texts.bracelet.description }}
-        </text>
-      </view>
+        <!-- 左侧商品信息区域 - 固定位置，内容动态变化 -->
+        <view class="recommendation-bracelet-info">
+          <text class="recommendation-bracelet-name">
+            {{ currentProduct?.name || config.texts.bracelet.name }}
+          </text>
+          <text class="recommendation-bracelet-desc">
+            {{ currentProduct?.description || config.texts.bracelet.description }}
+          </text>
+        </view>
 
-      <!-- 右下角手链图片 - 大图展示，优先使用数据库图片 -->
-      <image
-        class="bottom-right-bracelet-image"
-        :src="
-          fortuneData?.recommendation?.imageUrl || '../../static/pages/fortune/detail-image-2.png'
-        "
-        mode="aspectFit"
-        @error="handleBraceletImageError"
-      />
+        <!-- 右侧商品图轮播区域 - 仅此区域使用swiper -->
+        <view class="product-image-swiper-container">
+          <swiper
+            class="product-image-swiper"
+            :autoplay="true"
+            :interval="2000"
+            :circular="true"
+            :indicator-dots="false"
+            @change="handleSwiperChange"
+          >
+            <swiper-item
+              v-for="(product, index) in productList"
+              :key="product.id || index"
+              class="image-swiper-item"
+            >
+              <image
+                class="product-image"
+                :src="product.imageUrl || '../../static/pages/fortune/detail-image-2.png'"
+                mode="aspectFit"
+                @error="handleBraceletImageError"
+              />
+            </swiper-item>
+          </swiper>
 
-      <!-- 抖音店铺按钮 - 对应Figma node 1:421-422 -->
-      <view class="shop-button-wrapper" @click="handleShopClick">
-        <view class="shop-button-border-wrapper">
-          <image class="shop-icon-img" :src="config.images.shopIcon" mode="aspectFit" />
-          <text class="shop-button-text"> 复制链接到抖音 </text>
+          <!-- 轮播指示器 - 位于商品图下方 -->
+          <view v-if="productList.length > 1" class="image-swiper-dots">
+            <view
+              v-for="(product, index) in productList"
+              :key="'dot-' + (product.id || index)"
+              class="swiper-dot"
+              :class="{ active: index === currentProductIndex }"
+            />
+          </view>
+        </view>
+
+        <!-- 左下角抖音店铺按钮 - 固定位置 -->
+        <view class="shop-button-wrapper">
+          <view class="shop-button-border-wrapper">
+            <image class="shop-icon-img" :src="config.images.shopIcon" mode="aspectFit" />
+            <text class="shop-button-text"> 复制链接到抖音 </text>
+          </view>
         </view>
       </view>
     </view>
@@ -647,6 +699,29 @@ const loadingTimer = ref<ReturnType<typeof setInterval> | null>(null);
 
 // 计算属性
 const fortuneData = computed(() => fortuneStore.todayFortune);
+
+// 商品轮播相关状态
+const currentProductIndex = ref(0); // 当前显示的商品索引
+
+// 获取商品列表（优先使用recommendationList，fallback到单个recommendation）
+const productList = computed(() => {
+  const data = fortuneData.value;
+  if (data?.recommendationList && data.recommendationList.length > 0) {
+    return data.recommendationList;
+  }
+  // 向后兼容：如果没有recommendationList，使用单个recommendation
+  if (data?.recommendation) {
+    return [data.recommendation];
+  }
+  return [];
+});
+
+// 当前显示的商品
+const currentProduct = computed(() => {
+  const list = productList.value;
+  if (list.length === 0) return null;
+  return list[currentProductIndex.value] || list[0];
+});
 
 const TRUE_LIKE_VALUES = ['1', 'true', 'yes'];
 
@@ -1150,11 +1225,14 @@ function stopLoadingAnimation() {
   loadingText.value = LOADING_MESSAGES[0];
 }
 
+/**
+ * 处理商品卡片点击（跳转到当前商品的抖音链接）
+ */
 function handleShopClick() {
-  const recommendation = fortuneData.value?.recommendation;
-  if (recommendation?.douyinUrl) {
+  const product = currentProduct.value;
+  if (product?.douyinUrl) {
     // 网页版：直接打开链接
-    openDouyinShop(recommendation.douyinUrl);
+    openDouyinShop(product.douyinUrl);
   } else {
     uni.showToast({
       title: '暂无店铺链接',
@@ -1162,6 +1240,13 @@ function handleShopClick() {
       duration: 2000,
     });
   }
+}
+
+/**
+ * 处理轮播切换事件
+ */
+function handleSwiperChange(e: any) {
+  currentProductIndex.value = e.detail.current;
 }
 
 /**
@@ -1234,7 +1319,7 @@ function handleHistoryNavigation() {
   position: relative;
   /* 设置明确的高度，确保所有内容都能正确显示 */
   min-height: 100vh;
-  height: 1865rpx; /* 调整后总高度：历史按钮底部1825rpx（1710 + 115）+ 底部间距40rpx = 1865rpx */
+  height: 1965rpx; /* 从2025rpx减少到1965rpx，配合运势卡片高度减少60rpx */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   /* 禁止容器本身滚动，让页面自然滚动 */
   overflow: visible;
@@ -1251,7 +1336,7 @@ function handleHistoryNavigation() {
   opacity: 0;
   transition: opacity 0.4s ease-in;
   /* 确保背景覆盖整个容器 */
-  min-height: 1865rpx;
+  min-height: 1965rpx;
 
   .bg-main {
     position: absolute;
@@ -1352,7 +1437,7 @@ function handleHistoryNavigation() {
 .card-decoration-layer {
   top: 420rpx;
   width: 701rpx;
-  height: 920rpx; /* 从800rpx增加到920rpx，增加120rpx高度，解决内容紧凑问题 */
+  height: 1020rpx; /* 从1080rpx减少到1020rpx，减少底部空隙 */
 }
 
 /* 运势卡片背景图 - 对应Figma node 1:307-310 */
@@ -1380,10 +1465,85 @@ function handleHistoryNavigation() {
 
 /* 底部装饰图 - 推荐商品卡片背景 */
 .bottom-decoration {
-  top: 1360rpx; /* 上移到原历史按钮位置，与运势卡片保持20rpx间距 */
+  top: 1460rpx; /* 从1520rpx上移到1460rpx，配合运势卡片高度减少，保持20rpx间隙 */
   width: 701rpx;
   height: 330rpx;
   z-index: 2;
+}
+
+/* 商品推荐卡片容器 - 包含所有商品推荐相关元素，点击整个区域触发跳转 */
+.recommendation-card-container {
+  position: absolute;
+  top: 1460rpx; /* 与底部装饰图位置一致 */
+  left: 25rpx; /* 居中对齐 (750 - 701) / 2 ≈ 25rpx */
+  width: 701rpx;
+  height: 330rpx;
+  z-index: 10; /* 高于底部装饰图(z-index: 2) */
+  cursor: pointer; /* 鼠标悬停时显示手型光标 */
+  transition: opacity 0.2s ease; /* 添加过渡效果 */
+}
+
+.recommendation-card-container:active {
+  opacity: 0.95; /* 点击时稍微降低透明度 */
+}
+
+/* 右侧商品图轮播容器 */
+.product-image-swiper-container {
+  position: absolute;
+  top: 15rpx; /* 距离容器顶部15rpx */
+  right: 15rpx; /* 从5rpx改为15rpx，左移10rpx，确保在容器内部 */
+  width: 300rpx;
+  height: 300rpx;
+  z-index: 1;
+}
+
+/* 商品图轮播swiper */
+.product-image-swiper {
+  width: 100%;
+  height: 100%;
+}
+
+/* 商品图轮播项 */
+.image-swiper-item {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 商品图片 */
+.product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 商品图轮播指示器容器 */
+.image-swiper-dots {
+  position: absolute;
+  bottom: 8rpx; /* 从-20rpx改为8rpx，上移到商品图内部 */
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8rpx;
+  z-index: 20;
+  pointer-events: none; /* 不阻止点击事件 */
+}
+
+/* 轮播指示器圆点 */
+.swiper-dot {
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease;
+}
+
+.swiper-dot.active {
+  width: 20rpx;
+  border-radius: 4rpx;
+  background-color: rgba(138, 43, 226, 0.8); /* 使用紫色主题色 */
 }
 
 /* 顶部装饰图 - 通用样式 */
@@ -1599,17 +1759,37 @@ function handleHistoryNavigation() {
   filter: drop-shadow(0 0 8rpx rgba(167, 139, 250, 0.6));
 }
 
-/* 三项运势容器 */
-.luck-sections-container {
+/* 四项运势容器 - 2行梯形布局 */
+.luck-sections-wrapper {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 820rpx; /* 优化布局：从780rpx下移到820rpx，增加与上方内容的间距 */
-  display: flex;
-  gap: 40rpx;
+  top: 800rpx;
   z-index: 11;
-  width: 600rpx;
-  justify-content: space-between;
+  width: 580rpx; /* 与建议区域宽度一致 */
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx; /* 两行之间的间距 */
+}
+
+/* 运势行容器 */
+.luck-sections-row {
+  display: flex;
+}
+
+/* 第1行：事业运和财富运 - 稍微向中间靠拢 */
+.luck-sections-row-top {
+  width: 100%;
+  padding: 0 30rpx; /* 左右各留30rpx间距，让内容稍微向中间靠拢 */
+  justify-content: space-between; /* 在padding范围内两端对齐 */
+}
+
+/* 第2行：健康运和爱情运 - 稍微向外扩展 */
+.luck-sections-row-bottom {
+  width: 480rpx; /* 从420rpx增加到480rpx，让第2行稍微宽一些 */
+  margin: 0 auto; /* 居中 */
+  padding: 0 20rpx; /* 左右各留20rpx间距 */
+  justify-content: space-between; /* 在padding范围内两端对齐 */
 }
 
 /* 分项运势区域 */
@@ -1618,6 +1798,15 @@ function handleHistoryNavigation() {
   flex-direction: column;
   align-items: center;
   gap: 10rpx;
+}
+
+/* 第1行的运势项 - 不使用flex:1，让它们自然宽度 */
+.luck-sections-row-top .luck-section {
+  flex: 0 0 auto; /* 不伸缩，保持自然宽度 */
+}
+
+/* 第2行的运势项 - 平均分配空间 */
+.luck-sections-row-bottom .luck-section {
   flex: 1; /* 平均分配空间 */
 }
 
@@ -1660,6 +1849,12 @@ function handleHistoryNavigation() {
   color: #ff97c6;
 }
 
+/* 健康运标题和分数颜色 - 橙色主题 */
+.luck-name-health,
+.luck-score-health {
+  color: #ff9f66;
+}
+
 .luck-stars-row {
   display: flex;
   justify-content: center;
@@ -1671,7 +1866,7 @@ function handleHistoryNavigation() {
   position: absolute;
   left: 50%;
   transform: translate(-50%);
-  top: 940rpx; /* 优化布局：从880rpx下移到940rpx，增加与三项运势的间距 */
+  top: 1050rpx; /* 从1000rpx下移到1050rpx，确保不遮挡第2行运势 */
   width: 580rpx;
   height: 140rpx;
   z-index: 11;
@@ -1767,7 +1962,7 @@ function handleHistoryNavigation() {
 .lucky-cards-container {
   position: absolute;
   left: 86rpx;
-  top: 1120rpx; /* 优化布局：从1030rpx下移到1120rpx，增加与建议区域的间距 */
+  top: 1230rpx; /* 从1180rpx下移到1230rpx，配合建议区域的新位置 */
   width: 580rpx;
   display: flex;
   justify-content: center;
@@ -1850,7 +2045,7 @@ function handleHistoryNavigation() {
 /* 历史记录按钮 - 与绑定页面和个人信息页面按钮样式保持一致 */
 .history-button {
   position: absolute;
-  top: 1710rpx; /* 商品推荐卡片下方：1360rpx（商品卡片top）+ 330rpx（商品卡片height）+ 20rpx（间距）= 1710rpx */
+  top: 1810rpx; /* 从1870rpx上移到1810rpx，配合底部装饰图上移60rpx */
   left: 42rpx; /* 与绑定页面和个人信息页面按钮左边距一致 */
   width: 668rpx; /* 与绑定页面和个人信息页面按钮宽度一致 */
   height: 115rpx; /* 与绑定页面和个人信息页面按钮高度一致 */
@@ -1888,11 +2083,11 @@ function handleHistoryNavigation() {
 /* 手链标题区域 - 包含装饰图标（缩小版bind页面样式） */
 .recommendation-card-title-wrapper {
   position: absolute;
-  left: 60rpx;
-  bottom: 375rpx; /* 保持相对卡片背景130rpx的距离：1865 - (1360 + 130) = 375rpx */
+  top: 10rpx; /* 从20rpx减少到10rpx，上移10rpx */
+  left: 35rpx; /* 距离容器左边35rpx (60rpx - 25rpx容器左边距) */
   width: 240rpx; /* 缩小版：bind页面380rpx缩小到240rpx，比例约0.63 */
   height: 114rpx; /* 缩小版：bind页面180rpx缩小到114rpx，比例约0.63 */
-  z-index: 11;
+  z-index: 1; /* 相对于容器的层级 */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1928,16 +2123,17 @@ function handleHistoryNavigation() {
   z-index: 11;
 }
 
-/* 手链信息区域 */
+/* 手链信息区域 - 固定位置，内容动态变化 */
 .recommendation-bracelet-info {
   position: absolute;
-  left: 60rpx;
-  bottom: 250rpx; /* 保持相对卡片背景255rpx的距离：1865 - (1360 + 255) = 250rpx */
+  top: 130rpx; /* 从145rpx减少到130rpx，上移15rpx */
+  left: 35rpx; /* 距离容器左边35rpx (60rpx - 25rpx容器左边距) */
   width: 320rpx;
   display: flex;
   flex-direction: column;
   gap: 12rpx;
-  z-index: 11;
+  z-index: 1; /* 相对于容器的层级 */
+  transition: opacity 0.3s ease; /* 添加淡入淡出效果 */
 
   .recommendation-bracelet-name {
     font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
@@ -1958,30 +2154,14 @@ function handleHistoryNavigation() {
   }
 }
 
-/* 右下角手链图片 - 确保在卡片边界内 */
-.bottom-right-bracelet-image {
-  position: absolute;
-  right: 30rpx;
-  bottom: 190rpx; /* 保持相对卡片背景315rpx的距离：1865 - (1360 + 315) = 190rpx */
-  width: 300rpx; /* 从320rpx减小到300rpx，确保不超出卡片边界 */
-  height: 300rpx; /* 从320rpx减小到300rpx，确保不超出卡片边界 */
-  max-width: 300rpx; /* 限制最大宽度 */
-  max-height: 300rpx; /* 限制最大高度 */
-  z-index: 11; /* 降低z-index，确保在卡片层级内（卡片z-index: 2，内容z-index: 11） */
-  display: block;
-  background-color: transparent;
-  /* 确保图片不会溢出 */
-  object-fit: contain;
-}
-
-/* 抖音店铺按钮 */
+/* 抖音店铺按钮 - 固定位置 */
 .shop-button-wrapper {
   position: absolute;
-  left: 40rpx;
-  bottom: 190rpx; /* 保持相对卡片背景315rpx的距离：1865 - (1360 + 315) = 190rpx */
+  bottom: 15rpx; /* 距离容器底部15rpx */
+  left: 15rpx; /* 距离容器左边15rpx (40rpx - 25rpx容器左边距) */
   display: flex;
   align-items: center;
-  z-index: 11;
+  z-index: 1; /* 相对于容器的层级 */
 }
 
 .shop-button-border-wrapper {

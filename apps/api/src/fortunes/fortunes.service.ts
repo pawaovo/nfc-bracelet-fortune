@@ -84,7 +84,7 @@ export class FortunesService {
 
     if (existingFortune) {
       this.logger.log(`Found existing fortune for user ${userId} on ${today}`);
-      return this.formatFortuneResponse(existingFortune, isAuth);
+      return await this.formatFortuneResponse(existingFortune, isAuth);
     }
 
     // 没有记录，生成新的运势
@@ -124,7 +124,7 @@ export class FortunesService {
       },
     });
 
-    return this.formatFortuneResponse(newFortune, isAuth);
+    return await this.formatFortuneResponse(newFortune, isAuth);
   }
 
   /**
@@ -190,7 +190,7 @@ export class FortunesService {
     });
 
     this.logger.log(`Regenerated fortune for user ${userId} on ${today}`);
-    return this.formatFortuneResponse(fortune, isAuth);
+    return await this.formatFortuneResponse(fortune, isAuth);
   }
 
   /**
@@ -224,8 +224,10 @@ export class FortunesService {
     const hasMore = totalLoaded < total;
 
     return {
-      fortunes: fortunes.map((fortune) =>
-        this.formatFortuneResponse(fortune, isAuth),
+      fortunes: await Promise.all(
+        fortunes.map((fortune) =>
+          this.formatFortuneResponse(fortune, isAuth, false),
+        ), // 历史记录不需要商品列表，提升性能
       ),
       total,
       page,
@@ -258,7 +260,7 @@ export class FortunesService {
       throw new NotFoundException('该日期没有运势记录');
     }
 
-    return this.formatFortuneResponse(fortune, isAuth);
+    return await this.formatFortuneResponse(fortune, isAuth);
   }
 
   /**
@@ -517,6 +519,7 @@ export class FortunesService {
         careerStars: 3,
         wealthStars: 3,
         loveStars: 3,
+        healthStars: 3,
       };
 
       // 提取星盘分析
@@ -545,10 +548,18 @@ export class FortunesService {
 
       // 提取爱情运分析
       const loveAnalysisMatch = content.match(
-        /爱情运分析[：:]\s*\n([\s\S]*?)(?=\n\n|总结和建议|$)/,
+        /爱情运分析[：:]\s*\n([\s\S]*?)(?=\n\n|健康运分析|总结和建议|$)/,
       );
       if (loveAnalysisMatch) {
         result.loveAnalysis = loveAnalysisMatch[1].trim();
+      }
+
+      // 提取健康运分析
+      const healthAnalysisMatch = content.match(
+        /健康运分析[：:]\s*\n([\s\S]*?)(?=\n\n|总结和建议|$)/,
+      );
+      if (healthAnalysisMatch) {
+        result.healthAnalysis = healthAnalysisMatch[1].trim();
       }
 
       // 提取星数评分（支持小数）
@@ -565,6 +576,11 @@ export class FortunesService {
       const loveStarsMatch = content.match(/爱情运星数[：:]\s*([\d.]+)/);
       if (loveStarsMatch) {
         result.loveStars = parseFloat(loveStarsMatch[1]);
+      }
+
+      const healthStarsMatch = content.match(/健康运星数[：:]\s*([\d.]+)/);
+      if (healthStarsMatch) {
+        result.healthStars = parseFloat(healthStarsMatch[1]);
       }
 
       // 提取建议事项
@@ -667,11 +683,13 @@ export class FortunesService {
     const defaultCareerStars = 3;
     const defaultWealthStars = 3;
     const defaultLoveStars = 3;
+    const defaultHealthStars = 3;
 
     // 获取星数（优先使用AI返回的值）
     const careerStars = aiData.careerStars ?? defaultCareerStars;
     const wealthStars = aiData.wealthStars ?? defaultWealthStars;
     const loveStars = aiData.loveStars ?? defaultLoveStars;
+    const healthStars = aiData.healthStars ?? defaultHealthStars;
 
     return {
       // 综合分数
@@ -683,11 +701,13 @@ export class FortunesService {
       careerAnalysis: aiData.careerAnalysis,
       wealthAnalysis: aiData.wealthAnalysis,
       loveAnalysis: aiData.loveAnalysis,
+      healthAnalysis: aiData.healthAnalysis,
 
       // 星级评分（新版）
       careerStars,
       wealthStars,
       loveStars,
+      healthStars,
 
       // 建议和避免
       suggestion: aiData.suggestion || '保持积极心态，好运自然来。',
@@ -739,9 +759,11 @@ export class FortunesService {
       careerAnalysis: fortuneData.careerAnalysis,
       wealthAnalysis: fortuneData.wealthAnalysis,
       loveAnalysis: fortuneData.loveAnalysis,
+      healthAnalysis: fortuneData.healthAnalysis,
       careerStars: fortuneData.careerStars,
       wealthStars: fortuneData.wealthStars,
       loveStars: fortuneData.loveStars,
+      healthStars: fortuneData.healthStars,
       avoidance: fortuneData.avoidance,
       suitable: fortuneData.suitable,
       unsuitable: fortuneData.unsuitable,
@@ -780,9 +802,11 @@ export class FortunesService {
       careerAnalysis: undefined,
       wealthAnalysis: undefined,
       loveAnalysis: undefined,
+      healthAnalysis: undefined,
       careerStars: 3.5,
       wealthStars: 3.5,
       loveStars: 3.5,
+      healthStars: 3.5,
       avoidance: '避免冲动决策。',
       suitable: '合作',
       unsuitable: '金水',
@@ -815,9 +839,11 @@ export class FortunesService {
       careerAnalysis: '工作运势良好，适合推进重要项目。',
       wealthAnalysis: '财运稳定，适合理性投资。',
       loveAnalysis: '感情运势平和，适合增进了解。',
+      healthAnalysis: '健康状况良好，注意规律作息。',
       careerStars: 4,
       wealthStars: 4,
       loveStars: 4,
+      healthStars: 4,
       avoidance: '避免冲动决策，保持理性思考。',
       suitable: '合作、沟通、学习',
       unsuitable: '冒险、投机、争执',
@@ -1061,12 +1087,44 @@ export class FortunesService {
   }
 
   /**
-   * 格式化运势响应（新版：包含详细字段）
+   * 获取所有商品列表（用于轮播展示）
+   * @returns 商品列表（最多5个）
    */
-  private formatFortuneResponse(
+  private async getAllRecommendations() {
+    const products = await this.prisma.product.findMany({
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        imageUrl: true,
+        price: true,
+        douyinUrl: true,
+      },
+      take: 5, // 获取前5个商品
+      orderBy: {
+        createdAt: 'desc', // 按创建时间倒序
+      },
+    });
+
+    return products.length > 0 ? products : [];
+  }
+
+  /**
+   * 格式化运势响应（新版：包含详细字段）
+   * @param fortune 运势数据
+   * @param isAuth 是否已认证
+   * @param includeRecommendationList 是否包含商品列表（默认true，历史记录可设为false以提升性能）
+   */
+  private async formatFortuneResponse(
     fortune: any,
     isAuth: boolean = true,
-  ): FortuneData {
+    includeRecommendationList: boolean = true,
+  ): Promise<FortuneData> {
+    // 只在需要时获取商品列表（优化性能）
+    const recommendationList = includeRecommendationList
+      ? await this.getAllRecommendations()
+      : [];
+
     const response: FortuneData = {
       date: fortune.date,
       overallScore: fortune.overallScore,
@@ -1081,6 +1139,11 @@ export class FortunesService {
             douyinUrl: fortune.recommendation.douyinUrl,
           }
         : undefined,
+      // 添加商品列表用于轮播展示（仅在需要时）
+      recommendationList:
+        includeRecommendationList && recommendationList.length > 0
+          ? recommendationList
+          : undefined,
     };
 
     // 对于已认证用户，返回完整的运势信息（包含新增字段）
