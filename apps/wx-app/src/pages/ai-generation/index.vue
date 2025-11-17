@@ -11,7 +11,8 @@
       </view>
     </view>
 
-    <view v-if="isLoading" class="loading-container">
+    <view v-if="isLoading" class="loading-container" :class="{ 'fade-out': isFadingOut }">
+      <!-- 背景PAG动画 (loading_bmp.pag) -->
       <view class="pag-animation-overlay">
         <PagLoadingCDN
           ref="pagLoadingRef"
@@ -19,8 +20,24 @@
           :auto-play="false"
           :loop="false"
           :manual-control="true"
+          pag-file-url="/static/pag/loading_bmp.pag"
           @download-complete="onPagDownloadComplete"
           @ready="onPagReady"
+        />
+      </view>
+
+      <!-- 前景PAG动画 (loading.pag) -->
+      <view class="pag-foreground-overlay">
+        <PagLoadingCDN
+          ref="pagForegroundRef"
+          :width="300"
+          :height="300"
+          :auto-play="false"
+          :loop="false"
+          :manual-control="true"
+          pag-file-url="/static/pag/loading.pag"
+          @download-complete="onPagForegroundDownloadComplete"
+          @ready="onPagForegroundReady"
         />
       </view>
 
@@ -88,8 +105,10 @@ const isLoading = ref(true);
 const isGenerating = ref(false);
 const showPagWaiting = ref(false);
 const pagDownloadComplete = ref(false);
+const pagForegroundDownloadComplete = ref(false);
 const aiResponseComplete = ref(false);
 const errorMessage = ref('');
+const isFadingOut = ref(false);
 
 const aiRetryState = ref({
   showRetry: false,
@@ -102,10 +121,16 @@ const loadingText = ref<string>(LOADING_MESSAGES[0]);
 const loadingTimer = ref<ReturnType<typeof setInterval> | null>(null);
 
 const pagLoadingRef = ref<InstanceType<typeof PagLoadingCDN>>();
+const pagForegroundRef = ref<InstanceType<typeof PagLoadingCDN>>();
 
 const pagAnimationState = ref({
   isPlaying: false,
   loopTimer: null as ReturnType<typeof setTimeout> | null,
+  hasHandledReady: false,
+});
+
+const pagForegroundAnimationState = ref({
+  isPlaying: false,
   hasHandledReady: false,
 });
 
@@ -114,16 +139,13 @@ onLoad(() => {
   triggerGeneration();
 });
 
+// 页面隐藏/卸载时清理资源（防止内存泄漏）
 onHide(() => {
-  cleanupPagAnimation();
+  cleanupAllPagResources();
 });
 
 onUnload(() => {
-  cleanupPagAnimation();
-});
-
-onBeforeUnmount(() => {
-  cleanupPagAnimation();
+  cleanupAllPagResources();
 });
 
 async function triggerGeneration() {
@@ -139,13 +161,18 @@ async function triggerGeneration() {
 
   isGenerating.value = true;
   isLoading.value = true;
+  isFadingOut.value = false;
   errorMessage.value = '';
   aiRetryState.value.showRetry = false;
   showPagWaiting.value = false;
   pagDownloadComplete.value = false;
+  pagForegroundDownloadComplete.value = false;
   aiResponseComplete.value = false;
+  // 重置PAG动画状态
   pagAnimationState.value.hasHandledReady = false;
   pagAnimationState.value.isPlaying = false;
+  pagForegroundAnimationState.value.hasHandledReady = false;
+  pagForegroundAnimationState.value.isPlaying = false;
 
   try {
     const pagCached = await isPagCached();
@@ -167,13 +194,25 @@ async function triggerGeneration() {
     uni.removeStorageSync(FORCE_RELOAD_FLAG_KEY);
 
     await handlePagAnimationAfterAI();
+
+    // 开始淡出动画
+    isFadingOut.value = true;
+
+    // 在淡出动画期间提前清理PAG资源
     setTimeout(() => {
-      navigateToFortune();
-    }, 150);
+      cleanupAllPagResources();
+    }, 300); // 淡出动画进行到一半时开始清理
+
+    // 等待淡出动画完成后再跳转
+    setTimeout(() => {
+      uni.redirectTo({
+        url: '/pages/fortune/index?fromProfile=true&preloaded=true',
+      });
+    }, 600);
   } catch (error) {
     console.error('AI 生成失败:', error);
     // 停止动画（如果PAG组件已就绪）
-    if (pagLoadingRef.value?.checkReady()) {
+    if (pagLoadingRef.value?.checkReady() && pagForegroundRef.value?.checkReady()) {
       await stopLoadingAnimation();
     }
     showPagWaiting.value = false;
@@ -205,18 +244,14 @@ async function handleRetry() {
   }
 }
 
+/**
+ * 处理降级方案（跳转到访客模式）
+ */
 function handleFallback() {
   aiRetryState.value.showRetry = false;
-  cleanupPagAnimation();
+  cleanupAllPagResources();
   fortuneStore.clearFortune();
   uni.redirectTo({ url: '/pages/fortune/index?mode=visitor' });
-}
-
-function navigateToFortune() {
-  cleanupPagAnimation();
-  uni.redirectTo({
-    url: '/pages/fortune/index?fromProfile=true&preloaded=true',
-  });
 }
 
 function startLoadingAnimation() {
@@ -240,8 +275,8 @@ async function stopLoadingAnimation() {
   }
   loadingText.value = LOADING_MESSAGES[0];
 
-  // 只有在PAG组件就绪时才播放结束动画
-  if (pagLoadingRef.value?.checkReady()) {
+  // 只有在两个PAG组件都就绪时才播放结束动画
+  if (pagLoadingRef.value?.checkReady() && pagForegroundRef.value?.checkReady()) {
     await playPagEnding();
   } else {
     console.warn('⚠️ PAG组件未就绪，跳过结束动画');
@@ -250,7 +285,18 @@ async function stopLoadingAnimation() {
 
 function onPagDownloadComplete() {
   pagDownloadComplete.value = true;
-  showPagWaiting.value = false;
+  checkAllPagDownloadComplete();
+}
+
+function onPagForegroundDownloadComplete() {
+  pagForegroundDownloadComplete.value = true;
+  checkAllPagDownloadComplete();
+}
+
+function checkAllPagDownloadComplete() {
+  if (pagDownloadComplete.value && pagForegroundDownloadComplete.value) {
+    showPagWaiting.value = false;
+  }
 }
 
 async function onPagReady() {
@@ -259,11 +305,29 @@ async function onPagReady() {
   }
 
   pagAnimationState.value.hasHandledReady = true;
+  checkBothPagReady();
+}
+
+async function onPagForegroundReady() {
+  if (pagForegroundAnimationState.value.hasHandledReady) {
+    return;
+  }
+
+  pagForegroundAnimationState.value.hasHandledReady = true;
+  checkBothPagReady();
+}
+
+async function checkBothPagReady() {
+  // 等待两个PAG都就绪
+  if (
+    !pagAnimationState.value.hasHandledReady ||
+    !pagForegroundAnimationState.value.hasHandledReady
+  ) {
+    return;
+  }
 
   if (aiResponseComplete.value) {
     // AI已完成，播放结束动画
-    // 注意：不要在这里设置 isLoading = false，会导致组件卸载
-    // 让 navigateToFortune 中的路由跳转自然触发组件卸载
     await stopLoadingAnimation();
   } else {
     // AI未完成，开始播放循环动画
@@ -271,15 +335,15 @@ async function onPagReady() {
   }
 }
 
+/**
+ * AI完成后处理PAG动画
+ * 等待结束动画播放完成
+ */
 async function handlePagAnimationAfterAI() {
-  if (pagDownloadComplete.value) {
-    // 等待结束动画播放完成后再卸载组件
+  if (pagDownloadComplete.value && pagForegroundDownloadComplete.value) {
     await stopLoadingAnimation();
-    // 延迟卸载组件，确保动画播放完成
-    // stopLoadingAnimation 内部已经等待了结束动画播放完成
-    // 这里不需要立即设置 isLoading = false，让 navigateToFortune 中的跳转自然触发卸载
   } else {
-    console.log('等待 PAG 下载完成后播放结束动画');
+    console.log('⚠️ 等待所有 PAG 下载完成后播放结束动画');
   }
 }
 
@@ -288,12 +352,12 @@ function startPagAnimation() {
     return;
   }
 
-  if (!pagLoadingRef.value) {
+  if (!pagLoadingRef.value || !pagForegroundRef.value) {
     setTimeout(() => startPagAnimation(), PAG_CONFIG.componentInitDelayMs);
     return;
   }
 
-  if (!pagLoadingRef.value.checkReady()) {
+  if (!pagLoadingRef.value.checkReady() || !pagForegroundRef.value.checkReady()) {
     setTimeout(() => startPagAnimation(), PAG_CONFIG.componentCheckIntervalMs);
     return;
   }
@@ -308,14 +372,20 @@ function startPagAnimation() {
   const loopEndProgress = PAG_CONFIG.loopEnd / totalDuration;
 
   pagAnimationState.value.isPlaying = true;
+  pagForegroundAnimationState.value.isPlaying = true;
+
+  // 同时播放两个PAG的初始动画
   pagLoadingRef.value.playInitialAnimation(loopStartProgress);
+  pagForegroundRef.value.playInitialAnimation(loopStartProgress);
 
   pagAnimationState.value.loopTimer = setTimeout(() => {
-    if (!pagLoadingRef.value) return;
+    if (!pagLoadingRef.value || !pagForegroundRef.value) return;
     if (!pagAnimationState.value.isPlaying) {
       return;
     }
+    // 同时播放两个PAG的循环动画
     pagLoadingRef.value.startMiddleLoop(loopStartProgress, loopEndProgress);
+    pagForegroundRef.value.startMiddleLoop(loopStartProgress, loopEndProgress);
   }, PAG_CONFIG.loopStart * 1000);
 }
 
@@ -323,27 +393,28 @@ function playPagEnding(): Promise<void> {
   return new Promise(resolve => {
     console.log('🎬 准备播放结束动画...');
 
-    // 清除循环定时器
+    // 清除循环定时器（停止等待循环开始的定时器）
     if (pagAnimationState.value.loopTimer) {
       clearTimeout(pagAnimationState.value.loopTimer);
       pagAnimationState.value.loopTimer = null;
     }
 
     // 检查PAG组件引用
-    if (!pagLoadingRef.value) {
+    if (!pagLoadingRef.value || !pagForegroundRef.value) {
       console.warn('⚠️ PAG组件引用不存在，跳过结束动画');
       resolve();
       return;
     }
 
     // 检查PAG组件是否就绪
-    if (!pagLoadingRef.value.checkReady()) {
+    if (!pagLoadingRef.value.checkReady() || !pagForegroundRef.value.checkReady()) {
       console.warn('⚠️ PAG组件未就绪，跳过结束动画');
       resolve();
       return;
     }
 
     pagAnimationState.value.isPlaying = false;
+    pagForegroundAnimationState.value.isPlaying = false;
 
     // 获取PAG信息
     const pagInfo = pagLoadingRef.value.getPagInfo();
@@ -355,11 +426,38 @@ function playPagEnding(): Promise<void> {
 
     console.log('✅ PAG组件就绪，开始播放结束动画');
     const totalDuration = pagInfo.duration;
+    const loopStartProgress = PAG_CONFIG.loopStart / totalDuration;
     const endingStartProgress = PAG_CONFIG.endingStart / totalDuration;
-    const endingDuration = (totalDuration - PAG_CONFIG.endingStart) * 1000;
+    const endingDuration = (PAG_CONFIG.endingEnd - PAG_CONFIG.endingStart) * 1000;
 
-    pagLoadingRef.value.playEnding(endingStartProgress);
-    console.log(`⏱️ 结束动画时长: ${endingDuration}ms`);
+    // 检查当前进度，如果还在初始动画阶段，先快速播放到循环段
+    const currentProgress = pagLoadingRef.value.getProgress() || 0;
+    console.log(
+      `📊 当前进度: ${(currentProgress * 100).toFixed(0)}%, 循环起点: ${(loopStartProgress * 100).toFixed(0)}%`
+    );
+
+    if (currentProgress < loopStartProgress) {
+      console.log('⚡ 初始动画未完成，快速跳转到循环段再播放结束动画');
+      // 先跳转到循环段起点（不调用flush，让playEnding自动渲染）
+      pagLoadingRef.value.setProgress(loopStartProgress);
+      pagForegroundRef.value.setProgress(loopStartProgress);
+
+      // 短暂延迟后播放结束动画
+      setTimeout(() => {
+        pagLoadingRef.value.playEnding(endingStartProgress);
+        pagForegroundRef.value.playEnding(endingStartProgress);
+        console.log(
+          `⏱️ 结束动画时长: ${endingDuration}ms (${PAG_CONFIG.endingStart}s - ${PAG_CONFIG.endingEnd}s)`
+        );
+      }, 50);
+    } else {
+      // 正常播放结束动画
+      pagLoadingRef.value.playEnding(endingStartProgress);
+      pagForegroundRef.value.playEnding(endingStartProgress);
+      console.log(
+        `⏱️ 结束动画时长: ${endingDuration}ms (${PAG_CONFIG.endingStart}s - ${PAG_CONFIG.endingEnd}s)`
+      );
+    }
 
     setTimeout(() => {
       console.log('✅ 结束动画播放完成');
@@ -368,20 +466,48 @@ function playPagEnding(): Promise<void> {
   });
 }
 
+/**
+ * 清理PAG动画相关的定时器和状态
+ * 注意：这只清理父组件的定时器，不清理PAG组件内部的资源
+ */
 function cleanupPagAnimation() {
+  // 清理循环定时器
   if (pagAnimationState.value.loopTimer) {
     clearTimeout(pagAnimationState.value.loopTimer);
     pagAnimationState.value.loopTimer = null;
   }
 
+  // 清理文字轮播定时器
   if (loadingTimer.value) {
     clearInterval(loadingTimer.value);
     loadingTimer.value = null;
   }
 
+  // 重置状态
   pagAnimationState.value.isPlaying = false;
   pagAnimationState.value.hasHandledReady = false;
+  pagForegroundAnimationState.value.isPlaying = false;
+  pagForegroundAnimationState.value.hasHandledReady = false;
   loadingText.value = LOADING_MESSAGES[0];
+}
+
+/**
+ * 完整清理所有PAG资源（父组件 + 子组件）
+ * 用于页面跳转前的资源清理
+ */
+function cleanupAllPagResources() {
+  console.log('🧹 完整清理所有PAG资源');
+
+  // 1. 清理父组件的定时器和状态
+  cleanupPagAnimation();
+
+  // 2. 清理PAG组件的WebGL资源
+  try {
+    pagLoadingRef.value?.cleanup();
+    pagForegroundRef.value?.cleanup();
+  } catch (error) {
+    console.warn('⚠️ 清理PAG组件资源失败:', error);
+  }
 }
 </script>
 
@@ -422,6 +548,12 @@ function cleanupPagAnimation() {
   min-height: 100vh;
   padding: 60rpx;
   text-align: center;
+  opacity: 1;
+  transition: opacity 0.5s ease-out;
+}
+
+.loading-container.fade-out {
+  opacity: 0;
 }
 
 .pag-animation-overlay {
@@ -437,9 +569,21 @@ function cleanupPagAnimation() {
   pointer-events: none;
 }
 
+.pag-foreground-overlay {
+  position: fixed;
+  bottom: 230rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
 .loading-text {
   position: fixed;
-  bottom: 250rpx;
+  bottom: 400rpx;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;

@@ -48,6 +48,7 @@ interface Props {
   loop?: boolean;
   fillWidth?: boolean; // 是否横向填充屏幕
   manualControl?: boolean; // 是否手动控制播放（用于自定义循环逻辑）
+  pagFileUrl?: string; // PAG文件URL（可选，默认使用pagPreloader中的配置）
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -57,6 +58,7 @@ const props = withDefaults(defineProps<Props>(), {
   loop: true,
   fillWidth: false,
   manualControl: false,
+  pagFileUrl: '',
 });
 
 // 定义事件
@@ -201,9 +203,24 @@ async function loadAndPlayPAG() {
     // 小程序环境：使用缓存机制
     if (!isMiniProgram) {
       console.log('📥 加载本地PAG文件...');
-      pagBuffer = await downloadPagFileWithProgress();
-      if (!pagBuffer) {
-        throw new Error('PAG文件加载失败');
+      // 如果指定了自定义URL，使用自定义URL，否则使用默认的
+      if (props.pagFileUrl) {
+        console.log('使用自定义PAG文件:', props.pagFileUrl);
+        const response = await fetch(props.pagFileUrl);
+        if (!response.ok) {
+          throw new Error(`PAG文件加载失败，状态码: ${response.status}`);
+        }
+        pagBuffer = await response.arrayBuffer();
+        console.log(
+          '✅ 自定义PAG文件加载成功（大小:',
+          (pagBuffer.byteLength / 1024 / 1024).toFixed(2),
+          'MB）'
+        );
+      } else {
+        pagBuffer = await downloadPagFileWithProgress();
+        if (!pagBuffer) {
+          throw new Error('PAG文件加载失败');
+        }
       }
       emit('downloadComplete');
     } else {
@@ -615,9 +632,12 @@ function checkReady() {
   return isReady.value;
 }
 
-// 清理资源
-onBeforeUnmount(() => {
-  console.log('🧹 PagLoadingCDN 组件卸载，清理资源');
+/**
+ * 手动清理PAG资源（在组件卸载前调用）
+ * 关键：避免调用会触发异步渲染的方法（如 stop(), flush()）
+ */
+function cleanup() {
+  console.log('🧹 手动清理 PAG 资源');
 
   // 1. 先停止循环标志，防止定时器继续执行
   isLoopingMiddle.value = false;
@@ -632,26 +652,44 @@ onBeforeUnmount(() => {
     progressCheckTimer = null;
   }
 
-  // 3. 停止并销毁 PAG 资源
+  // 3. 直接销毁 PAG 资源（不调用 pause/stop/flush，避免触发异步渲染）
   if (pagView) {
     try {
-      pagView.stop();
+      // 直接销毁，不调用 pause() 或 stop()，因为它们会触发 flush()
       pagView.destroy();
+      pagView = null;
+      console.log('✅ PAGView 已销毁');
     } catch (error) {
-      console.error('❌ 销毁 PAGView 失败:', error);
+      console.warn('⚠️ 销毁 PAGView 失败:', error);
+      pagView = null;
     }
   }
+
   if (pagFile) {
     try {
       pagFile.destroy();
+      pagFile = null;
+      console.log('✅ PAGFile 已销毁');
     } catch (error) {
-      console.error('❌ 销毁 PAGFile 失败:', error);
+      console.warn('⚠️ 销毁 PAGFile 失败:', error);
+      pagFile = null;
     }
   }
 
   // 4. 重置状态
   isReady.value = false;
   isLoading.value = false;
+}
+
+// 清理资源
+onBeforeUnmount(() => {
+  console.log('🧹 PagLoadingCDN 组件卸载');
+
+  // 如果还没清理，再清理一次（防御性编程）
+  if (pagView || pagFile) {
+    console.warn('⚠️ 组件卸载时发现未清理的资源，执行清理');
+    cleanup();
+  }
 });
 
 // 暴露方法给父组件
@@ -661,6 +699,7 @@ defineExpose({
   pause: () => pagView?.pause(),
   stop: () => pagView?.stop(),
   retry: retryLoad,
+  cleanup, // 手动清理资源
 
   // 手动控制方法（用于自定义循环逻辑）
   playInitialAnimation, // 播放初始动画

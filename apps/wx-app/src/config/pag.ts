@@ -11,14 +11,17 @@ export const PAG_CONFIG = {
   /** 总时长（秒） */
   totalDuration: 25,
 
-  /** 循环段开始时间（秒） - 52% */
-  loopStart: 13,
+  /** 循环段开始时间（秒） - 40% */
+  loopStart: 10,
 
-  /** 循环段结束时间（秒） - 72% */
-  loopEnd: 18,
+  /** 循环段结束时间（秒） - 48% */
+  loopEnd: 12,
 
   /** 结束动画开始时间（秒） - 80% */
   endingStart: 20,
+
+  /** 结束动画结束时间（秒） - 88% */
+  endingEnd: 22,
 
   /** 结束动画缓冲时间（毫秒） */
   endingBufferMs: 500,
