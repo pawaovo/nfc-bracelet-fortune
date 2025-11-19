@@ -49,6 +49,7 @@ interface Props {
   fillWidth?: boolean; // 是否横向填充屏幕
   manualControl?: boolean; // 是否手动控制播放（用于自定义循环逻辑）
   pagFileUrl?: string; // PAG文件URL（可选，默认使用pagPreloader中的配置）
+  scaleMode?: number; // PAG缩放模式: 0=None, 1=Stretch, 2=LetterBox, 3=Zoom
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -59,6 +60,7 @@ const props = withDefaults(defineProps<Props>(), {
   fillWidth: false,
   manualControl: false,
   pagFileUrl: '',
+  scaleMode: 2, // 默认使用LetterBox模式，保持宽高比
 });
 
 // 定义事件
@@ -273,10 +275,11 @@ async function loadAndPlayPAG() {
       pagView = await PAG.PAGView.init(pagFile, canvas);
       console.log('✅ PAGView初始化成功');
 
-      if (props.fillWidth) {
-        pagView.setScaleMode(3);
-        console.log('🖼️ 设置缩放模式: Zoom');
-      }
+      // 设置缩放模式
+      const finalScaleMode = props.fillWidth ? 3 : props.scaleMode;
+      pagView.setScaleMode(finalScaleMode);
+      const scaleModeNames = ['None', 'Stretch', 'LetterBox', 'Zoom'];
+      console.log(`🖼️ 设置缩放模式: ${scaleModeNames[finalScaleMode]} (${finalScaleMode})`);
 
       if (props.loop && !props.manualControl) {
         pagView.setRepeatCount(0);

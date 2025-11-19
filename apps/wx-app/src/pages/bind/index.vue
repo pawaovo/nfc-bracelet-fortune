@@ -1,63 +1,39 @@
 <template>
   <view class="bind-container">
-    <!-- 主背景容器 -->
-    <view class="main-background">
-      <!-- 主背景图片 -->
-      <image class="bg-main" :src="themeConfig.images.mainBackground" mode="scaleToFill" />
-
-      <!-- 星空背景图片 -->
-      <image class="bg-stars" :src="themeConfig.images.starsBackground" mode="scaleToFill" />
+    <!-- 全屏背景PAG动画 -->
+    <view class="pag-background-overlay">
+      <PagLoadingCDN
+        ref="pagBackgroundRef"
+        :fill-width="true"
+        :auto-play="true"
+        :loop="true"
+        :manual-control="false"
+        pag-file-url="/static/pag/Bind_animation.pag"
+      />
     </view>
 
     <!-- 欢迎文案区域 -->
     <view class="welcome-section">
-      <text class="welcome-title">
-        {{ themeConfig.texts.welcome.title }}
-      </text>
-      <text class="welcome-subtitle">
-        {{ themeConfig.texts.welcome.subtitle }}
-      </text>
-      <text class="welcome-description">
-        {{ themeConfig.texts.welcome.description }}
-      </text>
-    </view>
-
-    <!-- 手链展示区域 -->
-    <view class="bracelet-section">
-      <!-- 手链主图 -->
-      <view class="bracelet-main">
-        <!-- 手链图标（装饰性图片） -->
-        <image class="bracelet-icon-img" :src="themeConfig.images.braceletIcon" mode="aspectFit" />
-        <!-- 今日开运手链标签 -->
-        <image class="bracelet-label" :src="themeConfig.images.braceletLabel" mode="aspectFit" />
-        <!-- 手链星星装饰 -->
-        <image class="bracelet-star" :src="themeConfig.images.braceletStar" mode="aspectFit" />
-      </view>
-
-      <!-- 手链信息 -->
-      <view class="bracelet-info">
-        <text class="bracelet-name">
-          {{ recommendedProduct?.name || themeConfig.texts.bracelet.name }}
-        </text>
-        <text class="bracelet-desc">
-          {{ recommendedProduct?.description || themeConfig.texts.bracelet.description }}
-        </text>
-      </view>
-    </view>
-
-    <!-- 手链详情图片区域 - 只在有商品图片时显示 -->
-    <view v-if="shouldShowProductImage" class="bracelet-details">
-      <image
-        class="detail-img"
-        :src="recommendedProduct?.imageUrl"
-        mode="aspectFit"
-        @error="handleProductImageError"
-      />
+      <text class="welcome-title"> 嗨！我是你的专属运势手链 </text>
+      <text class="welcome-subtitle"> 绑定我，每天为你分析运势！ </text>
     </view>
 
     <!-- 绑定按钮区域 -->
     <view class="bind-section">
-      <image class="button-bg" :src="themeConfig.images.buttonBackground" mode="aspectFit" />
+      <!-- 按钮上的蝴蝶PAG动画 - 保持正方形比例 -->
+      <view class="pag-button-overlay">
+        <PagLoadingCDN
+          ref="pagButtonRef"
+          :width="300"
+          :height="300"
+          :auto-play="true"
+          :loop="true"
+          :manual-control="false"
+          pag-file-url="/static/pag/Bind_button.pag"
+        />
+      </view>
+
+      <!-- 绑定按钮 -->
       <button
         class="bind-button"
         :class="{ loading: isBinding }"
@@ -66,27 +42,20 @@
       >
         <view v-if="isBinding" class="button-loading">
           <view class="button-loading-spinner" />
-          <text>{{ themeConfig.texts.button.loading }}</text>
+          <text>绑定中...</text>
         </view>
-        <text v-else>
-          {{ themeConfig.texts.button.normal }}
-        </text>
+        <text v-else> 开始绑定 </text>
       </button>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { authService } from '@/api/auth';
-import { fortuneService } from '@/api/fortune';
 import { useAuthStore } from '@/stores/auth';
-import { getTheme, type BindPageTheme } from './config';
+import PagLoadingCDN from '@/components/PagLoadingCDN.vue';
 
-// 页面配置
-// 可以通过 URL 参数传入主题名称，例如：?theme=amethyst
-// 默认使用 'default' 主题
-const themeConfig = ref<BindPageTheme>(getTheme('default'));
 const authStore = useAuthStore();
 
 // 响应式数据
@@ -94,16 +63,11 @@ const isBinding = ref(false);
 const nfcId = ref('');
 const isH5Platform = process.env.UNI_PLATFORM === 'h5';
 
-// 动态商品数据
-const recommendedProduct = ref<any>(null);
-const useFallbackProductImage = ref(false);
+// PAG组件引用
+const pagBackgroundRef = ref<InstanceType<typeof PagLoadingCDN>>();
+const pagButtonRef = ref<InstanceType<typeof PagLoadingCDN>>();
 
-// 是否显示商品图片：只有当商品数据加载成功且图片未加载失败时才显示
-const shouldShowProductImage = computed(() => {
-  return recommendedProduct.value?.imageUrl && !useFallbackProductImage.value;
-});
-
-// 页面加载时获取NFC ID和随机商品
+// 页面加载时获取NFC ID
 onMounted(async () => {
   const pages = getCurrentPages();
   const currentPage = pages[pages.length - 1];
@@ -131,43 +95,7 @@ onMounted(async () => {
       nfcId.value = options.nfcId;
     }
   }
-
-  // 获取主题配置（支持通过 URL 参数切换主题）
-  if (options.theme) {
-    themeConfig.value = getTheme(options.theme as string);
-  }
-
-  // 加载随机商品推荐（异步加载，不阻塞页面）
-  loadRandomRecommendation();
 });
-
-/**
- * 加载随机商品推荐
- * 失败时自动使用config中的默认配置
- */
-async function loadRandomRecommendation() {
-  try {
-    const response = await fortuneService.getRandomRecommendation();
-    if (response.success && response.data) {
-      recommendedProduct.value = response.data;
-      useFallbackProductImage.value = false;
-    }
-  } catch (error) {
-    console.warn('加载随机商品失败，使用默认配置');
-  }
-}
-
-/**
- * 处理商品图片加载失败
- * 图片加载失败时，隐藏图片区域（不显示占位图）
- */
-function handleProductImageError() {
-  useFallbackProductImage.value = true;
-
-  console.warn('商品图片加载失败，隐藏图片区域:', {
-    imageUrl: recommendedProduct.value?.imageUrl,
-  });
-}
 
 // 处理绑定按钮点击
 const handleBindClick = async () => {
@@ -273,51 +201,31 @@ const handleBindClick = async () => {
 <style lang="scss" scoped>
 .bind-container {
   position: relative;
-  /* 设置明确的高度，确保所有内容都能显示 */
   min-height: 100vh;
-  height: 1550rpx; /* 设置足够的高度容纳所有内容（按钮底部约1495rpx） */
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  /* 禁止容器本身滚动 */
-  overflow: visible;
+  width: 100%;
+  overflow: hidden;
+  background: #1a1a2e; /* 深色背景作为PAG动画的底色 */
 }
 
-/* 主背景容器 - 改为绝对定位，随页面一起滚动 */
-.main-background {
-  position: absolute;
+/* 全屏背景PAG动画层 */
+.pag-background-overlay {
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   z-index: 0;
-  /* 确保背景覆盖整个容器 */
-  min-height: 1550rpx;
-
-  .bg-main {
-    position: absolute;
-    top: -5.69%;
-    left: -52.38%;
-    width: 159.69%;
-    height: 107.94%;
-    z-index: 1;
-  }
-
-  .bg-stars {
-    position: absolute;
-    top: 200rpx;
-    left: 30rpx;
-    width: 690rpx;
-    height: 1140rpx;
-    z-index: 100;
-  }
 }
 
 /* 欢迎文案区域 */
 .welcome-section {
   position: absolute;
-  top: 279rpx;
-  left: 80rpx;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 590rpx;
-  z-index: 200;
+  z-index: 100;
+  text-align: center;
 
   .welcome-title {
     display: block;
@@ -325,155 +233,67 @@ const handleBindClick = async () => {
     font-size: 48rpx;
     color: #ffffff;
     font-weight: 600;
-    line-height: 1.3;
-    margin-bottom: 10rpx;
+    line-height: 1.4;
+    margin-bottom: 20rpx;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
   .welcome-subtitle {
     display: block;
     font-family: 'PingFang SC', sans-serif;
-    font-size: 48rpx;
+    font-size: 36rpx;
     color: #ffffff;
-    font-weight: 600;
-    line-height: 1.3;
-    margin-bottom: 30rpx;
-  }
-
-  .welcome-description {
-    display: block;
-    font-family: 'PingFang SC', sans-serif;
-    font-size: 32rpx;
-    color: #ffffff;
-    font-weight: 600;
-    line-height: 1.3;
-  }
-}
-
-/* 手链展示区域 */
-.bracelet-section {
-  position: absolute;
-  top: 490rpx;
-  left: 80rpx;
-  width: 590rpx;
-  z-index: 200;
-
-  .bracelet-main {
-    position: relative;
-    width: 380rpx;
-    height: 180rpx;
-    margin-bottom: 29rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    .bracelet-icon-img {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 380rpx;
-      height: 180rpx;
-    }
-
-    .bracelet-label {
-      position: absolute;
-      top: -10rpx;
-      width: 380rpx;
-      height: 180rpx;
-      z-index: 10;
-    }
-
-    .bracelet-star {
-      position: absolute;
-      top: 25rpx;
-      left: 250rpx;
-      width: 26rpx;
-      height: 30rpx;
-      opacity: 0.84;
-    }
-  }
-
-  .bracelet-info {
-    .bracelet-name {
-      display: block;
-      font-family: 'PingFang SC', sans-serif;
-      font-size: 40rpx;
-      color: #ffffff;
-      font-weight: 600;
-      line-height: 1.3;
-      margin-bottom: 8rpx;
-    }
-
-    .bracelet-desc {
-      display: block;
-      font-family: 'PingFang SC', sans-serif;
-      font-size: 24rpx;
-      color: #bbbbbb;
-      font-weight: 600;
-      line-height: 1.3;
-    }
-  }
-}
-
-/* 手链详情图片区域 - 合并为单个大容器 */
-.bracelet-details {
-  position: absolute;
-  top: 855rpx;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 600rpx;
-  height: 440rpx;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-
-  .detail-img {
-    width: 100%;
-    height: 100%;
-    border-radius: 24rpx;
-    object-fit: cover;
+    font-weight: 500;
+    line-height: 1.4;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 }
 
 /* 绑定按钮区域 */
 .bind-section {
-  position: absolute;
-  top: 1380rpx;
-  left: 42rpx;
+  position: fixed;
+  bottom: 100rpx;
+  left: 50%;
+  transform: translateX(-50%);
   width: 668rpx;
-  height: 115rpx;
-  z-index: 200;
+  height: 300rpx; /* 增加高度以容纳正方形的PAG动画 */
+  z-index: 100;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end; /* 按钮靠底部对齐 */
 
-  .button-bg {
+  /* 按钮上的蝴蝶PAG动画 - 正方形容器 */
+  .pag-button-overlay {
     position: absolute;
     top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300rpx; /* 正方形 */
+    height: 300rpx; /* 正方形 */
     z-index: 1;
+    pointer-events: none; /* 让点击事件穿透到按钮 */
   }
 
   .bind-button {
     position: relative;
     z-index: 2;
     width: 100%;
-    height: 100%;
-    background: transparent;
+    height: 115rpx;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
+    border-radius: 58rpx;
     color: #ffffff;
     font-family: 'PingFang SC', sans-serif;
     font-size: 36rpx;
-    font-weight: 400; /* 从600改为400，使用正常粗细 */
-    line-height: 115rpx;
+    font-weight: 500;
     text-align: center;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
 
     &.loading {
       opacity: 0.7;
@@ -481,6 +301,7 @@ const handleBindClick = async () => {
 
     &:active {
       opacity: 0.8;
+      transform: scale(0.98);
     }
   }
 
@@ -498,6 +319,15 @@ const handleBindClick = async () => {
     border-top: 3rpx solid #ffffff;
     border-radius: 50%;
     animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }
 </style>
