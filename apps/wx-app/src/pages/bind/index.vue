@@ -3,12 +3,22 @@
     <!-- 全屏背景PAG动画 -->
     <view class="pag-background-overlay">
       <PagLoadingCDN
-        ref="pagBackgroundRef"
         :fill-width="true"
         :auto-play="true"
         :loop="true"
-        :manual-control="false"
         pag-file-url="/static/pag/Bind_animation.pag"
+      />
+    </view>
+
+    <!-- 蝴蝶PAG动画 - 定位在按钮上方 -->
+    <view v-if="showButterfly" class="pag-butterfly-container">
+      <PagLoadingCDN
+        :width="400"
+        :height="400"
+        :auto-play="true"
+        :loop="true"
+        :scale-mode="2"
+        pag-file-url="/static/pag/Bind_button.pag"
       />
     </view>
 
@@ -20,38 +30,23 @@
 
     <!-- 绑定按钮区域 -->
     <view class="bind-section">
-      <!-- 按钮上的蝴蝶PAG动画 - 保持正方形比例 -->
-      <view class="pag-button-overlay">
-        <PagLoadingCDN
-          ref="pagButtonRef"
-          :width="300"
-          :height="300"
-          :auto-play="true"
-          :loop="true"
-          :manual-control="false"
-          pag-file-url="/static/pag/Bind_button.pag"
-        />
-      </view>
-
-      <!-- 绑定按钮 -->
-      <button
-        class="bind-button"
-        :class="{ loading: isBinding }"
-        :disabled="isBinding"
-        @click="handleBindClick"
-      >
+      <!-- 绑定按钮容器 - 与个人信息页面保持一致 -->
+      <view class="bind-button-container" @click="handleBindClick">
+        <!-- 按钮背景图 -->
+        <image class="button-bg" src="/static/pages/bind/button-bg.png" mode="aspectFit" />
+        <!-- 按钮内容 -->
         <view v-if="isBinding" class="button-loading">
           <view class="button-loading-spinner" />
-          <text>绑定中...</text>
+          <text class="button-text"> 绑定中... </text>
         </view>
-        <text v-else> 开始绑定 </text>
-      </button>
+        <text v-else class="button-text"> 开始绑定 </text>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { authService } from '@/api/auth';
 import { useAuthStore } from '@/stores/auth';
 import PagLoadingCDN from '@/components/PagLoadingCDN.vue';
@@ -63,15 +58,14 @@ const isBinding = ref(false);
 const nfcId = ref('');
 const isH5Platform = process.env.UNI_PLATFORM === 'h5';
 
-// PAG组件引用
-const pagBackgroundRef = ref<InstanceType<typeof PagLoadingCDN>>();
-const pagButtonRef = ref<InstanceType<typeof PagLoadingCDN>>();
+// 控制蝴蝶动画的显示
+const showButterfly = ref(false);
 
 // 页面加载时获取NFC ID
 onMounted(async () => {
   const pages = getCurrentPages();
   const currentPage = pages[pages.length - 1];
-  const options = currentPage.options || {};
+  const options = (currentPage as any).options || {};
 
   // 获取 NFC ID
   // H5环境：优先从 URL 查询参数获取（因为 hash 路由的问题）
@@ -95,6 +89,15 @@ onMounted(async () => {
       nfcId.value = options.nfcId;
     }
   }
+
+  // 延迟1秒显示蝴蝶动画，确保背景动画DOM已完全渲染
+  setTimeout(async () => {
+    showButterfly.value = true;
+    // 等待DOM更新完成
+    await nextTick();
+    // 再等待一帧，确保uni-app的Canvas元素完全渲染
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }, 1000);
 });
 
 // 处理绑定按钮点击
@@ -215,14 +218,46 @@ const handleBindClick = async () => {
   width: 100%;
   height: 100%;
   z-index: 0;
+
+  :deep(.pag-loading-container),
+  :deep(.pag-canvas) {
+    width: 100%;
+    height: 100%;
+  }
 }
 
-/* 欢迎文案区域 */
+/* 蝴蝶PAG动画容器 - 定位在底部按钮区域 */
+.pag-butterfly-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 200;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+
+  :deep(.pag-loading-container) {
+    width: 400px;
+    height: 400px;
+    min-height: auto;
+    margin-bottom: -30px;
+  }
+
+  :deep(.pag-canvas) {
+    width: 400px !important;
+    height: 400px !important;
+  }
+}
+
+/* 欢迎文案区域 - 定位在底部按钮上方 */
 .welcome-section {
-  position: absolute;
-  top: 50%;
+  position: fixed;
+  bottom: 250rpx; /* 在按钮上方，按钮在100rpx，文案在250rpx */
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   width: 590rpx;
   z-index: 100;
   text-align: center;
@@ -256,70 +291,65 @@ const handleBindClick = async () => {
   left: 50%;
   transform: translateX(-50%);
   width: 668rpx;
-  height: 300rpx; /* 增加高度以容纳正方形的PAG动画 */
+  height: 115rpx; /* 只需要按钮的高度 */
   z-index: 100;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end; /* 按钮靠底部对齐 */
+  justify-content: center;
+}
 
-  /* 按钮上的蝴蝶PAG动画 - 正方形容器 */
-  .pag-button-overlay {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 300rpx; /* 正方形 */
-    height: 300rpx; /* 正方形 */
-    z-index: 1;
-    pointer-events: none; /* 让点击事件穿透到按钮 */
-  }
+/* 绑定按钮容器 - 与个人信息页面保持一致的样式 */
+.bind-button-container {
+  position: relative;
+  width: 668rpx;
+  height: 115rpx;
+  z-index: 2;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-  .bind-button {
-    position: relative;
-    z-index: 2;
-    width: 100%;
-    height: 115rpx;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    border-radius: 58rpx;
-    color: #ffffff;
-    font-family: 'PingFang SC', sans-serif;
-    font-size: 36rpx;
-    font-weight: 500;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
-    transition: all 0.3s ease;
+/* 按钮背景图 */
+.button-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
 
-    &.loading {
-      opacity: 0.7;
-    }
+/* 按钮文字 */
+.button-text {
+  position: relative;
+  z-index: 2;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 36rpx;
+  font-weight: 400;
+  color: #ffffff;
+  line-height: 115rpx;
+  text-align: center;
+}
 
-    &:active {
-      opacity: 0.8;
-      transform: scale(0.98);
-    }
-  }
+/* 按钮loading状态 */
+.button-loading {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+}
 
-  .button-loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16rpx;
-  }
-
-  .button-loading-spinner {
-    width: 32rpx;
-    height: 32rpx;
-    border: 3rpx solid rgba(255, 255, 255, 0.3);
-    border-top: 3rpx solid #ffffff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
+.button-loading-spinner {
+  width: 32rpx;
+  height: 32rpx;
+  border: 3rpx solid rgba(255, 255, 255, 0.3);
+  border-top: 3rpx solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {

@@ -136,11 +136,9 @@ async function initPAGSDK() {
       PAG = await PAGInit({
         locateFile: (file: string) => `/static/${file}`,
       });
-      console.log('✅ PAG SDK初始化成功（小程序）');
     } else {
       // H5环境：使用CDN加载的全局变量
       const windowWithLibpag = window as typeof window & { libpag?: GlobalWithWx['libpag'] };
-      console.log('🔍 检查 window.libpag:', typeof windowWithLibpag.libpag);
 
       // 等待CDN脚本加载完成
       let retryCount = 0;
@@ -154,20 +152,16 @@ async function initPAGSDK() {
         throw new Error('PAG SDK CDN加载失败，请检查网络连接');
       }
 
-      console.log('✅ 找到 window.libpag');
-
       // 使用全局变量初始化，WASM文件也从CDN加载
       PAG = await windowWithLibpag.libpag.PAGInit({
         locateFile: (file: string) => {
           // H5环境：所有文件都从CDN加载，确保版本一致
           if (file.endsWith('.wasm')) {
-            console.log(`📦 加载WASM文件: ${H5_WASM_URL}`);
             return H5_WASM_URL;
           }
           return `https://cdn.jsdelivr.net/npm/libpag@4.5.1/lib/${file}`;
         },
       });
-      console.log('✅ PAG SDK初始化成功（H5）');
     }
     return PAG;
   } catch (error) {
@@ -197,27 +191,18 @@ async function loadAndPlayPAG() {
     loadError.value = false;
     errorMessage.value = '';
 
-    console.log('🚀 开始加载PAG资源...');
-
     await initPAGSDK();
 
     // H5环境：直接加载本地文件，不使用缓存
     // 小程序环境：使用缓存机制
     if (!isMiniProgram) {
-      console.log('📥 加载本地PAG文件...');
       // 如果指定了自定义URL，使用自定义URL，否则使用默认的
       if (props.pagFileUrl) {
-        console.log('使用自定义PAG文件:', props.pagFileUrl);
         const response = await fetch(props.pagFileUrl);
         if (!response.ok) {
           throw new Error(`PAG文件加载失败，状态码: ${response.status}`);
         }
         pagBuffer = await response.arrayBuffer();
-        console.log(
-          '✅ 自定义PAG文件加载成功（大小:',
-          (pagBuffer.byteLength / 1024 / 1024).toFixed(2),
-          'MB）'
-        );
       } else {
         pagBuffer = await downloadPagFileWithProgress();
         if (!pagBuffer) {
@@ -228,11 +213,9 @@ async function loadAndPlayPAG() {
     } else {
       const cachedBuffer = await loadPagFromCache();
       if (cachedBuffer) {
-        console.log('📦 命中缓存 PAG (', (cachedBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB)');
         pagBuffer = cachedBuffer;
         emit('downloadComplete');
       } else {
-        console.log('📭 缓存未命中，开始下载...');
         isDownloading.value = true;
         pagBuffer = await downloadPagFileWithProgress();
         isDownloading.value = false;
@@ -241,7 +224,6 @@ async function loadAndPlayPAG() {
           throw new Error('PAG文件下载失败');
         }
 
-        console.log('✅ 下载并缓存成功 (', (pagBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB)');
         emit('downloadComplete');
       }
     }
@@ -252,60 +234,40 @@ async function loadAndPlayPAG() {
       const dpr = uni.getSystemInfoSync().pixelRatio || 2;
       canvas.width = actualWidth.value * dpr;
       canvas.height = actualHeight.value * dpr;
-      console.log(`🎯 Canvas尺寸: ${canvas.width}x${canvas.height} (dpr: ${dpr})`);
 
       if (!isMiniProgram && typeof (canvas as any).style !== 'undefined') {
         (canvas as HTMLCanvasElement).style.width = `${actualWidth.value}px`;
         (canvas as HTMLCanvasElement).style.height = `${actualHeight.value}px`;
       }
 
-      console.log('📥 开始加载PAG文件...');
       pagFile = await PAG.PAGFile.load(pagBuffer);
-      console.log('✅ PAG文件加载成功:', pagFile.width(), 'x', pagFile.height());
-
-      console.log('🎬 初始化PAGView...');
-      console.log('Canvas信息:', {
-        id: canvas.id,
-        width: canvas.width,
-        height: canvas.height,
-        tagName: canvas.tagName,
-        hasWebGL: !!(canvas.getContext('webgl') || canvas.getContext('webgl2')),
-      });
-
       pagView = await PAG.PAGView.init(pagFile, canvas);
-      console.log('✅ PAGView初始化成功');
 
       // 设置缩放模式
       const finalScaleMode = props.fillWidth ? 3 : props.scaleMode;
       pagView.setScaleMode(finalScaleMode);
-      const scaleModeNames = ['None', 'Stretch', 'LetterBox', 'Zoom'];
-      console.log(`🖼️ 设置缩放模式: ${scaleModeNames[finalScaleMode]} (${finalScaleMode})`);
 
       if (props.loop && !props.manualControl) {
         pagView.setRepeatCount(0);
-        console.log('🔁 已开启循环播放');
       }
 
       if (props.autoPlay && !props.manualControl) {
         await pagView.play();
-        console.log('▶️ PAG动画开始播放');
       }
 
       isReady.value = true;
-      console.log('✨ PAG 已就绪');
-
       emit('ready');
-      console.log('📢 已触发 ready 事件');
-
       isLoading.value = false;
+
+      console.log('✅ PAG动画加载成功');
     } catch (error) {
-      console.error('⚠️ PAG渲染失败:', error);
+      // PAG渲染失败，静默处理
       errorMessage.value = `渲染失败: ${error instanceof Error ? error.message : String(error)}`;
       loadError.value = true;
       isLoading.value = false;
     }
   } catch (error) {
-    console.error('❌ PAG加载失败:', error);
+    // PAG加载失败，静默处理（不在控制台输出错误）
     errorMessage.value = `加载失败: ${error instanceof Error ? error.message : String(error)}`;
     loadError.value = true;
     isLoading.value = false;
@@ -353,26 +315,24 @@ async function resolveCanvasNode(): Promise<any> {
     throw new Error('Document 不可用');
   }
 
-  console.log('🎨 H5环境：创建原生canvas元素');
-
   // 获取uni-app的canvas容器
   let wrapper: HTMLElement | null = null;
   let retryCount = 0;
-  const maxRetries = 20;
+  const maxRetries = 30;
 
   while (!wrapper && retryCount < maxRetries) {
     wrapper = document.getElementById(canvasId);
     if (!wrapper) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 150));
       retryCount++;
     }
   }
 
   if (!wrapper) {
+    // Canvas容器查询失败，但不抛出错误，因为可能是uni-app的渲染机制导致
+    // 如果真的需要Canvas，后续的PAG初始化会失败并给出更明确的错误
     throw new Error(`Canvas容器查询失败: #${canvasId}`);
   }
-
-  console.log('🔍 找到canvas容器:', wrapper.tagName, wrapper.className);
 
   // 清空容器内容
   wrapper.innerHTML = '';
@@ -394,8 +354,6 @@ async function resolveCanvasNode(): Promise<any> {
   // 添加到容器
   wrapper.appendChild(canvasElement);
 
-  console.log('✅ 原生canvas创建成功:', canvasElement.id);
-
   // 验证canvas是否支持WebGL
   const gl =
     canvasElement.getContext('webgl', {
@@ -413,7 +371,6 @@ async function resolveCanvasNode(): Promise<any> {
     throw new Error('Canvas不支持WebGL，请检查浏览器兼容性');
   }
 
-  console.log('✅ WebGL上下文创建成功:', gl.constructor.name);
   return canvasElement;
 }
 
@@ -424,19 +381,16 @@ onMounted(() => {
     const systemInfo = uni.getSystemInfoSync();
     screenWidth.value = systemInfo.windowWidth;
     screenHeight.value = systemInfo.windowHeight;
-    console.log(
-      '📱 屏幕尺寸:',
-      screenWidth.value,
-      'x',
-      screenHeight.value,
-      '(dpr:',
-      systemInfo.pixelRatio + ')'
-    );
   }
+
+  // 根据是否全屏使用不同的延迟时间
+  // 全屏模式（背景动画）：200ms延迟
+  // 非全屏模式（蝴蝶动画）：800ms延迟，确保DOM完全渲染
+  const delay = props.fillWidth ? 200 : 800;
 
   setTimeout(() => {
     loadAndPlayPAG();
-  }, 100);
+  }, delay);
 });
 
 /**
