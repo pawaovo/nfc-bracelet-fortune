@@ -125,17 +125,17 @@ const stars = computed(() => {
 
 // 根据size属性调整星星大小
 .star-rating[data-size='small'] .star-container {
-  width: 32rpx;
-  height: 32rpx;
-}
-
-.star-rating[data-size='medium'] .star-container {
-  width: 36rpx;
+  width: 36rpx; /* 从32rpx放大到36rpx */
   height: 36rpx;
 }
 
+.star-rating[data-size='medium'] .star-container {
+  width: 40rpx; /* 从36rpx放大到40rpx */
+  height: 40rpx;
+}
+
 .star-rating[data-size='large'] .star-container {
-  width: 48rpx;
-  height: 48rpx;
+  width: 52rpx; /* 从48rpx放大到52rpx */
+  height: 52rpx;
 }
 </style>

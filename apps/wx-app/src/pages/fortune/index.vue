@@ -275,38 +275,7 @@
 
           <!-- 幸运卡片容器 - 重新布局 -->
           <view class="lucky-cards-container">
-            <!-- 宜卡片 -->
-            <!-- 暂时禁用点击功能，后续升级恢复：@click="showSuitableModal" -->
-            <view class="lucky-card">
-              <!-- 背景图 -->
-              <image
-                class="lucky-card-bg"
-                src="../../static/pages/fortune/other.png"
-                mode="scaleToFill"
-              />
-
-              <!-- 内容容器 -->
-              <view class="lucky-card-content">
-                <!-- 图标 -->
-                <image
-                  class="lucky-card-icon"
-                  src="/static/pages/fortune/good.png"
-                  mode="aspectFit"
-                />
-
-                <!-- 标题 -->
-                <view class="lucky-label-box">
-                  <text class="lucky-label-text"> 宜 </text>
-                </view>
-
-                <!-- 正文 -->
-                <text class="lucky-value-text">
-                  {{ fortuneData?.suitable || '合作' }}
-                </text>
-              </view>
-            </view>
-
-            <!-- 喜用卡片 -->
+            <!-- 今日喜用卡片（第1个） -->
             <!-- 暂时禁用点击功能，后续升级恢复：@click="showUnsuitableModal" -->
             <view class="lucky-card">
               <!-- 背景图 -->
@@ -327,7 +296,7 @@
 
                 <!-- 标题 -->
                 <view class="lucky-label-box">
-                  <text class="lucky-label-text"> 喜用 </text>
+                  <text class="lucky-label-text"> 今日喜用 </text>
                 </view>
 
                 <!-- 正文 -->
@@ -337,7 +306,7 @@
               </view>
             </view>
 
-            <!-- 幸运元素卡片 -->
+            <!-- 幸运元素卡片（第2个） -->
             <!-- 暂时禁用点击功能，后续升级恢复：@click="showLuckyElementModal" -->
             <view class="lucky-card">
               <!-- 背景图 -->
@@ -364,6 +333,37 @@
                 <!-- 正文 -->
                 <text class="lucky-value-text">
                   {{ fortuneData?.luckyColor || '蓝色' }}/{{ fortuneData?.luckyNumber || 7 }}
+                </text>
+              </view>
+            </view>
+
+            <!-- 宜卡片（第3个） -->
+            <!-- 暂时禁用点击功能，后续升级恢复：@click="showSuitableModal" -->
+            <view class="lucky-card">
+              <!-- 背景图 -->
+              <image
+                class="lucky-card-bg"
+                src="../../static/pages/fortune/other.png"
+                mode="scaleToFill"
+              />
+
+              <!-- 内容容器 -->
+              <view class="lucky-card-content">
+                <!-- 图标 -->
+                <image
+                  class="lucky-card-icon"
+                  src="/static/pages/fortune/good.png"
+                  mode="aspectFit"
+                />
+
+                <!-- 标题 -->
+                <view class="lucky-label-box">
+                  <text class="lucky-label-text"> 宜 </text>
+                </view>
+
+                <!-- 正文 -->
+                <text class="lucky-value-text">
+                  {{ fortuneData?.suitable || '合作' }}
                 </text>
               </view>
             </view>
@@ -1769,27 +1769,15 @@ function handleHistoryNavigation() {
   width: 580rpx; /* 与建议区域宽度一致 */
   display: flex;
   flex-direction: column;
-  gap: 30rpx; /* 两行之间的间距 */
+  gap: 20rpx; /* 从30rpx减少到20rpx，减少两行之间的间距 */
 }
 
-/* 运势行容器 */
+/* 运势行容器 - 两行共用样式 */
 .luck-sections-row {
   display: flex;
-}
-
-/* 第1行：事业运和财富运 - 稍微向中间靠拢 */
-.luck-sections-row-top {
   width: 100%;
-  padding: 0 30rpx; /* 左右各留30rpx间距，让内容稍微向中间靠拢 */
-  justify-content: space-between; /* 在padding范围内两端对齐 */
-}
-
-/* 第2行：健康运和爱情运 - 稍微向外扩展 */
-.luck-sections-row-bottom {
-  width: 480rpx; /* 从420rpx增加到480rpx，让第2行稍微宽一些 */
-  margin: 0 auto; /* 居中 */
-  padding: 0 20rpx; /* 左右各留20rpx间距 */
-  justify-content: space-between; /* 在padding范围内两端对齐 */
+  padding: 0 30rpx; /* 左右各留30rpx间距 */
+  justify-content: space-between; /* 两端对齐 */
 }
 
 /* 分项运势区域 */
@@ -1797,17 +1785,8 @@ function handleHistoryNavigation() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10rpx;
-}
-
-/* 第1行的运势项 - 不使用flex:1，让它们自然宽度 */
-.luck-sections-row-top .luck-section {
+  gap: 4rpx; /* 缩小标题和星星之间的间距 */
   flex: 0 0 auto; /* 不伸缩，保持自然宽度 */
-}
-
-/* 第2行的运势项 - 平均分配空间 */
-.luck-sections-row-bottom .luck-section {
-  flex: 1; /* 平均分配空间 */
 }
 
 /* 运势标题行 - 包含标题和分数 */
@@ -1815,7 +1794,7 @@ function handleHistoryNavigation() {
   display: flex;
   align-items: baseline;
   gap: 8rpx;
-  margin-bottom: 8rpx;
+  margin-bottom: 4rpx; /* 从8rpx减少到4rpx */
 }
 
 /* 运势标题和分数文字共用样式 */
@@ -1866,36 +1845,37 @@ function handleHistoryNavigation() {
   position: absolute;
   left: 50%;
   transform: translate(-50%);
-  top: 1050rpx; /* 从1000rpx下移到1050rpx，确保不遮挡第2行运势 */
+  top: 1010rpx; /* 从1030rpx上移到1010rpx，再上移20rpx */
   width: 580rpx;
-  height: 140rpx;
+  height: 200rpx; /* 从140rpx增加到200rpx，支持2行文本显示 */
   z-index: 11;
   background-color: rgba(0, 0, 0, 0.45); /* 加深背景色，从0.3提升到0.45 */
   border-radius: 20rpx; /* 添加圆角以匹配背景图 */
 }
 
-/* 建议区域通用定位样式 */
-.advice-bg-image,
+/* 建议区域背景图 */
+.advice-bg-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  opacity: 0.8;
+}
+
+/* 建议区域内容容器 */
 .advice-content-container {
   position: absolute;
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
-}
-
-.advice-bg-image {
-  z-index: 1;
-  opacity: 0.8;
-}
-
-/* 内容容器 - 显示在背景图上方，上下对称展示 */
-.advice-content-container {
-  padding: 0 20rpx;
+  padding: 16rpx 20rpx;
   z-index: 2;
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: center;
   box-sizing: border-box;
 }
@@ -1903,16 +1883,16 @@ function handleHistoryNavigation() {
 .advice-item {
   display: flex;
   gap: 12rpx;
-  align-items: center;
+  align-items: flex-start; /* 从center改为flex-start，支持多行文本顶部对齐 */
   width: 100%;
-  height: 40rpx;
+  min-height: 70rpx; /* 从固定height: 40rpx改为min-height: 70rpx，支持2行文本 */
 }
 
 .advice-divider {
   width: calc(100% - 40rpx);
   height: 1rpx;
   background-color: rgba(255, 255, 255, 0.3);
-  margin: 0 20rpx;
+  margin: 8rpx 20rpx; /* 增加上下margin，从0改为8rpx */
 }
 
 .advice-label-text {
@@ -1939,30 +1919,30 @@ function handleHistoryNavigation() {
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  height: 40rpx;
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* 从center改为flex-start */
 }
 
 .advice-content-text {
-  display: block;
+  display: -webkit-box; /* 使用webkit-box布局支持多行省略 */
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; /* 限制显示2行 */
   color: rgba(187, 187, 187, 1);
   font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
   font-size: 26rpx;
   font-weight: 400;
-  line-height: 40rpx;
+  line-height: 34rpx; /* 从40rpx减少到34rpx，让2行文本更紧凑 */
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
   width: 100%;
-  padding-top: 4rpx;
+  word-break: break-word; /* 支持中英文换行 */
 }
 
 /* 幸运卡片容器 */
 .lucky-cards-container {
   position: absolute;
   left: 86rpx;
-  top: 1230rpx; /* 从1180rpx下移到1230rpx，配合建议区域的新位置 */
+  top: 1230rpx; /* 从1250rpx上移到1230rpx，配合建议区域的新位置（1010+200=1210，间隙20rpx） */
   width: 580rpx;
   display: flex;
   justify-content: center;

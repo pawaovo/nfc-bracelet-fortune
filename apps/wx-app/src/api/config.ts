@@ -120,6 +120,16 @@ export function setCurrentEnv(env: EnvType) {
 }
 
 function getDevBaseUrl(): string {
+  // H5浏览器环境：优先使用localhost
+  if (typeof window !== 'undefined' && window.location) {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      console.log('[API] H5浏览器开发环境，使用 localhost:', API_CONFIG.DEV_BASE_URL);
+      return API_CONFIG.DEV_BASE_URL;
+    }
+  }
+
+  // 小程序真机环境：使用局域网地址
   try {
     if (typeof uni !== 'undefined' && typeof uni.getSystemInfoSync === 'function') {
       const systemInfo = uni.getSystemInfoSync();
