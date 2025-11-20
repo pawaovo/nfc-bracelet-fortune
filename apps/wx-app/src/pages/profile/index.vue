@@ -89,17 +89,39 @@
       {{ config.texts.birthdayLabel }}
     </text>
 
-    <!-- 生日输入框 -->
+    <!-- 生日输入框（包含年月日时） -->
     <view class="birthday-input-container">
       <view class="input-bg" />
       <picker
-        mode="date"
-        :value="formData.birthday"
+        mode="multiSelector"
+        :range="birthdayPickerData"
+        :value="selectedBirthdayIndexes"
         class="birthday-picker"
         @change="onBirthdayChange"
+        @columnchange="onBirthdayColumnChange"
       >
-        <text class="birthday-input" :class="{ placeholder: !formData.birthday }">
-          {{ formData.birthday || config.texts.birthdayPlaceholder }}
+        <text class="birthday-input" :class="{ placeholder: !birthdayDisplayText }">
+          {{ birthdayDisplayText || config.texts.birthdayPlaceholder }}
+        </text>
+      </picker>
+    </view>
+
+    <!-- 出生地标签 -->
+    <text class="birthplace-label"> 出生地 </text>
+
+    <!-- 出生地选择器 -->
+    <view class="birthplace-input-container">
+      <view class="input-bg" />
+      <picker
+        mode="multiSelector"
+        :range="regionData"
+        :value="selectedRegionIndexes"
+        class="birthplace-picker"
+        @change="onBirthplaceChange"
+        @columnchange="onRegionColumnChange"
+      >
+        <text class="birthplace-input" :class="{ placeholder: !formData.birthplace }">
+          {{ formData.birthplace || '请选择出生地' }}
         </text>
       </picker>
     </view>
@@ -130,6 +152,12 @@ import type { ProfilePageTheme } from './config';
 import { generateDevJWT } from '@/utils/devToken';
 import type { UserPartial } from '@shared/types';
 import { preloadPagFile } from '@/utils/pagPreloader';
+import {
+  loadRegionData,
+  initRegionPickerData,
+  getFullAddress,
+  type RegionItem,
+} from '@/utils/regionData';
 
 const config = ref<ProfilePageTheme>(getTheme('default'));
 const authStore = useAuthStore();
@@ -139,6 +167,9 @@ const formData = reactive({
   name: '',
   password: '',
   birthday: '',
+  birthHour: undefined as number | undefined,
+  birthplace: '',
+  gender: '' as 'male' | 'female' | '',
 });
 
 const isLoading = ref(false);
@@ -149,6 +180,49 @@ const pageHint = ref(''); // 页面提示信息（用于场景B）
 // 背景图片加载状态
 const backgroundReady = ref(false);
 let loadedCount = 0;
+
+// 生日选择器数据（年月日时四列）
+const birthdayPickerData = ref<string[][]>([
+  [], // 年份列表
+  [], // 月份列表
+  [], // 日期列表
+  [], // 小时列表
+]);
+
+// 当前选中的生日索引
+const selectedBirthdayIndexes = ref([0, 0, 0, 0]);
+
+// 生日显示文本
+const birthdayDisplayText = computed(() => {
+  if (!formData.birthday && formData.birthHour === undefined) {
+    return '';
+  }
+
+  const date = formData.birthday || '';
+  const hour = formData.birthHour !== undefined ? `${formData.birthHour}:00` : '';
+
+  if (date && hour) {
+    return `${date} ${hour}`;
+  } else if (date) {
+    return date;
+  } else if (hour) {
+    return hour;
+  }
+  return '';
+});
+
+// 地区数据（省市区三级联动）
+const regionData = ref<string[][]>([
+  [], // 省份列表
+  [], // 城市列表
+  [], // 区县列表
+]);
+
+// 当前选中的地区索引
+const selectedRegionIndexes = ref([0, 0, 0]);
+
+// 完整的地区数据结构（使用从regionData.ts导入的类型）
+const fullRegionData = ref<RegionItem[]>([]);
 
 /**
  * 处理背景图片加载完成或失败
@@ -178,6 +252,14 @@ const initFormFromUser = () => {
   if (!authStore.user) return;
   formData.name = authStore.user.name || authStore.user.username || '';
   formData.birthday = formatDateForInput(authStore.user.birthday || null);
+  formData.birthHour = authStore.user.birthHour ?? undefined;
+  formData.birthplace = authStore.user.birthplace || '';
+
+  // 如果有生日数据，更新生日选择器的索引
+  if (formData.birthday) {
+    const [year, month, day] = formData.birthday.split('-').map(Number);
+    selectedBirthdayIndexes.value = [year - 1900, month - 1, day - 1, formData.birthHour ?? 0];
+  }
 };
 
 const syncNfcId = (options?: Record<string, unknown>) => {
@@ -204,8 +286,153 @@ const syncNfcId = (options?: Record<string, unknown>) => {
   console.log('[Profile] syncNfcId 结果:', { fromQuery, stored, nextId });
 };
 
-const onBirthdayChange = (event: { detail: { value: string } }) => {
-  formData.birthday = event.detail.value;
+// 初始化生日选择器数据
+const initBirthdayPickerData = () => {
+  // 年份：1900-2100
+  const years = Array.from({ length: 201 }, (_, i) => `${1900 + i}年`);
+
+  // 月份：1-12
+  const months = Array.from({ length: 12 }, (_, i) => `${i + 1}月`);
+
+  // 日期：1-31（初始值，会根据年月动态调整）
+  const days = Array.from({ length: 31 }, (_, i) => `${i + 1}日`);
+
+  // 小时：0-23，格式为"9:00"
+  const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+
+  birthdayPickerData.value = [years, months, days, hours];
+
+  // 设置默认选中值（当前日期）
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const currentDay = now.getDate() - 1;
+  const currentHour = now.getHours();
+
+  selectedBirthdayIndexes.value = [
+    currentYear - 1900, // 年份索引
+    currentMonth, // 月份索引
+    currentDay, // 日期索引
+    currentHour, // 小时索引
+  ];
+};
+
+// 生日选择器列变化事件
+const onBirthdayColumnChange = (event: { detail: { column: number; value: number } }) => {
+  const { column, value } = event.detail;
+  const newIndexes = [...selectedBirthdayIndexes.value];
+  newIndexes[column] = value;
+
+  // 如果改变了年份或月份，需要更新日期列表
+  if (column === 0 || column === 1) {
+    const year = 1900 + newIndexes[0];
+    const month = newIndexes[1] + 1;
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    // 更新日期列表
+    birthdayPickerData.value[2] = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}日`);
+
+    // 如果当前选中的日期超出了新月份的天数，调整到最后一天
+    if (newIndexes[2] >= daysInMonth) {
+      newIndexes[2] = daysInMonth - 1;
+    }
+  }
+
+  selectedBirthdayIndexes.value = newIndexes;
+};
+
+// 生日选择器确认事件
+const onBirthdayChange = (event: { detail: { value: number[] } }) => {
+  const indexes = event.detail.value;
+  selectedBirthdayIndexes.value = indexes;
+
+  const year = 1900 + indexes[0];
+  const month = indexes[1] + 1;
+  const day = indexes[2] + 1;
+  const hour = indexes[3];
+
+  // 更新formData
+  formData.birthday = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  formData.birthHour = hour;
+};
+
+// 地区选择器列变化事件
+const onRegionColumnChange = (event: { detail: { column: number; value: number } }) => {
+  const { column, value } = event.detail;
+  const newIndexes = [...selectedRegionIndexes.value];
+  newIndexes[column] = value;
+
+  // 更新后续列的数据
+  if (column === 0) {
+    // 省份变化，更新城市列表
+    const province = fullRegionData.value[value];
+    if (province && province.children) {
+      regionData.value[1] = province.children.map(city => city.name);
+      // 重置城市和区县索引
+      newIndexes[1] = 0;
+      newIndexes[2] = 0;
+      // 更新区县列表
+      if (province.children[0] && province.children[0].children) {
+        regionData.value[2] = province.children[0].children.map(district => district.name);
+      } else {
+        regionData.value[2] = [];
+      }
+    }
+  } else if (column === 1) {
+    // 城市变化，更新区县列表
+    const provinceIndex = newIndexes[0];
+    const province = fullRegionData.value[provinceIndex];
+    if (province && province.children) {
+      const city = province.children[value];
+      if (city && city.children) {
+        regionData.value[2] = city.children.map(district => district.name);
+        newIndexes[2] = 0;
+      } else {
+        regionData.value[2] = [];
+      }
+    }
+  }
+
+  selectedRegionIndexes.value = newIndexes;
+};
+
+// 地区选择器确认事件
+const onBirthplaceChange = (event: { detail: { value: number[] } }) => {
+  const indexes = event.detail.value;
+  selectedRegionIndexes.value = indexes;
+
+  // 使用工具函数获取完整地址
+  formData.birthplace = getFullAddress(fullRegionData.value, indexes[0], indexes[1], indexes[2]);
+};
+
+// 初始化地区数据
+const initRegionData = async () => {
+  try {
+    // 从JSON文件加载完整的省市区数据
+    const data = await loadRegionData();
+    fullRegionData.value = data;
+
+    // 使用工具函数初始化picker数据
+    const { provinceList } = initRegionPickerData(data);
+
+    // 初始化第一级（省份）
+    regionData.value[0] = provinceList;
+
+    // 初始化第二级（城市）
+    if (data[0] && data[0].children) {
+      regionData.value[1] = data[0].children.map(city => city.name);
+    }
+
+    // 初始化第三级（区县）
+    if (data[0]?.children?.[0]?.children) {
+      regionData.value[2] = data[0].children[0].children.map(district => district.name);
+    }
+
+    console.log('[Profile] 地区数据加载成功，共', data.length, '个省份');
+  } catch (error) {
+    console.error('[Profile] 地区数据加载失败:', error);
+    uni.showToast({ title: '地区数据加载失败', icon: 'none', duration: 2000 });
+  }
 };
 
 const validateForm = (): boolean => {
@@ -251,6 +478,9 @@ const buildSubmitPayload = () => {
     password: string;
     name: string;
     birthday: string;
+    birthHour?: number;
+    birthplace?: string;
+    gender?: string;
     nfcId?: string;
   } = {
     username,
@@ -258,6 +488,17 @@ const buildSubmitPayload = () => {
     name: trimmedName,
     birthday: formData.birthday,
   };
+
+  // 添加可选字段
+  if (formData.birthHour !== undefined) {
+    payload.birthHour = formData.birthHour;
+  }
+  if (formData.birthplace) {
+    payload.birthplace = formData.birthplace.trim();
+  }
+  if (formData.gender) {
+    payload.gender = formData.gender;
+  }
 
   if (currentNfcId.value) {
     payload.nfcId = currentNfcId.value;
@@ -491,6 +732,8 @@ onLoad(options => {
   authStore.initFromStorage();
   syncNfcId(options);
   initFormFromUser();
+  initBirthdayPickerData(); // 初始化生日选择器数据
+  initRegionData(); // 初始化地区数据
 
   if (!isH5Platform && !authStore.isAuthenticated) {
     uni.redirectTo({ url: '/pages/bind/index' });
@@ -532,7 +775,7 @@ onLoad(options => {
   position: relative;
   /* 使用固定高度，不使用vh单位，避免键盘弹出时重新计算 */
   min-height: 100vh;
-  height: 1627rpx; /* 调整为与bind页面一致的高度，确保所有内容都能正确显示 */
+  height: 1800rpx; /* 增加高度以容纳新增的选择器 */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   /* 禁止容器本身滚动 */
   overflow: visible;
@@ -549,7 +792,7 @@ onLoad(options => {
   opacity: 0;
   transition: opacity 0.4s ease-in;
   /* 确保背景覆盖整个容器 */
-  min-height: 1627rpx;
+  min-height: 1800rpx;
 
   .bg-main {
     position: absolute;
@@ -593,7 +836,7 @@ onLoad(options => {
   top: 480rpx; /* 向下移动，增加与顶部引导文字的间距 */
   left: 10.27%;
   width: 78.53%;
-  height: 798rpx; /* 使用固定高度，确保卡片在所有设备上高度一致 */
+  height: 815rpx; /* 调整卡片高度：生日(107rpx) + 出生地(107rpx) + 间距 */
   z-index: 150;
   /* 添加圆角，确保在所有设备上显示圆角 */
   border-radius: 30rpx;
@@ -797,13 +1040,64 @@ onLoad(options => {
   }
 }
 
+/* 出生地标签 */
+.birthplace-label {
+  position: absolute;
+  top: 1130rpx; /* 生日输入框下方约23rpx */
+  left: 21.87%;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 32rpx;
+  color: #ffffff;
+  font-weight: 600;
+  line-height: normal;
+  z-index: 200;
+}
+
+/* 出生地输入框容器 */
+.birthplace-input-container {
+  position: absolute;
+  top: 1180rpx; /* 标签下方50rpx */
+  left: 20%;
+  right: 20.53%;
+  height: 82rpx;
+  z-index: 200;
+}
+
+/* 出生地选择器 */
+.birthplace-picker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 出生地输入框 */
+.birthplace-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0 30rpx;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 25rpx;
+  color: #ffffff;
+  line-height: 82rpx;
+  display: flex;
+  align-items: center;
+
+  &.placeholder {
+    opacity: 0.5;
+  }
+}
+
 /* 提交按钮容器 - 与绑定页面按钮保持一致的样式 */
 .submit-button-container {
   position: absolute;
-  top: 1380rpx; /* 与绑定页面按钮位置一致 */
-  /* 卡片顶部480rpx + 卡片高度798rpx = 1278rpx（卡片底部） */
-  /* 按钮顶部1380rpx，按钮高度115rpx，按钮底部1495rpx */
-  /* 按钮顶部距离卡片底部：1380 - 1278 = 102rpx（合理的间距） */
+  top: 1345rpx; /* 出生地输入框下方约83rpx */
+  /* 出生地输入框底部：1180 + 82 = 1262rpx */
+  /* 按钮顶部距离出生地输入框底部：1345 - 1262 = 83rpx（合理的间距） */
   left: 42rpx; /* 与绑定页面按钮左边距一致 */
   width: 668rpx; /* 与绑定页面按钮宽度一致 */
   height: 115rpx;

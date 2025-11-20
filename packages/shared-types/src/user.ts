@@ -4,6 +4,9 @@ export interface User {
   username: string | null;
   name: string | null;
   birthday: Date | null;
+  birthHour?: number | null; // 出生时辰(0-23)
+  birthplace?: string | null; // 出生地
+  gender?: string | null; // 性别: male/female
   password?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -15,6 +18,9 @@ export interface UserPartial {
   username: string | null;
   name: string | null;
   birthday: Date | null;
+  birthHour?: number | null;
+  birthplace?: string | null;
+  gender?: string | null;
 }
 
 export interface UpdateProfileDto {
@@ -22,6 +28,9 @@ export interface UpdateProfileDto {
   password: string;
   name: string;
   birthday: string; // YYYY-MM-DD
+  birthHour?: number; // 出生时辰(0-23)
+  birthplace?: string; // 出生地
+  gender?: string; // 性别: male/female
   nfcId?: string;
 }
 
@@ -30,6 +39,9 @@ export interface WebRegisterRequest {
   password: string;
   name: string;
   birthday: string; // YYYY-MM-DD
+  birthHour?: number; // 出生时辰(0-23)
+  birthplace?: string; // 出生地
+  gender?: string; // 性别: male/female
   nfcId?: string; // 可选：访客用户没有nfcId
 }
 

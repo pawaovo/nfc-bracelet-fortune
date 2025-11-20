@@ -56,6 +56,17 @@ export class ProfileService {
         updatePayload.password = updateProfileDto.password.trim();
       }
 
+      // 添加新字段
+      if (updateProfileDto.birthHour !== undefined) {
+        updatePayload.birthHour = updateProfileDto.birthHour;
+      }
+      if (updateProfileDto.birthplace !== undefined) {
+        updatePayload.birthplace = updateProfileDto.birthplace?.trim() || null;
+      }
+      if (updateProfileDto.gender !== undefined) {
+        updatePayload.gender = updateProfileDto.gender;
+      }
+
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
         data: updatePayload,
@@ -65,6 +76,9 @@ export class ProfileService {
           username: true,
           name: true,
           birthday: true,
+          birthHour: true,
+          birthplace: true,
+          gender: true,
         },
       });
 
@@ -81,6 +95,9 @@ export class ProfileService {
         username: updatedUser.username,
         name: updatedUser.name,
         birthday: updatedUser.birthday,
+        birthHour: updatedUser.birthHour,
+        birthplace: updatedUser.birthplace,
+        gender: updatedUser.gender,
       };
     } catch (error) {
       this.logger.error(`Failed to update profile for user ${userId}`, error);
@@ -103,6 +120,9 @@ export class ProfileService {
     name: string,
     birthday: string,
     nfcId: string,
+    birthHour?: number,
+    birthplace?: string,
+    gender?: string,
   ): Promise<UserPartial & { userType: 'bound' }> {
     const trimmedUsername = username.trim();
     const trimmedPassword = password.trim();
@@ -131,6 +151,9 @@ export class ProfileService {
         username: true,
         name: true,
         birthday: true,
+        birthHour: true,
+        birthplace: true,
+        gender: true,
         password: true,
       },
     });
@@ -149,19 +172,34 @@ export class ProfileService {
       throw new BadRequestException('该手链未绑定此用户');
     }
 
-    // 更新用户信息（昵称和生日）
+    // 更新用户信息（昵称、生日和新字段）
+    const updateData: Record<string, unknown> = {
+      name: validatedName,
+      birthday: validatedBirthday,
+    };
+
+    if (birthHour !== undefined) {
+      updateData.birthHour = birthHour;
+    }
+    if (birthplace !== undefined) {
+      updateData.birthplace = birthplace?.trim() || null;
+    }
+    if (gender !== undefined) {
+      updateData.gender = gender;
+    }
+
     const updatedUser = await this.prisma.user.update({
       where: { id: user.id },
-      data: {
-        name: validatedName,
-        birthday: validatedBirthday,
-      },
+      data: updateData,
       select: {
         id: true,
         wechatOpenId: true,
         username: true,
         name: true,
         birthday: true,
+        birthHour: true,
+        birthplace: true,
+        gender: true,
       },
     });
 
@@ -175,6 +213,9 @@ export class ProfileService {
       username: updatedUser.username,
       name: updatedUser.name,
       birthday: updatedUser.birthday,
+      birthHour: updatedUser.birthHour,
+      birthplace: updatedUser.birthplace,
+      gender: updatedUser.gender,
       userType: 'bound',
     };
   }
@@ -187,6 +228,9 @@ export class ProfileService {
     const name = this.validateName(dto.name);
     const birthday = this.validateBirthday(dto.birthday);
     const nfcId = dto.nfcId?.trim();
+    const birthHour = dto.birthHour;
+    const birthplace = dto.birthplace?.trim();
+    const gender = dto.gender;
 
     // 检查nfcId的真实性
     let isRealNfcId = false;
@@ -210,6 +254,9 @@ export class ProfileService {
         username: true,
         name: true,
         birthday: true,
+        birthHour: true,
+        birthplace: true,
+        gender: true,
         password: true,
       },
     });
@@ -223,6 +270,9 @@ export class ProfileService {
           password,
           name,
           birthday,
+          birthHour,
+          birthplace,
+          gender,
         },
         select: {
           id: true,
@@ -230,6 +280,9 @@ export class ProfileService {
           username: true,
           name: true,
           birthday: true,
+          birthHour: true,
+          birthplace: true,
+          gender: true,
         },
       });
       user = { ...created, password };
@@ -247,6 +300,9 @@ export class ProfileService {
           password,
           name,
           birthday,
+          birthHour,
+          birthplace,
+          gender,
         },
         select: {
           id: true,
@@ -254,6 +310,9 @@ export class ProfileService {
           username: true,
           name: true,
           birthday: true,
+          birthHour: true,
+          birthplace: true,
+          gender: true,
         },
       });
       user = { ...updated, password };
@@ -279,6 +338,9 @@ export class ProfileService {
       username: user.username,
       name: user.name,
       birthday: user.birthday,
+      birthHour: user.birthHour,
+      birthplace: user.birthplace,
+      gender: user.gender,
       userType,
     };
   }

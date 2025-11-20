@@ -65,6 +65,9 @@ export class ProfileController {
         webLoginDto.name,
         webLoginDto.birthday,
         webLoginDto.nfcId,
+        webLoginDto.birthHour,
+        webLoginDto.birthplace,
+        webLoginDto.gender,
       );
       return {
         success: true,

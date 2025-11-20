@@ -5,8 +5,12 @@ import {
   Matches,
   IsDateString,
   IsOptional,
+  IsInt,
+  Min,
+  Max,
+  IsIn,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class RegisterWebDto {
   @IsString()
@@ -33,6 +37,23 @@ export class RegisterWebDto {
   @IsNotEmpty()
   @IsDateString({}, { message: '生日格式不正确，请使用YYYY-MM-DD格式' })
   birthday: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: '出生时辰必须是整数' })
+  @Min(0, { message: '出生时辰必须在0-23之间' })
+  @Max(23, { message: '出生时辰必须在0-23之间' })
+  birthHour?: number;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 255, { message: '出生地长度不能超过255个字符' })
+  birthplace?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['male', 'female'], { message: '性别只能是male或female' })
+  gender?: string;
 
   @IsOptional()
   @IsString()
