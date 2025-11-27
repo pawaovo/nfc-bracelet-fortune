@@ -1,6 +1,5 @@
-<template>
+﻿<template>
   <view class="page">
-    <!-- 设置按钮 -->
     <view class="settings-btn" @tap="goToSettings">
       <text class="settings-icon"> ⚙️ </text>
     </view>
@@ -11,9 +10,12 @@
         <text class="title"> Hello </text>
       </view>
 
-      <!-- 免责声明 -->
       <view class="disclaimer">
         <text class="disclaimer-text"> 本服务仅供娱乐参考 </text>
+      </view>
+
+      <view class="cta" @tap="goToVerifyCode">
+        <text class="cta-text"> 进入验证码登录 </text>
       </view>
     </view>
   </view>
@@ -22,6 +24,10 @@
 <script setup lang="ts">
 const goToSettings = () => {
   uni.navigateTo({ url: '/pages/settings/index' });
+};
+
+const goToVerifyCode = () => {
+  uni.navigateTo({ url: '/pages/verify-code/index' });
 };
 </script>
 
@@ -81,5 +87,18 @@ const goToSettings = () => {
 .disclaimer-text {
   font-size: 24rpx;
   color: #856404;
+}
+
+.cta {
+  margin-top: 80rpx;
+  padding: 24rpx 48rpx;
+  background: linear-gradient(135deg, #7c5df8 0%, #5c5cf8 100%);
+  border-radius: 999rpx;
+}
+
+.cta-text {
+  color: #fff;
+  font-size: 28rpx;
+  letter-spacing: 4rpx;
 }
 </style>

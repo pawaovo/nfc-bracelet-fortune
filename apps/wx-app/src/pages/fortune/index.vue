@@ -2122,6 +2122,11 @@ function handleHistoryNavigation() {
     font-weight: 600;
     line-height: 40rpx;
     margin-bottom: 2rpx;
+    /* 单行省略 */
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .recommendation-bracelet-desc {
@@ -2130,6 +2135,12 @@ function handleHistoryNavigation() {
     color: #bbbbbb;
     font-weight: 400;
     line-height: 36rpx;
+    /* 两行省略 */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
     word-break: break-word;
   }
 }

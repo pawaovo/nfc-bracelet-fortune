@@ -24,8 +24,7 @@
       <view class="stars-overlay" />
     </view>
 
-    <!-- 头像占位图 -->
-    <image class="avatar-placeholder" :src="config.images.avatarPlaceholder" mode="aspectFill" />
+    <!-- 头像占位图 - 已移除，不再需要卡片遮罩效果 -->
 
     <!-- 引导文字区域 -->
     <view class="guide-text-container">
@@ -37,61 +36,75 @@
       </text>
     </view>
 
-    <!-- 用户名显示区域 - 只在用户填写名称后显示 -->
-    <view v-if="displayUsername" class="username-container">
-      <!-- 头像图标 - 暂时隐藏，保留代码便于后续恢复 -->
-      <image v-if="false" class="avatar-icon" :src="config.images.avatarIcon" mode="aspectFit" />
-      <!-- 用户名文字 -->
-      <text class="username-text">
-        {{ displayUsername }}
-      </text>
-    </view>
-
-    <!-- 称呼标签 -->
-    <text class="name-label">
-      {{ config.texts.nameLabel }}
-    </text>
-
     <!-- 称呼输入框 -->
     <view class="name-input-container">
       <view class="input-bg" />
+      <text class="input-label"> 昵 称 </text>
       <input
         v-model="formData.name"
         class="name-input"
         type="nickname"
-        :placeholder="config.texts.namePlaceholder"
+        placeholder="输入你的昵称"
         placeholder-style="color: rgba(255, 255, 255, 0.5);"
         maxlength="20"
       />
     </view>
 
-    <!-- 密码标签 -->
-    <text class="password-label">
-      {{ config.texts.passwordLabel }}
-    </text>
-
     <!-- 密码输入框 -->
     <view class="password-input-container">
       <view class="input-bg" />
+      <text class="input-label"> 密 码 </text>
       <input
         v-model="formData.password"
         class="password-input"
         type="text"
         password
-        :placeholder="config.texts.passwordPlaceholder"
+        placeholder="输入你的密码"
         placeholder-style="color: rgba(255, 255, 255, 0.5);"
         maxlength="64"
       />
     </view>
 
-    <!-- 生日标签 -->
-    <text class="birthday-label">
-      {{ config.texts.birthdayLabel }}
-    </text>
+    <!-- 性别选择器 -->
+    <view class="gender-selector-container">
+      <view
+        class="gender-option female"
+        :class="{ selected: formData.gender === 'female' }"
+        @click="formData.gender = 'female'"
+      >
+        <image
+          class="gender-icon"
+          :src="
+            formData.gender === 'female'
+              ? '/static/pages/profile/icon-female-selected.svg'
+              : '/static/pages/profile/icon-female.svg'
+          "
+          mode="aspectFit"
+        />
+        <text class="gender-text"> 女 </text>
+      </view>
+      <view
+        class="gender-option male"
+        :class="{ selected: formData.gender === 'male' }"
+        @click="formData.gender = 'male'"
+      >
+        <image
+          class="gender-icon"
+          :src="
+            formData.gender === 'male'
+              ? '/static/pages/profile/icon-male-selected.svg'
+              : '/static/pages/profile/icon-male.svg'
+          "
+          mode="aspectFit"
+        />
+        <text class="gender-text"> 男 </text>
+      </view>
+    </view>
 
     <!-- 生日输入框（包含年月日时） -->
     <view class="birthday-input-container">
       <view class="input-bg" />
+      <text class="input-label"> 出生时间 </text>
       <picker
         mode="multiSelector"
         :range="birthdayPickerData"
@@ -101,17 +114,15 @@
         @columnchange="onBirthdayColumnChange"
       >
         <text class="birthday-input" :class="{ placeholder: !birthdayDisplayText }">
-          {{ birthdayDisplayText || config.texts.birthdayPlaceholder }}
+          {{ birthdayDisplayText || '2000-01-01 1:00' }}
         </text>
       </picker>
     </view>
 
-    <!-- 出生地标签 -->
-    <text class="birthplace-label"> 出生地 </text>
-
     <!-- 出生地选择器 -->
     <view class="birthplace-input-container">
       <view class="input-bg" />
+      <text class="input-label"> 出生地点 </text>
       <picker
         mode="multiSelector"
         :range="regionData"
@@ -121,21 +132,19 @@
         @columnchange="onRegionColumnChange"
       >
         <text class="birthplace-input" :class="{ placeholder: !formData.birthplace }">
-          {{ formData.birthplace || '请选择出生地' }}
+          {{ formData.birthplace || '北京市 朝阳区' }}
         </text>
       </picker>
     </view>
 
     <!-- 提交按钮 -->
     <view class="submit-button-container" @click="handleSubmitClick">
-      <image class="button-bg" :src="config.images.buttonBackground" mode="aspectFit" />
+      <image class="button-bg" src="/static/pages/bind/button-bg.png" mode="aspectFit" />
       <view v-if="isLoading" class="button-loading">
         <view class="button-loading-spinner" />
-        <text class="button-text"> 保存中... </text>
+        <text class="button-text"> 开启中... </text>
       </view>
-      <text v-else class="button-text">
-        {{ config.texts.submitButton }}
-      </text>
+      <text v-else class="button-text"> 开启我的好运 </text>
     </view>
   </view>
 </template>
@@ -836,7 +845,7 @@ onLoad(options => {
   top: 480rpx; /* 向下移动，增加与顶部引导文字的间距 */
   left: 10.27%;
   width: 78.53%;
-  height: 815rpx; /* 调整卡片高度：生日(107rpx) + 出生地(107rpx) + 间距 */
+  height: 620rpx; /* 调整卡片高度：移除标签后更紧凑（4个输入框 + 间距） */
   z-index: 150;
   /* 添加圆角，确保在所有设备上显示圆角 */
   border-radius: 30rpx;
@@ -905,63 +914,38 @@ onLoad(options => {
   text-align: center;
 }
 
-/* 称呼标签 - 使用固定rpx值 */
-.name-label {
-  position: absolute;
-  top: 625rpx; /* 调整位置，位于卡片内部，与卡片顶部有合理间距 */
-  left: 21.87%;
-  font-family: 'PingFang SC', sans-serif;
-  font-size: 32rpx;
-  color: #ffffff;
-  font-weight: 600;
-  line-height: normal;
-  z-index: 200;
-}
-
 /* 称呼输入框容器 - 使用固定rpx值 */
 .name-input-container {
   position: absolute;
-  top: 675rpx; /* 标签下方50rpx，确保有足够的间距 */
-  left: 20%;
-  right: 20.53%;
-  height: 82rpx;
-  z-index: 200;
-}
-
-/* 密码标签 - 使用固定rpx值 */
-.password-label {
-  position: absolute;
-  top: 800rpx; /* 与昵称输入框间距约43rpx（800 - 675 - 82 = 43） */
-  left: 21.87%;
-  font-family: 'PingFang SC', sans-serif;
-  font-size: 32rpx;
-  color: #ffffff;
-  font-weight: 600;
-  line-height: normal;
+  top: 540rpx; /* 整体上移 */
+  left: 12%;
+  right: 12%;
+  height: 96rpx;
   z-index: 200;
 }
 
 /* 密码输入框容器 - 使用固定rpx值 */
 .password-input-container {
   position: absolute;
-  top: 850rpx; /* 标签下方50rpx */
-  left: 20%;
-  right: 20.53%;
-  height: 82rpx;
+  top: 666rpx; /* 昵称输入框下方30rpx间距（540 + 96 + 30 = 666） */
+  left: 12%;
+  right: 12%;
+  height: 96rpx;
   z-index: 200;
 }
 
 .password-input {
   position: absolute;
   top: 0;
-  left: 0;
-  width: 100%;
+  left: 170rpx;
+  width: calc(100% - 200rpx);
   height: 100%;
-  padding: 0 30rpx;
+  padding: 0;
   font-family: 'PingFang SC', sans-serif;
-  font-size: 25rpx;
+  font-size: 28rpx;
   color: #ffffff;
-  line-height: 82rpx;
+  line-height: 96rpx;
+  text-align: left;
 }
 .input-bg {
   position: absolute;
@@ -969,137 +953,184 @@ onLoad(options => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.5);
   border-radius: 48rpx;
+}
+
+/* 输入框标签 */
+.input-label {
+  position: absolute;
+  left: 30rpx;
+  top: 0;
+  height: 96rpx;
+  line-height: 96rpx;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #ffffff;
+  z-index: 2;
+  width: 140rpx;
+  letter-spacing: 2rpx;
 }
 
 /* 称呼输入框 */
 .name-input {
   position: absolute;
   top: 0;
-  left: 0;
-  width: 100%;
+  left: 170rpx;
+  width: calc(100% - 200rpx);
   height: 100%;
-  padding: 0 30rpx;
+  padding: 0;
   font-family: 'PingFang SC', sans-serif;
-  font-size: 25rpx;
+  font-size: 28rpx;
   color: #ffffff;
+  line-height: 96rpx;
+  text-align: left;
   background: transparent;
   box-sizing: border-box;
 }
 
-/* 生日标签 - 使用固定rpx值 */
-.birthday-label {
+/* 性别选择器容器 */
+.gender-selector-container {
   position: absolute;
-  top: 975rpx; /* 与密码输入框间距约43rpx（975 - 850 - 82 = 43） */
-  left: 21.87%;
-  font-family: 'PingFang SC', sans-serif;
-  font-size: 32rpx;
-  color: #ffffff;
-  font-weight: 600;
-  line-height: normal;
+  top: 792rpx; /* 密码输入框下方30rpx间距（666 + 96 + 30 = 792） */
+  left: 12%;
+  right: 12%;
+  height: 96rpx;
   z-index: 200;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 性别选项按钮 - 输入栏样式 */
+.gender-option {
+  width: 45%;
+  height: 96rpx;
+  border-radius: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2rpx solid transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* 女性按钮选中状态 - 樱花粉 */
+.gender-option.female.selected {
+  background: rgba(255, 130, 170, 0.3);
+  border-color: #ff70fd;
+  border-width: 5rpx;
+}
+
+/* 男性按钮选中状态 */
+.gender-option.male.selected {
+  background: rgba(112, 217, 255, 0.3);
+  border-color: #70d9ff;
+  border-width: 5rpx;
+}
+
+/* 性别图标 */
+.gender-icon {
+  width: 36rpx;
+  height: 36rpx;
+  margin-right: 12rpx;
+}
+
+/* 性别文字 - 与输入栏标题一致 */
+.gender-text {
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+/* 女性选中状态 - 图标和文字都变色 */
+.gender-option.female.selected .gender-text {
+  color: #ff70fd;
+}
+
+/* 男性选中状态 - 图标和文字都变色 */
+.gender-option.male.selected .gender-text {
+  color: #70d9ff;
 }
 
 /* 生日输入框容器 - 使用固定rpx值 */
 .birthday-input-container {
   position: absolute;
-  top: 1025rpx; /* 标签下方50rpx */
-  left: 20%;
-  right: 20.53%;
-  height: 82rpx;
+  top: 918rpx; /* 性别选择器下方30rpx间距（792 + 96 + 30 = 918） */
+  left: 12%;
+  right: 12%;
+  height: 96rpx;
   z-index: 200;
 }
 
-/* 生日选择器 */
+/* 生日选择器 - 调整位置 */
 .birthday-picker {
   position: absolute;
   top: 0;
-  left: 0;
-  width: 100%;
+  left: 170rpx;
+  width: calc(100% - 200rpx);
   height: 100%;
 }
 
 /* 生日输入框 */
 .birthday-input {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
-  padding: 0 30rpx;
   font-family: 'PingFang SC', sans-serif;
-  font-size: 25rpx;
+  font-size: 28rpx;
   color: #ffffff;
-  line-height: 82rpx;
-  display: flex;
-  align-items: center;
+  line-height: 96rpx;
+  text-align: left;
 
   &.placeholder {
     opacity: 0.5;
   }
-}
-
-/* 出生地标签 */
-.birthplace-label {
-  position: absolute;
-  top: 1130rpx; /* 生日输入框下方约23rpx */
-  left: 21.87%;
-  font-family: 'PingFang SC', sans-serif;
-  font-size: 32rpx;
-  color: #ffffff;
-  font-weight: 600;
-  line-height: normal;
-  z-index: 200;
 }
 
 /* 出生地输入框容器 */
 .birthplace-input-container {
   position: absolute;
-  top: 1180rpx; /* 标签下方50rpx */
-  left: 20%;
-  right: 20.53%;
-  height: 82rpx;
+  top: 1044rpx; /* 生日输入框下方30rpx间距（918 + 96 + 30 = 1044） */
+  left: 12%;
+  right: 12%;
+  height: 96rpx;
   z-index: 200;
 }
 
-/* 出生地选择器 */
+/* 出生地选择器 - 调整位置 */
 .birthplace-picker {
   position: absolute;
   top: 0;
-  left: 0;
-  width: 100%;
+  left: 170rpx;
+  width: calc(100% - 200rpx);
   height: 100%;
 }
 
 /* 出生地输入框 */
 .birthplace-input {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
-  padding: 0 30rpx;
   font-family: 'PingFang SC', sans-serif;
-  font-size: 25rpx;
+  font-size: 28rpx;
   color: #ffffff;
-  line-height: 82rpx;
-  display: flex;
-  align-items: center;
+  line-height: 96rpx;
+  text-align: left;
 
   &.placeholder {
     opacity: 0.5;
   }
 }
 
-/* 提交按钮容器 - 与绑定页面按钮保持一致的样式 */
+/* 提交按钮容器 - 与绑定页面保持一致 */
 .submit-button-container {
   position: absolute;
-  top: 1345rpx; /* 出生地输入框下方约83rpx */
-  /* 出生地输入框底部：1180 + 82 = 1262rpx */
-  /* 按钮顶部距离出生地输入框底部：1345 - 1262 = 83rpx（合理的间距） */
-  left: 42rpx; /* 与绑定页面按钮左边距一致 */
-  width: 668rpx; /* 与绑定页面按钮宽度一致 */
+  top: 1180rpx; /* 出生地输入框下方40rpx间距（1044 + 96 + 40 = 1180） */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 520rpx; /* 比绑定页面668rpx略短 */
   height: 115rpx;
   z-index: 200;
   cursor: pointer;
@@ -1108,7 +1139,7 @@ onLoad(options => {
   justify-content: center;
 }
 
-/* 按钮背景 */
+/* 按钮背景图 */
 .button-bg {
   position: absolute;
   top: 0;
@@ -1124,7 +1155,7 @@ onLoad(options => {
   z-index: 2;
   font-family: 'PingFang SC', sans-serif;
   font-size: 36rpx;
-  font-weight: 400; /* 从600改为400，使用正常粗细 */
+  font-weight: 400;
   color: #ffffff;
   line-height: 115rpx;
   text-align: center;

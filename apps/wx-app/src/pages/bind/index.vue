@@ -111,8 +111,8 @@ const handleBindClick = async () => {
   if (isH5Platform) {
     // H5平台：直接跳转到个人信息页
     const target = nfcId.value
-      ? `/pages/profile/index?nfcId=${nfcId.value}`
-      : '/pages/profile/index';
+      ? `/pages/verify-code/index?nfcId=${nfcId.value}`
+      : '/pages/verify-code/index';
     uni.navigateTo({ url: target });
     return;
   }

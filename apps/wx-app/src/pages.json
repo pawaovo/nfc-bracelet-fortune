@@ -15,6 +15,13 @@
       }
     },
     {
+      "path": "pages/verify-code/index",
+      "style": {
+        "navigationBarTitleText": "验证码登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/profile/index",
       "style": {
         "navigationBarTitleText": "完善信息",
