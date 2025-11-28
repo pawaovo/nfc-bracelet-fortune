@@ -7,6 +7,14 @@ import { DEV_CONFIG, applyDevScenario, TEMP_NFC_BYPASS } from '@/config/dev-scen
 import type { Product } from '@shared/types';
 
 const IS_H5 = process.env.UNI_PLATFORM === 'h5';
+const PAG_CDN_BASE = 'https://yunshi-2sy.pages.dev';
+const PAG_ASSETS = [
+  `${PAG_CDN_BASE}/static/pag/Bind_animation.pag`,
+  `${PAG_CDN_BASE}/static/pag/Bind_button.pag`,
+  `${PAG_CDN_BASE}/static/pag/loading_bmp.pag`,
+  `${PAG_CDN_BASE}/static/pag/loading.pag`,
+];
+const PAG_WASM = 'https://cdn.jsdelivr.net/npm/libpag@4.5.1/lib/libpag.wasm';
 
 // H5环境下，防止onShow重复执行启动逻辑
 let hasLaunched = false;
@@ -29,6 +37,11 @@ onLaunch((options: LaunchOptions) => {
 
   // 初始化应用状态
   initializeApp();
+
+  // H5??? PAG ??
+  if (IS_H5) {
+    preloadH5PagAssets();
+  }
 
   // 标记已启动
   hasLaunched = true;
@@ -490,6 +503,17 @@ function generateVirtualNfcId(): string {
   console.log('生成新的虚拟NFC ID:', virtualNfcId);
 
   return virtualNfcId;
+}
+
+function preloadH5PagAssets() {
+  try {
+    fetch(PAG_WASM).catch(() => {});
+    PAG_ASSETS.forEach(url => {
+      fetch(url).catch(() => {});
+    });
+  } catch (error) {
+    console.warn('?? PAG ????', error);
+  }
 }
 </script>
 

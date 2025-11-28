@@ -1,16 +1,27 @@
-<template>
+﻿<template>
   <view class="bind-container">
-    <!-- 全屏背景PAG动画 -->
+    <!-- 全屏背景，未就绪时展示预览与加载 -->
     <view class="pag-background-overlay">
+      <image
+        v-if="showPagPreview"
+        class="pag-preview-bg"
+        src="/static/pages/bind/preview.png"
+        mode="aspectFill"
+      />
+      <view v-if="showPagLoading" class="pag-loading-mask">
+        <view class="pag-loading-dot" />
+        <text class="pag-loading-text"> 加载中 </text>
+      </view>
       <PagLoadingCDN
         :fill-width="true"
         :auto-play="true"
         :loop="true"
         :pag-file-url="pagBackgroundUrl"
+        @ready="onPagBackgroundReady"
       />
     </view>
 
-    <!-- 蝴蝶PAG动画 - 定位在按钮上方 -->
+    <!-- 蝴蝶 PAG 动画 - 位置在按钮上方 -->
     <view v-if="showButterfly" class="pag-butterfly-container">
       <PagLoadingCDN
         :width="400"
@@ -19,22 +30,20 @@
         :loop="true"
         :scale-mode="2"
         :pag-file-url="pagButtonUrl"
+        @ready="onPagButtonReady"
       />
     </view>
 
     <!-- 欢迎文案区域 -->
-    <view class="welcome-section">
-      <text class="welcome-title"> 嗨！我是你的专属运势手链 </text>
-      <text class="welcome-subtitle"> 绑定我，每天为你分析运势！ </text>
+    <view v-if="pagReady" class="welcome-section">
+      <text class="welcome-title"> 欢迎来到你的专属手链运势 </text>
+      <text class="welcome-subtitle"> 在这里，每天为你开启好运 </text>
     </view>
 
     <!-- 绑定按钮区域 -->
-    <view class="bind-section">
-      <!-- 绑定按钮容器 - 与个人信息页面保持一致 -->
+    <view v-if="pagReady" class="bind-section">
       <view class="bind-button-container" @click="handleBindClick">
-        <!-- 按钮背景图 -->
         <image class="button-bg" src="/static/pages/bind/button-bg.png" mode="aspectFit" />
-        <!-- 按钮内容 -->
         <view v-if="isBinding" class="button-loading">
           <view class="button-loading-spinner" />
           <text class="button-text"> 绑定中... </text>
@@ -46,14 +55,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, nextTick, computed } from 'vue';
 import { authService } from '@/api/auth';
 import { useAuthStore } from '@/stores/auth';
 import PagLoadingCDN from '@/components/PagLoadingCDN.vue';
 
 const authStore = useAuthStore();
 
-// 响应式数据
+// 响应式状态
 const isBinding = ref(false);
 const nfcId = ref('');
 const isH5Platform = process.env.UNI_PLATFORM === 'h5';
@@ -66,6 +75,11 @@ const pagButtonUrl =
   process.env.UNI_PLATFORM === 'h5'
     ? `${PAG_CDN_BASE}/static/pag/Bind_button.pag`
     : '/static/pag/Bind_button.pag';
+const pagBackgroundReady = ref(false);
+const pagButtonReady = ref(false);
+const pagReady = computed(() => pagBackgroundReady.value && pagButtonReady.value);
+const showPagLoading = computed(() => !pagReady.value);
+const showPagPreview = showPagLoading;
 
 // 控制蝴蝶动画的显示
 const showButterfly = ref(false);
@@ -77,7 +91,7 @@ onMounted(async () => {
   const options = (currentPage as any).options || {};
 
   // 获取 NFC ID
-  // H5环境：优先从 URL 查询参数获取（因为 hash 路由的问题）
+  // H5环境：优先从 URL 查询参数获取（因 hash 路由的问题）
   if (isH5Platform) {
     const urlParams = new URLSearchParams(window.location.search);
     const nfcIdFromUrl = urlParams.get('nfcId');
@@ -85,7 +99,7 @@ onMounted(async () => {
       nfcId.value = nfcIdFromUrl;
       console.log('[Bind] 从 URL 获取 nfcId:', nfcIdFromUrl);
     } else {
-      // 尝试从 localStorage 获取
+      // 再从 localStorage 获取
       const storedNfcId = uni.getStorageSync('currentNfcId');
       if (storedNfcId) {
         nfcId.value = storedNfcId;
@@ -93,23 +107,28 @@ onMounted(async () => {
       }
     }
   } else {
-    // 小程序环境：从 options 获取
+    // 小程序环境从 options 获取
     if (options.nfcId) {
       nfcId.value = options.nfcId;
     }
   }
 
-  // 延迟1秒显示蝴蝶动画，确保背景动画DOM已完全渲染
+  // 延迟1s显示蝴蝶动画，确保背景和DOM先完成渲染
   setTimeout(async () => {
     showButterfly.value = true;
-    // 等待DOM更新完成
     await nextTick();
-    // 再等待一帧，确保uni-app的Canvas元素完全渲染
     await new Promise(resolve => setTimeout(resolve, 100));
   }, 1000);
 });
 
-// 处理绑定按钮点击
+const onPagBackgroundReady = () => {
+  pagBackgroundReady.value = true;
+};
+
+const onPagButtonReady = () => {
+  pagButtonReady.value = true;
+};
+
 const handleBindClick = async () => {
   if (isBinding.value) return;
 
@@ -118,7 +137,6 @@ const handleBindClick = async () => {
   }
 
   if (isH5Platform) {
-    // H5平台：直接跳转到个人信息页
     const target = nfcId.value
       ? `/pages/verify-code/index?nfcId=${nfcId.value}`
       : '/pages/verify-code/index';
@@ -138,7 +156,7 @@ const handleBindClick = async () => {
     });
 
     if (!loginResult.code) {
-      throw new Error('微信授权失败');
+      throw new Error('微信登录授权失败');
     }
 
     const response = await authService.login(loginResult.code, nfcId.value || undefined);
@@ -150,43 +168,25 @@ const handleBindClick = async () => {
         authStore.login(token, user || {});
       }
 
-      // 根据状态跳转到不同页面
       if (status === 'PROFILE_INCOMPLETE') {
-        // 跳转到个人信息页
         uni.redirectTo({ url: '/pages/profile/index' });
       } else if (status === 'AUTHENTICATED') {
-        // 跳转到运势页
         uni.redirectTo({ url: '/pages/fortune/index' });
       } else if (status === 'VISITOR_PREVIEW') {
         if (previewScore && recommendation) {
-          uni.setStorageSync('previewData', {
-            score: previewScore,
-            recommendation,
-          });
+          uni.setStorageSync('previewData', { score: previewScore, recommendation });
         }
-
-        uni.showToast({
-          title: '该手链已被绑定，为您展示访客预览',
-          icon: 'none',
-          duration: 2000,
-        });
-
-        uni.redirectTo({
-          url: '/pages/fortune/index?mode=visitor&preview=true',
-        });
+        uni.showToast({ title: '该手链已绑定，为你展示游客预览', icon: 'none', duration: 2000 });
+        uni.redirectTo({ url: '/pages/fortune/index?mode=visitor&preview=true' });
       }
     } else {
       throw new Error(response.message || '登录失败');
     }
   } catch (error) {
-    console.error('绑定出错:', error);
-
-    // 根据错误类型显示友好提示
+    console.error('绑定流程异常:', error);
     let errorMessage = '绑定失败，请重试';
-
     if (error instanceof Error && error.message) {
       const message = error.message;
-
       if (message.includes('网络') || message.includes('network')) {
         errorMessage = '网络连接失败，请检查网络';
       } else if (message.includes('超时') || message.includes('timeout')) {
@@ -194,16 +194,10 @@ const handleBindClick = async () => {
       } else if (message.includes('授权') || message.includes('auth')) {
         errorMessage = '微信授权失败，请重试';
       } else {
-        // 其他错误直接使用原始错误信息
         errorMessage = message;
       }
     }
-
-    uni.showToast({
-      title: errorMessage,
-      icon: 'none',
-      duration: 2500,
-    });
+    uni.showToast({ title: errorMessage, icon: 'none', duration: 2500 });
   } finally {
     isBinding.value = false;
   }
@@ -216,10 +210,10 @@ const handleBindClick = async () => {
   min-height: 100vh;
   width: 100%;
   overflow: hidden;
-  background: #1a1a2e; /* 深色背景作为PAG动画的底色 */
+  background: #1a1a2e;
 }
 
-/* 全屏背景PAG动画层 */
+/* 全屏背景PAG容器 */
 .pag-background-overlay {
   position: fixed;
   top: 0;
@@ -227,6 +221,18 @@ const handleBindClick = async () => {
   width: 100%;
   height: 100%;
   z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .pag-preview-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
 
   :deep(.pag-loading-container),
   :deep(.pag-canvas) {
@@ -235,7 +241,7 @@ const handleBindClick = async () => {
   }
 }
 
-/* 蝴蝶PAG动画容器 - 定位在底部按钮区域 */
+/* 蝴蝶PAG动画容器 - 叠加在底部 */
 .pag-butterfly-container {
   position: fixed;
   bottom: 0;
@@ -261,10 +267,10 @@ const handleBindClick = async () => {
   }
 }
 
-/* 欢迎文案区域 - 定位在底部按钮上方 */
+/* 欢迎文案区域 - 位置在按钮上方 */
 .welcome-section {
   position: fixed;
-  bottom: 250rpx; /* 在按钮上方，按钮在100rpx，文案在250rpx */
+  bottom: 250rpx;
   left: 50%;
   transform: translateX(-50%);
   width: 590rpx;
@@ -287,9 +293,9 @@ const handleBindClick = async () => {
     font-family: 'PingFang SC', sans-serif;
     font-size: 36rpx;
     color: #ffffff;
-    font-weight: 500;
     line-height: 1.4;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    opacity: 0.85;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   }
 }
 
@@ -300,7 +306,7 @@ const handleBindClick = async () => {
   left: 50%;
   transform: translateX(-50%);
   width: 668rpx;
-  height: 115rpx; /* 只需要按钮的高度 */
+  height: 115rpx;
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -308,7 +314,6 @@ const handleBindClick = async () => {
   justify-content: center;
 }
 
-/* 绑定按钮容器 - 与个人信息页面保持一致的样式 */
 .bind-button-container {
   position: relative;
   width: 668rpx;
@@ -320,7 +325,6 @@ const handleBindClick = async () => {
   justify-content: center;
 }
 
-/* 按钮背景图 */
 .button-bg {
   position: absolute;
   top: 0;
@@ -330,7 +334,6 @@ const handleBindClick = async () => {
   z-index: 1;
 }
 
-/* 按钮文字 */
 .button-text {
   position: relative;
   z-index: 2;
@@ -342,7 +345,6 @@ const handleBindClick = async () => {
   text-align: center;
 }
 
-/* 按钮loading状态 */
 .button-loading {
   position: relative;
   z-index: 2;
@@ -367,6 +369,44 @@ const handleBindClick = async () => {
   }
   100% {
     transform: rotate(360deg);
+  }
+}
+
+/* PAG 加载占位 */
+.pag-loading-mask {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 30%, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.55));
+}
+
+.pag-loading-dot {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8);
+  animation: pag-bounce 1s ease-in-out infinite;
+  margin-bottom: 12rpx;
+}
+
+.pag-loading-text {
+  font-size: 28rpx;
+  color: #ffffff;
+  opacity: 0.9;
+}
+
+@keyframes pag-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12rpx);
   }
 }
 </style>
