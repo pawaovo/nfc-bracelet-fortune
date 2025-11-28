@@ -3,7 +3,7 @@
     <!-- 全屏背景，未就绪时展示预览与加载 -->
     <view class="pag-background-overlay">
       <image
-        v-if="showPagPreview"
+        v-if="showPagLoading"
         class="pag-preview-bg"
         src="/static/pages/bind/preview.png"
         mode="aspectFill"
@@ -79,7 +79,6 @@ const pagBackgroundReady = ref(false);
 const pagButtonReady = ref(false);
 const pagReady = computed(() => pagBackgroundReady.value && pagButtonReady.value);
 const showPagLoading = computed(() => !pagReady.value);
-const showPagPreview = showPagLoading;
 
 // 控制蝴蝶动画的显示
 const showButterfly = ref(false);
