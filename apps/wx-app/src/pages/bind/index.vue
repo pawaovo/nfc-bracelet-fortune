@@ -6,7 +6,7 @@
         :fill-width="true"
         :auto-play="true"
         :loop="true"
-        pag-file-url="/static/pag/Bind_animation.pag"
+        :pag-file-url="pagBackgroundUrl"
       />
     </view>
 
@@ -18,7 +18,7 @@
         :auto-play="true"
         :loop="true"
         :scale-mode="2"
-        pag-file-url="/static/pag/Bind_button.pag"
+        :pag-file-url="pagButtonUrl"
       />
     </view>
 
@@ -57,6 +57,15 @@ const authStore = useAuthStore();
 const isBinding = ref(false);
 const nfcId = ref('');
 const isH5Platform = process.env.UNI_PLATFORM === 'h5';
+const PAG_CDN_BASE = 'https://yunshi-2sy.pages.dev';
+const pagBackgroundUrl =
+  process.env.UNI_PLATFORM === 'h5'
+    ? `${PAG_CDN_BASE}/static/pag/Bind_animation.pag`
+    : '/static/pag/Bind_animation.pag';
+const pagButtonUrl =
+  process.env.UNI_PLATFORM === 'h5'
+    ? `${PAG_CDN_BASE}/static/pag/Bind_button.pag`
+    : '/static/pag/Bind_button.pag';
 
 // 控制蝴蝶动画的显示
 const showButterfly = ref(false);
