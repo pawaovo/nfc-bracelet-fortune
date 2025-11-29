@@ -574,7 +574,7 @@ function cleanupAllPagResources() {
 
 .pag-foreground-overlay {
   position: fixed;
-  bottom: 230rpx;
+  bottom: 8vh;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
@@ -586,7 +586,7 @@ function cleanupAllPagResources() {
 
 .loading-text {
   position: fixed;
-  bottom: 400rpx;
+  bottom: calc(8vh + 170rpx);
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
