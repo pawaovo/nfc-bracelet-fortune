@@ -1148,7 +1148,7 @@ export class FortunesService {
 
     // Fallback：无匹配商品时返回所有商品
     if (products.length === 0) {
-      return await this.prisma.product.findMany({
+      const allProducts = await this.prisma.product.findMany({
         select: {
           id: true,
           name: true,
@@ -1159,9 +1159,22 @@ export class FortunesService {
         },
         orderBy: { createdAt: 'desc' },
       });
+      return this.shuffleArray(allProducts).slice(0, 3);
     }
 
-    return products;
+    return this.shuffleArray(products).slice(0, 3);
+  }
+
+  /**
+   * 随机打乱数组（Fisher-Yates 算法）
+   */
+  private shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
   }
 
   /**
