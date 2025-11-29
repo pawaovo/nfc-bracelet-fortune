@@ -39,5 +39,13 @@ module.exports = {
       },
     },
   ],
-  ignorePatterns: ['node_modules/', 'dist/', 'build/', 'coverage/', '*.config.js', '*.config.ts'],
+  ignorePatterns: [
+    'node_modules/',
+    'dist/',
+    'build/',
+    'coverage/',
+    '*.config.js',
+    '*.config.ts',
+    '**/static/libpag*.js',
+  ],
 };
