@@ -4,7 +4,7 @@
 
 // 小程序使用cpolar服务器，H5使用本地文件
 const PAG_FILE_URL_MINIPROGRAM = 'https://720dcf1a.cpolar.io/pag/loading-fortune.pag';
-const PAG_FILE_URL_H5 = 'https://yunshi-2sy.pages.dev/static/pag/loading_bmp.pag';
+const PAG_FILE_URL_H5 = '/static/pag/loading_bmp.pag';
 const CACHE_KEY = 'loading-fortune.pag';
 const DOWNLOAD_TIMEOUT = 120000;
 

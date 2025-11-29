@@ -98,13 +98,8 @@ import { PAG_CONFIG, LOADING_MESSAGES, LOADING_MESSAGE_INTERVAL } from '@/config
 const config = ref<FortunePageTheme>(getTheme('default'));
 const FORCE_RELOAD_FLAG_KEY = 'fortuneForceReload';
 const isH5Platform = process.env.UNI_PLATFORM === 'h5';
-const PAG_CDN_BASE = 'https://yunshi-2sy.pages.dev';
-const pagLoadingUrl = isH5Platform
-  ? `${PAG_CDN_BASE}/static/pag/loading_bmp.pag`
-  : '/static/pag/loading_bmp.pag';
-const pagForegroundUrl = isH5Platform
-  ? `${PAG_CDN_BASE}/static/pag/loading.pag`
-  : '/static/pag/loading.pag';
+const pagLoadingUrl = '/static/pag/loading_bmp.pag';
+const pagForegroundUrl = '/static/pag/loading.pag';
 
 const authStore = useAuthStore();
 const fortuneStore = useFortuneStore();

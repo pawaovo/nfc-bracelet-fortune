@@ -66,15 +66,8 @@ const authStore = useAuthStore();
 const isBinding = ref(false);
 const nfcId = ref('');
 const isH5Platform = process.env.UNI_PLATFORM === 'h5';
-const PAG_CDN_BASE = 'https://yunshi-2sy.pages.dev';
-const pagBackgroundUrl =
-  process.env.UNI_PLATFORM === 'h5'
-    ? `${PAG_CDN_BASE}/static/pag/Bind_animation.pag`
-    : '/static/pag/Bind_animation.pag';
-const pagButtonUrl =
-  process.env.UNI_PLATFORM === 'h5'
-    ? `${PAG_CDN_BASE}/static/pag/Bind_button.pag`
-    : '/static/pag/Bind_button.pag';
+const pagBackgroundUrl = '/static/pag/Bind_animation.pag';
+const pagButtonUrl = '/static/pag/Bind_button.pag';
 const pagBackgroundReady = ref(false);
 const pagButtonReady = ref(false);
 const pagReady = computed(() => pagBackgroundReady.value && pagButtonReady.value);

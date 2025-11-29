@@ -7,14 +7,13 @@ import { DEV_CONFIG, applyDevScenario, TEMP_NFC_BYPASS } from '@/config/dev-scen
 import type { Product } from '@shared/types';
 
 const IS_H5 = process.env.UNI_PLATFORM === 'h5';
-const PAG_CDN_BASE = 'https://yunshi-2sy.pages.dev';
 const PAG_ASSETS = [
-  `${PAG_CDN_BASE}/static/pag/Bind_animation.pag`,
-  `${PAG_CDN_BASE}/static/pag/Bind_button.pag`,
-  `${PAG_CDN_BASE}/static/pag/loading_bmp.pag`,
-  `${PAG_CDN_BASE}/static/pag/loading.pag`,
+  '/static/pag/Bind_animation.pag',
+  '/static/pag/Bind_button.pag',
+  '/static/pag/loading_bmp.pag',
+  '/static/pag/loading.pag',
 ];
-const PAG_WASM = 'https://cdn.jsdelivr.net/npm/libpag@4.5.1/lib/libpag.wasm';
+const PAG_WASM = '/static/libpag.wasm';
 
 // H5环境下，防止onShow重复执行启动逻辑
 let hasLaunched = false;
