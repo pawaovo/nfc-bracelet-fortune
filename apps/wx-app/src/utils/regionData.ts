@@ -169,7 +169,16 @@ export function initRegionPickerData(regionData: RegionItem[]) {
 }
 
 /**
+ * 截断文本，最多显示指定字符数，超出部分用省略号代替
+ */
+function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+
+/**
  * 根据索引获取完整地址
+ * 每个地区名称最多显示3个字，超出部分省略
  */
 export function getFullAddress(
   regionData: RegionItem[],
@@ -180,11 +189,17 @@ export function getFullAddress(
   const province = regionData[provinceIndex];
   if (!province) return '';
 
+  const provinceName = truncateText(province.name, 3);
+
   const city = province.children?.[cityIndex];
-  if (!city) return province.name;
+  if (!city) return provinceName;
+
+  const cityName = truncateText(city.name, 3);
 
   const district = city.children?.[districtIndex];
-  if (!district) return `${province.name} ${city.name}`;
+  if (!district) return `${provinceName} ${cityName}`;
 
-  return `${province.name} ${city.name} ${district.name}`;
+  const districtName = truncateText(district.name, 3);
+
+  return `${provinceName} ${cityName} ${districtName}`;
 }

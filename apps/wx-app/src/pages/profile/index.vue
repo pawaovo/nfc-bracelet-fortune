@@ -447,9 +447,9 @@ const initRegionData = async () => {
 const validateForm = (): boolean => {
   if (!validateName(formData.name)) {
     if (!formData.name.trim()) {
-      uni.showToast({ title: '请输入用户名称', icon: 'none', duration: 2000 });
+      uni.showToast({ title: '请输入昵称', icon: 'none', duration: 2000 });
     } else {
-      uni.showToast({ title: '用户名称格式不正确', icon: 'none', duration: 2000 });
+      uni.showToast({ title: '昵称格式不正确', icon: 'none', duration: 2000 });
     }
     return false;
   }
@@ -460,12 +460,27 @@ const validateForm = (): boolean => {
     return false;
   }
 
+  if (!formData.gender) {
+    uni.showToast({ title: '请选择性别', icon: 'none', duration: 2000 });
+    return false;
+  }
+
   if (!validateBirthday(formData.birthday)) {
     if (!formData.birthday) {
-      uni.showToast({ title: '请选择生日', icon: 'none', duration: 2000 });
+      uni.showToast({ title: '请选择出生时间', icon: 'none', duration: 2000 });
     } else {
-      uni.showToast({ title: '生日格式不正确', icon: 'none', duration: 2000 });
+      uni.showToast({ title: '出生时间格式不正确', icon: 'none', duration: 2000 });
     }
+    return false;
+  }
+
+  if (formData.birthHour === undefined) {
+    uni.showToast({ title: '请选择出生时辰', icon: 'none', duration: 2000 });
+    return false;
+  }
+
+  if (!formData.birthplace || !formData.birthplace.trim()) {
+    uni.showToast({ title: '请选择出生地点', icon: 'none', duration: 2000 });
     return false;
   }
 
@@ -1118,6 +1133,9 @@ onLoad(options => {
   color: #ffffff;
   line-height: 96rpx;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   &.placeholder {
     opacity: 0.5;
