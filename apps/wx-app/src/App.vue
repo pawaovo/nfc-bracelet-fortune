@@ -13,7 +13,7 @@ const PAG_ASSETS = [
   '/static/pag/loading_bmp.pag',
   '/static/pag/loading.pag',
 ];
-const PAG_WASM = '/static/libpag.wasm';
+const PAG_WASM = 'https://cdn.jsdelivr.net/npm/libpag@4.5.1/lib/libpag.wasm';
 
 // H5环境下，防止onShow重复执行启动逻辑
 let hasLaunched = false;
