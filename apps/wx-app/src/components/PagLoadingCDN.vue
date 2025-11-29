@@ -37,8 +37,8 @@ interface GlobalWithWx {
 const globalAny =
   typeof globalThis !== 'undefined' ? (globalThis as GlobalWithWx) : ({} as GlobalWithWx);
 const isMiniProgram = !!globalAny.wx?.getFileSystemManager;
-// H5环境使用CDN的WASM文件，小程序使用本地WASM文件
-const H5_WASM_URL = 'https://cdn.jsdelivr.net/npm/libpag@4.5.1/lib/libpag.wasm';
+// H5和小程序都使用本地WASM文件
+const H5_WASM_URL = '/static/libpag.wasm';
 const MINIPROGRAM_WASM_URL = '/static/libpag.wasm';
 
 interface Props {
@@ -152,14 +152,14 @@ async function initPAGSDK() {
         throw new Error('PAG SDK CDN加载失败，请检查网络连接');
       }
 
-      // 使用全局变量初始化，WASM文件也从CDN加载
+      // 使用全局变量初始化，WASM文件从本地加载
       PAG = await windowWithLibpag.libpag.PAGInit({
         locateFile: (file: string) => {
-          // H5环境：所有文件都从CDN加载，确保版本一致
+          // H5环境：WASM从本地加载
           if (file.endsWith('.wasm')) {
             return H5_WASM_URL;
           }
-          return `https://cdn.jsdelivr.net/npm/libpag@4.5.1/lib/${file}`;
+          return `/static/${file}`;
         },
       });
     }
