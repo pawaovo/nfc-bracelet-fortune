@@ -279,3 +279,24 @@ pnpm --filter api prisma:generate
 - 确认使用 pnpm >= 8.0.0
 - 在项目根目录执行命令
 - 使用 `--filter` 指定子包: `pnpm --filter api <command>`
+
+**HTTP 524 错误 (生产环境)**:
+
+- 524 是 CDN 超时错误（腾讯云 EdgeOne 或 Cloudflare）
+- AI 生成 API 耗时较长，可能超过 CDN 默认超时（100秒）
+- 解决方案：在 CDN 控制台增加回源超时时间，或对 `/api/*` 路径禁用 CDN 代理
+
+## 生产环境配置
+
+- **域名**: `https://yunshi.autopia.chat`
+- **CDN**: 腾讯云 EdgeOne
+- **API 超时**: 前端 120 秒，需确保 CDN 回源超时 >= 120 秒
+- **AI 服务**: 火山引擎 Doubao（API Key 在 `.env` 配置）
+- **生产环境配置模板**: `deployment/.env.production.template`
+
+## PAG 动画
+
+- PAG 文件位于 `apps/wx-app/src/static/pag/`
+- 已改为本地加载，不再使用外部 CDN
+- libpag SDK: `libpag.min.js` 和 `libpag.wasm` 在 static 目录
+- ESLint 已配置忽略 `**/static/libpag*.js`
