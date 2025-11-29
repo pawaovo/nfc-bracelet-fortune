@@ -61,4 +61,7 @@ export interface UserForFortune {
   id: string;
   name?: string | null;
   birthday?: Date | null;
+  birthHour?: number | null;
+  birthplace?: string | null;
+  gender?: string | null;
 }

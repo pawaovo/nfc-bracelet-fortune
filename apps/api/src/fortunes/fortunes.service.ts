@@ -96,6 +96,9 @@ export class FortunesService {
       select: {
         id: true,
         birthday: true,
+        birthHour: true,
+        birthplace: true,
+        gender: true,
       },
     });
 
@@ -106,10 +109,14 @@ export class FortunesService {
     // 生成运势数据
     const fortuneData = await this.generateFortuneData(user, today, isAuth);
 
-    // 获取商品推荐（访客版和完整版都需要显示）
-    const recommendation = await this.getRecommendation(
-      fortuneData.overallScore,
+    // 获取商品推荐（基于最低星数的运势类型）
+    const recommendationList = await this.getRecommendationsByLowestFortune(
+      fortuneData.careerStars ?? 3.0,
+      fortuneData.wealthStars ?? 3.0,
+      fortuneData.loveStars ?? 3.0,
+      fortuneData.healthStars ?? 3.0,
     );
+    const recommendation = recommendationList[0] || null;
 
     // 保存到数据库（使用辅助方法避免重复代码）
     const newFortune = await this.prisma.dailyFortune.create({
@@ -148,6 +155,9 @@ export class FortunesService {
         id: true,
         name: true,
         birthday: true,
+        birthHour: true,
+        birthplace: true,
+        gender: true,
       },
     });
 
@@ -158,10 +168,14 @@ export class FortunesService {
     // 重新生成运势数据
     const fortuneData = await this.generateFortuneData(user, today, isAuth);
 
-    // 获取商品推荐（重新生成时也需要更新推荐）
-    const recommendation = await this.getRecommendation(
-      fortuneData.overallScore,
+    // 获取商品推荐（基于最低星数的运势类型）
+    const recommendationList = await this.getRecommendationsByLowestFortune(
+      fortuneData.careerStars ?? 3.0,
+      fortuneData.wealthStars ?? 3.0,
+      fortuneData.loveStars ?? 3.0,
+      fortuneData.healthStars ?? 3.0,
     );
+    const recommendation = recommendationList[0] || null;
 
     // 准备运势数据（使用辅助方法避免重复代码）
     const fortuneDataPayload = this.prepareFortuneDataPayload(fortuneData);
@@ -382,6 +396,9 @@ export class FortunesService {
       // 构建AI输入数据
       const promptData = {
         birthday: user.birthday || undefined,
+        birthHour: user.birthHour ?? undefined,
+        birthplace: user.birthplace ?? undefined,
+        gender: user.gender ?? undefined,
         date: date,
       };
 
@@ -1087,6 +1104,67 @@ export class FortunesService {
   }
 
   /**
+   * 根据最低星数的运势类型推荐商品
+   */
+  private async getRecommendationsByLowestFortune(
+    careerStars: number,
+    wealthStars: number,
+    loveStars: number,
+    healthStars: number,
+  ) {
+    // 使用默认值处理空值
+    const fortuneMap = {
+      career: careerStars ?? 3.0,
+      wealth: wealthStars ?? 3.0,
+      love: loveStars ?? 3.0,
+      health: healthStars ?? 3.0,
+    };
+
+    // 找出最低星数
+    const minStars = Math.min(...Object.values(fortuneMap));
+
+    // 按优先级找出第一个最低星数的类型
+    const lowestType = ['career', 'wealth', 'love', 'health'].find(
+      (type) => fortuneMap[type] === minStars,
+    );
+
+    // 查询包含该类型的所有商品
+    const products = await this.prisma.product.findMany({
+      where: {
+        fortuneTypes: {
+          has: lowestType,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        imageUrl: true,
+        price: true,
+        douyinUrl: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Fallback：无匹配商品时返回所有商品
+    if (products.length === 0) {
+      return await this.prisma.product.findMany({
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          imageUrl: true,
+          price: true,
+          douyinUrl: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+
+    return products;
+  }
+
+  /**
    * 获取所有商品列表（用于轮播展示）
    * @returns 商品列表（最多5个）
    */
@@ -1120,9 +1198,14 @@ export class FortunesService {
     isAuth: boolean = true,
     includeRecommendationList: boolean = true,
   ): Promise<FortuneData> {
-    // 只在需要时获取商品列表（优化性能）
+    // 只在需要时获取商品列表（基于最低星数的运势类型）
     const recommendationList = includeRecommendationList
-      ? await this.getAllRecommendations()
+      ? await this.getRecommendationsByLowestFortune(
+          fortune.careerStars ?? 3.0,
+          fortune.wealthStars ?? 3.0,
+          fortune.loveStars ?? 3.0,
+          fortune.healthStars ?? 3.0,
+        )
       : [];
 
     const response: FortuneData = {

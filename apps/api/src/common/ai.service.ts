@@ -10,6 +10,9 @@ export interface AIResponse {
 
 export interface FortunePromptData {
   birthday?: Date;
+  birthHour?: number;
+  birthplace?: string;
+  gender?: string;
   date: string;
 }
 
@@ -73,10 +76,32 @@ export class AIService {
   }
 
   /**
+   * 时辰转换辅助函数
+   */
+  private hourToShichen(hour: number): string {
+    const shichens = [
+      '子时',
+      '丑时',
+      '寅时',
+      '卯时',
+      '辰时',
+      '巳时',
+      '午时',
+      '未时',
+      '申时',
+      '酉时',
+      '戌时',
+      '亥时',
+    ];
+    const index = Math.floor(((hour + 1) % 24) / 2);
+    return shichens[index];
+  }
+
+  /**
    * 构建运势生成的提示词（新版详细格式）
    */
   private buildFortunePrompt(data: FortunePromptData): string {
-    const { birthday, date } = data;
+    const { birthday, birthHour, birthplace, gender, date } = data;
 
     // 格式化生日
     let birthdayStr = '';
@@ -86,7 +111,7 @@ export class AIService {
       birthdayStr = `${month}月${day}日`;
     }
 
-    const prompt = `你是一位专业的运势分析师，你的任务是结合星盘、运势、玄学知识，根据当日时间和生日为客户生成今日详细运势分析。
+    const prompt = `你是一位专业的运势分析师，你的任务是结合星盘、运势、玄学知识，根据当日时间和用户信息为客户生成今日详细运势分析。
 
 【重要】输出格式要求：
 - 必须严格按照下方指定的文本格式输出
@@ -98,10 +123,26 @@ export class AIService {
 <today_date>
 ${date}
 </today_date>
+
 用户的生日如下：
 <user_birthday>
 ${birthdayStr || '未提供'}
 </user_birthday>
+
+用户的出生时辰如下：
+<birth_hour>
+${birthHour !== undefined && birthHour !== null ? `${birthHour}时（${this.hourToShichen(birthHour)}）` : '未提供'}
+</birth_hour>
+
+用户的出生地点如下：
+<birthplace>
+${birthplace || '未提供'}
+</birthplace>
+
+用户的性别如下：
+<gender>
+${gender === 'male' ? '男性' : gender === 'female' ? '女性' : '未提供'}
+</gender>
 
 在进行运势分析时，请遵循以下要求：
 1. 综合运用星盘、运势、玄学知识进行全面分析。详细且深入地阐述每个方面的运势情况。
