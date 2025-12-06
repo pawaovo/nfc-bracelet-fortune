@@ -50,6 +50,21 @@
         </view>
         <text v-else class="button-text"> 开始绑定 </text>
       </view>
+
+      <!-- 授权勾选框 -->
+      <view class="agreement-section" @click="toggleAgreement">
+        <view class="checkbox-wrapper">
+          <view :class="['checkbox', { checked: agreed }]">
+            <text v-if="agreed" class="checkbox-icon"> ✓ </text>
+          </view>
+        </view>
+        <text class="agreement-text">
+          注册/登录即表示同意
+          <text class="agreement-link"> 《用户协议》 </text>
+          和
+          <text class="agreement-link"> 《隐私政策》 </text>
+        </text>
+      </view>
     </view>
   </view>
 </template>
@@ -65,6 +80,7 @@ const authStore = useAuthStore();
 // 响应式状态
 const isBinding = ref(false);
 const nfcId = ref('');
+const agreed = ref(false); // 用户是否同意授权
 const isH5Platform = process.env.UNI_PLATFORM === 'h5';
 const pagBackgroundUrl = '/static/pag/Bind_animation.pag';
 const pagButtonUrl = '/static/pag/Bind_button.pag';
@@ -121,8 +137,23 @@ const onPagButtonReady = () => {
   pagButtonReady.value = true;
 };
 
+// 切换授权勾选状态
+const toggleAgreement = () => {
+  agreed.value = !agreed.value;
+};
+
 const handleBindClick = async () => {
   if (isBinding.value) return;
+
+  // 检查是否已勾选授权
+  if (!agreed.value) {
+    uni.showToast({
+      title: '请先同意用户协议和隐私政策',
+      icon: 'none',
+      duration: 2000,
+    });
+    return;
+  }
 
   if (nfcId.value) {
     uni.setStorageSync('currentNfcId', nfcId.value);
@@ -298,12 +329,12 @@ const handleBindClick = async () => {
   left: 50%;
   transform: translateX(-50%);
   width: 668rpx;
-  height: 115rpx;
   z-index: 100;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 24rpx;
 }
 
 .bind-button-container {
@@ -400,5 +431,54 @@ const handleBindClick = async () => {
   50% {
     transform: translateY(-12rpx);
   }
+}
+
+/* 授权勾选区域 */
+.agreement-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  padding: 0 24rpx;
+  cursor: pointer;
+}
+
+.checkbox-wrapper {
+  flex-shrink: 0;
+}
+
+.checkbox {
+  width: 32rpx;
+  height: 32rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.6);
+  border-radius: 4rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+.checkbox.checked {
+  background: #ffffff;
+  border-color: #ffffff;
+}
+
+.checkbox-icon {
+  font-size: 24rpx;
+  color: #1a1a2e;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.agreement-text {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+}
+
+.agreement-link {
+  color: #ffffff;
+  text-decoration: underline;
 }
 </style>
