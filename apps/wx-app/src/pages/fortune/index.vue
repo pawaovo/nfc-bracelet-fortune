@@ -76,12 +76,26 @@
         mode="scaleToFill"
       />
 
-      <!-- 数字装饰图 - 位于卡片右上角 -->
-      <image
-        class="card-number-decoration"
-        src="../../static/pages/fortune/number.png"
-        mode="aspectFit"
-      />
+      <!-- 右上角区域：数字装饰图 + 综合分数 -->
+      <view class="right-top-area">
+        <!-- 数字装饰图 - 圆形光晕背景 -->
+        <image
+          class="card-number-decoration"
+          src="../../static/pages/fortune/number.png"
+          mode="aspectFit"
+        />
+        
+        <!-- 综合分数区域 - 叠加在光晕中心 -->
+        <view class="score-area">
+          <!-- 综合分数数字 - 在上方 -->
+          <text class="score-number-text">
+            {{ calculateOverallScore() }}
+          </text>
+          
+          <!-- 综合分数标签 - 在下方 -->
+          <text class="score-label-text"> 综合分数 </text>
+        </view>
+      </view>
 
       <!-- 底部装饰图 - 对应Figma node 1:311 -->
       <image
@@ -116,40 +130,43 @@
         <text class="lock-hint-text"> 碰一碰手链就能解锁 </text>
       </view>
 
-      <!-- 内容区域 - 使用绝对定位 -->
+      <!-- 内容区域 - 使用 flex 布局 -->
       <view class="content-wrapper">
-        <!-- 用户头像 - 暂时隐藏，保留代码便于后续恢复 -->
-        <view v-if="false" class="user-avatar" />
-
-        <!-- 用户名字 - 左对齐显示 -->
-        <text class="user-name-text">
-          {{ authStore.user?.name || 'YANG阳有点痩' }}
-        </text>
-
-        <!-- 运势分析标题 - 带查看详情图标 -->
-        <!-- 暂时禁用点击功能，后续升级恢复：@click="showDetailModal" -->
-        <view class="comment-title-row">
-          <text class="comment-title-text"> 运势分析 </text>
-          <image
-            class="comment-detail-icon"
-            src="../../static/pages/fortune/today.png"
-            mode="aspectFit"
-          />
+        <!-- 顶部区域：用户信息 -->
+        <view class="top-section">
+          <!-- 用户信息区域 - 头像和名字 -->
+          <view class="user-info-container">
+            <!-- 用户头像 -->
+            <image class="user-avatar" src="/static/pages/profile/avatar.png" mode="aspectFit" />
+            
+            <!-- 用户名字和副标题 -->
+            <view class="user-text-container">
+              <text class="user-name-text">
+                {{ authStore.user?.name || 'YANG阳有点痩' }}
+              </text>
+              <text class="user-subtitle-text">
+                这是你的专属运势...
+              </text>
+            </view>
+          </view>
         </view>
 
-        <!-- 今日点评内容 - 暂时禁用点击功能，后续升级恢复：@click="showDetailModal" -->
-        <text class="comment-content-text">
-          {{ fortuneData?.summary || fortuneData?.comment || '绑定生辰信息，查看专属运势分析' }}
-        </text>
+        <!-- 运势分析区域 -->
+        <view class="comment-section">
+          <!-- 运势分析标题 - 带查看详情图标 -->
+          <!-- 暂时禁用点击功能，后续升级恢复：@click="showDetailModal" -->
+          <view class="comment-title-row">
+            <text class="comment-title-text"> 今日点评 </text>
+            <image
+              class="comment-detail-icon"
+              src="../../static/pages/fortune/play.png"
+              mode="aspectFit"
+            />
+          </view>
 
-        <!-- 综合分数区域 - 暂时禁用点击功能，后续升级恢复：@click="showDetailModal" -->
-        <view class="score-area">
-          <!-- 综合分数标签 - 保持清晰可见 -->
-          <text class="score-label-text"> 综合分数 </text>
-
-          <!-- 综合分数数字 - 保持清晰可见 -->
-          <text class="score-number-text">
-            {{ calculateOverallScore() }}
+          <!-- 今日点评内容 - 暂时禁用点击功能，后续升级恢复：@click="showDetailModal" -->
+          <text class="comment-content-text">
+            {{ fortuneData?.summary || fortuneData?.comment || '绑定生辰信息，查看专属运势分析' }}
           </text>
         </view>
 
@@ -259,7 +276,7 @@
               </view>
 
               <!-- 分割线 -->
-              <view class="advice-divider" />
+              <!-- <view class="advice-divider" /> -->
 
               <!-- 避免 -->
               <view class="advice-item">
@@ -460,6 +477,7 @@
           <view class="shop-button-border-wrapper">
             <image class="shop-icon-img" :src="config.images.shopIcon" mode="aspectFit" />
             <text class="shop-button-text"> 复制链接到抖音 </text>
+            <image class="arrow-icon" src="/static/pages/profile/icon-arrow.png" mode="aspectFit" />
           </view>
         </view>
       </view>
@@ -1435,9 +1453,9 @@ function handleHistoryNavigation() {
 /* 运势卡片共同样式 - 位置和尺寸 */
 .card-bg-image,
 .card-decoration-layer {
-  top: 420rpx;
-  width: 701rpx;
-  height: 1020rpx; /* 从1080rpx减少到1020rpx，减少底部空隙 */
+  top: 360rpx;
+  width: 690rpx;
+  height: 980rpx; /* 从1080rpx减少到1020rpx，减少底部空隙 */
 }
 
 /* 运势卡片背景图 - 对应Figma node 1:307-310 */
@@ -1452,49 +1470,63 @@ function handleHistoryNavigation() {
   opacity: 0.8;
 }
 
-/* 数字装饰图 - 位于卡片右上角 */
-.card-number-decoration {
+/* 右上角区域：数字装饰图 + 综合分数 */
+.right-top-area {
   position: absolute;
   right: 40rpx;
-  top: 430rpx;
+  top: 360rpx;
   width: 240rpx;
   height: 240rpx;
   z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 数字装饰图 - 圆形光晕背景 */
+.card-number-decoration {
+  position: absolute;
+  top: 50rpx;
+  width: 100%;
+  height: 100%;
   opacity: 0.9;
 }
 
 /* 底部装饰图 - 推荐商品卡片背景 */
 .bottom-decoration {
-  top: 1460rpx; /* 从1520rpx上移到1460rpx，配合运势卡片高度减少，保持20rpx间隙 */
+  top: 1370rpx; /* 从1520rpx上移到1460rpx，配合运势卡片高度减少，保持20rpx间隙 */
   width: 701rpx;
   height: 330rpx;
   z-index: 2;
 }
 
-/* 商品推荐卡片容器 - 包含所有商品推荐相关元素，点击整个区域触发跳转 */
+/* 商品推荐卡片容器 - 使用 flex 布局 */
 .recommendation-card-container {
   position: absolute;
-  top: 1460rpx; /* 与底部装饰图位置一致 */
-  left: 25rpx; /* 居中对齐 (750 - 701) / 2 ≈ 25rpx */
+  top: 1370rpx;
+  left: 25rpx;
   width: 701rpx;
   height: 330rpx;
-  z-index: 10; /* 高于底部装饰图(z-index: 2) */
-  cursor: pointer; /* 鼠标悬停时显示手型光标 */
-  transition: opacity 0.2s ease; /* 添加过渡效果 */
+  z-index: 10;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  padding: 10rpx 15rpx 15rpx;
+  box-sizing: border-box;
 }
 
 .recommendation-card-container:active {
-  opacity: 0.95; /* 点击时稍微降低透明度 */
+  opacity: 0.95;
 }
 
 /* 右侧商品图轮播容器 */
 .product-image-swiper-container {
   position: absolute;
-  top: 15rpx; /* 距离容器顶部15rpx */
-  right: 15rpx; /* 从5rpx改为15rpx，左移10rpx，确保在容器内部 */
+  top: 0;
+  right: 15rpx;
   width: 300rpx;
   height: 300rpx;
-  z-index: 1;
 }
 
 /* 商品图轮播swiper */
@@ -1552,9 +1584,9 @@ function handleHistoryNavigation() {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 100rpx;
-  width: 400rpx;
-  height: 400rpx;
+  top: 60rpx;
+  width: 328rpx;
+  height: 324rpx;
   z-index: 3;
   opacity: 0.6;
 }
@@ -1616,51 +1648,81 @@ function handleHistoryNavigation() {
   margin-top: 180rpx; /* 向下偏移更多，位于锁图标底部区域 */
 }
 
-/* 内容包装器 */
+/* 内容包装器 - flex 垂直布局，放在卡片背景内 */
 .content-wrapper {
-  position: relative;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 360rpx; /* 与卡片背景对齐 */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 690rpx; /* 与卡片背景宽度一致 */
+  height: 980rpx; /* 与卡片背景高度一致 */
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  padding: 32rpx;
+  box-sizing: border-box;
+  overflow: hidden; /* 防止内容溢出卡片背景 */
 }
 
-/* 用户头像 - 暂时隐藏，保留样式便于后续恢复 */
+/* 顶部区域：用户信息 */
+.top-section {
+  margin-bottom: 20rpx;
+}
+
+/* 用户信息容器 - 横向布局 */
+.user-info-container {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex: 1;
+}
+
+/* 用户头像 */
 .user-avatar {
-  position: absolute;
-  left: 86rpx; /* 44px * 1.953 */
-  top: 480rpx; /* 246px * 1.953 */
-  width: 100rpx; /* 51px * 1.953 */
+  width: 100rpx;
   height: 100rpx;
   border-radius: 50%;
   background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
-  z-index: 11;
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
-/* 用户名字 - 隐藏头像后左对齐到原头像位置 */
+/* 用户文字容器 - 垂直布局 */
+.user-text-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+/* 用户名字 */
 .user-name-text {
-  position: absolute;
-  left: 86rpx; /* 从200rpx调整到86rpx，与原头像位置对齐，实现左对齐 */
-  top: 510rpx; /* 保持原有垂直位置 */
-  background: linear-gradient(135deg, #e0d4ff 0%, #8b5cf6 50%, #6d28d9 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #ffffff;
   font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-  font-size: 48rpx; /* 继续增大字体，从42rpx增大到48rpx */
-  font-weight: 700; /* 加粗效果，从600增加到700 */
-  line-height: 56rpx; /* 相应调整行高 */
-  z-index: 11;
+  font-size: 40rpx;
+  font-weight: 600;
+  line-height: 48rpx;
+}
+
+/* 用户副标题 */
+.user-subtitle-text {
+  color: #fff;
+  font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
+  font-size: 26rpx;
+  font-weight: 400;
+  line-height: 32rpx;
+}
+
+/* 运势分析区域 */
+.comment-section {
+  margin-bottom: 24rpx;
 }
 
 /* 运势分析标题行 */
 .comment-title-row {
-  position: absolute;
-  left: 86rpx;
-  top: 610rpx; /* 从 630rpx 上移到 610rpx */
   display: flex;
   align-items: center;
   gap: 10rpx;
-  z-index: 11;
+  margin-bottom: 18rpx;
 }
 
 .comment-title-text {
@@ -1674,82 +1736,46 @@ function handleHistoryNavigation() {
 .comment-detail-icon {
   width: 32rpx;
   height: 32rpx;
-  /* 暂时禁用点击效果，后续升级恢复：transition: transform 0.2s ease; */
   flex-shrink: 0;
 }
 
-/* 暂时禁用点击效果，后续升级恢复 */
-/* .comment-detail-icon:active {
-  transform: scale(1.2);
-} */
-
 /* 运势分析内容 */
 .comment-content-text {
-  position: absolute;
-  left: 86rpx;
-  top: 660rpx; /* 从 680rpx 上移到 660rpx */
-  width: 450rpx;
-  color: rgba(187, 187, 187, 1);
+  color: #ccc;
   font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
   font-size: 26rpx;
   font-weight: 400;
   line-height: 36rpx;
-  z-index: 11;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-height: 108rpx;
+  max-width: 400rpx;
 }
 
-/* 综合分数区域容器 - 【暂时禁用点击效果】后续升级恢复 */
+/* 综合分数区域容器 - 在光晕中心 */
 .score-area {
-  position: absolute;
-  right: 42rpx;
-  top: 530rpx;
-  width: 240rpx;
-  height: 120rpx;
-  z-index: 12;
-  /* 暂时禁用点击效果，后续升级恢复：cursor: pointer; */
-  /* 暂时禁用点击效果，后续升级恢复：transition: opacity 0.2s ease; */
-}
-
-/* 暂时禁用点击效果，后续升级恢复 */
-/* .score-area:active {
-  opacity: 0.8;
-} */
-
-/* 综合分数标签 */
-.score-label-text {
-  position: absolute;
-  right: 60rpx;
-  top: 80rpx;
-  color: #ffffff;
-  font-family: 'PingFang SC', sans-serif;
-  font-size: 24rpx;
-  font-weight: 600;
-  line-height: normal;
-  text-align: center;
-  width: auto;
-  background-color: #23176d;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50rpx;
-  padding: 4rpx 16rpx;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-right: 15rpx;
+  justify-content: center;
+  z-index: 1;
 }
 
 /* 综合分数数字 - 添加紫色高亮效果 */
 .score-number-text {
-  position: absolute;
-  right: 90rpx;
-  top: -10rpx;
   color: #ffffff;
-  font-size: 56rpx;
-  font-weight: 600;
+  font-size: 80rpx;
+  font-weight: 700;
+  margin-top: 130rpx;
   font-family: 'PingFang SC', sans-serif;
   font-style: italic;
-  text-align: right;
-  line-height: normal;
+  text-align: center;
+  line-height: 1;
+  margin-bottom: 10rpx;
   /* 紫色高亮效果 */
   text-shadow:
     0 0 10rpx rgba(255, 255, 255, 0.8),
@@ -1759,24 +1785,36 @@ function handleHistoryNavigation() {
   filter: drop-shadow(0 0 8rpx rgba(167, 139, 250, 0.6));
 }
 
+/* 综合分数标签 */
+.score-label-text {
+  color: #D8D1FA;
+  font-family: 'PingFang SC', sans-serif;
+  font-size: 22rpx;
+  font-weight: 600;
+  line-height: normal;
+  text-align: center;
+  background-color: rgba(35, 23, 109, 0.6);
+  border: 2rpx solid rgba(255, 255, 255, 0.4);
+  border-radius: 50rpx;
+  padding: 2rpx 12rpx;
+  white-space: nowrap;
+  letter-spacing: 2rpx;
+}
+
 /* 四项运势容器 - 2行梯形布局 */
 .luck-sections-wrapper {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: 800rpx;
-  z-index: 11;
-  width: 580rpx; /* 与建议区域宽度一致 */
+  width: 100%;
+  max-width: 580rpx;
   display: flex;
   flex-direction: column;
-  gap: 20rpx; /* 从30rpx减少到20rpx，减少两行之间的间距 */
+  gap: 16rpx;
 }
 
 /* 运势行容器 - 两行共用样式 */
 .luck-sections-row {
   display: flex;
   width: 100%;
-  padding: 0 30rpx; /* 左右各留30rpx间距 */
+  padding: 0 28rpx; /* 左右各留30rpx间距 */
   justify-content: space-between; /* 两端对齐 */
 }
 
@@ -1842,15 +1880,13 @@ function handleHistoryNavigation() {
 
 /* 建议和避免区域 - 优化深色背景 */
 .advice-container {
-  position: absolute;
-  left: 50%;
-  transform: translate(-50%);
-  top: 1010rpx; /* 从1030rpx上移到1010rpx，再上移20rpx */
-  width: 580rpx;
-  height: 200rpx; /* 从140rpx增加到200rpx，支持2行文本显示 */
-  z-index: 11;
-  background-color: rgba(0, 0, 0, 0.45); /* 加深背景色，从0.3提升到0.45 */
-  border-radius: 20rpx; /* 添加圆角以匹配背景图 */
+  position: relative;
+  width: 100%;
+  // max-width: 580rpx;
+  height: 200rpx;
+  margin: 30rpx 0 20rpx;
+  background-color: rgba(0, 0, 0, 0.45);
+  border-radius: 24rpx;
 }
 
 /* 建议区域背景图 */
@@ -1871,7 +1907,7 @@ function handleHistoryNavigation() {
   top: 0;
   width: 100%;
   height: 100%;
-  padding: 16rpx 20rpx;
+  padding: 20rpx 24rpx;
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -1940,20 +1976,18 @@ function handleHistoryNavigation() {
 
 /* 幸运卡片容器 */
 .lucky-cards-container {
-  position: absolute;
-  left: 86rpx;
-  top: 1230rpx; /* 从1250rpx上移到1230rpx，配合建议区域的新位置（1010+200=1210，间隙20rpx） */
-  width: 580rpx;
+  width: 100%;
+  max-width: 580rpx;
+  margin: 0 auto;
   display: flex;
   justify-content: center;
   gap: 30rpx;
-  z-index: 11;
 }
 
 .lucky-card {
   position: relative;
-  width: 172rpx;
-  height: 180rpx; /* 从160rpx增加到180rpx，为2行正文提供足够空间 */
+  width: 189rpx;
+  height: 156rpx; /* 从160rpx增加到180rpx，为2行正文提供足够空间 */
   flex-shrink: 0;
 }
 
@@ -1976,6 +2010,7 @@ function handleHistoryNavigation() {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   padding: 12rpx 12rpx 8rpx 12rpx; /* 底部padding从12rpx减少到8rpx，为正文提供更多空间 */
   box-sizing: border-box;
 }
@@ -1997,35 +2032,35 @@ function handleHistoryNavigation() {
 }
 
 .lucky-label-text {
-  color: #a78bfa;
-  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-  font-size: 30rpx;
+  color: #fff;
+  font-size: 24rpx;
   font-weight: 600;
   line-height: 36rpx; /* 从40rpx减少到36rpx，压缩标题高度 */
   white-space: nowrap;
 }
 
 .lucky-value-text {
-  color: rgba(187, 187, 187, 1);
+  color: #000;
   font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
   font-size: 26rpx;
-  font-weight: 400;
+  font-weight: 600;
   line-height: 36rpx;
   text-align: center;
   margin-top: 6rpx; /* 从20rpx减少到6rpx，减少标题和正文之间的间距 */
-  flex: 1;
+  padding: 0 12rpx;
+  border-radius: 17rpx;
+  background: #A08DFF;
   display: flex;
   align-items: center;
   justify-content: center;
   word-break: break-word;
   overflow: hidden;
-  padding: 0 4rpx; /* 添加左右内边距，防止文字贴边 */
 }
 
 /* 历史记录按钮 - 与绑定页面和个人信息页面按钮样式保持一致 */
 .history-button {
   position: absolute;
-  top: 1810rpx; /* 从1870rpx上移到1810rpx，配合底部装饰图上移60rpx */
+  top: 1730rpx; /* 从1870rpx上移到1810rpx，配合底部装饰图上移60rpx */
   left: 42rpx; /* 与绑定页面和个人信息页面按钮左边距一致 */
   width: 668rpx; /* 与绑定页面和个人信息页面按钮宽度一致 */
   height: 115rpx; /* 与绑定页面和个人信息页面按钮高度一致 */
@@ -2060,17 +2095,17 @@ function handleHistoryNavigation() {
   opacity: 0.8;
 }
 
-/* 手链标题区域 - 包含装饰图标（缩小版bind页面样式） */
+/* 手链标题区域 - 包含装饰图标 */
 .recommendation-card-title-wrapper {
-  position: absolute;
-  top: 10rpx; /* 从20rpx减少到10rpx，上移10rpx */
-  left: 35rpx; /* 距离容器左边35rpx (60rpx - 25rpx容器左边距) */
-  width: 240rpx; /* 缩小版：bind页面380rpx缩小到240rpx，比例约0.63 */
-  height: 114rpx; /* 缩小版：bind页面180rpx缩小到114rpx，比例约0.63 */
-  z-index: 1; /* 相对于容器的层级 */
+  position: relative;
+  width: 240rpx;
+  height: 114rpx;
+  margin-left: 20rpx;
+  margin-bottom: 10rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 /* 手链图标（装饰性背景） */
@@ -2103,17 +2138,15 @@ function handleHistoryNavigation() {
   z-index: 11;
 }
 
-/* 手链信息区域 - 固定位置，内容动态变化 */
+/* 手链信息区域 - 内容动态变化 */
 .recommendation-bracelet-info {
-  position: absolute;
-  top: 130rpx; /* 从145rpx减少到130rpx，上移15rpx */
-  left: 35rpx; /* 距离容器左边35rpx (60rpx - 25rpx容器左边距) */
-  width: 320rpx;
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 12rpx;
-  z-index: 1; /* 相对于容器的层级 */
-  transition: opacity 0.3s ease; /* 添加淡入淡出效果 */
+  margin-left: 20rpx;
+  margin-right: 340rpx;
+  transition: opacity 0.3s ease;
 
   .recommendation-bracelet-name {
     font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
@@ -2145,21 +2178,19 @@ function handleHistoryNavigation() {
   }
 }
 
-/* 抖音店铺按钮 - 固定位置 */
+/* 抖音店铺按钮 */
 .shop-button-wrapper {
-  position: absolute;
-  bottom: 15rpx; /* 距离容器底部15rpx */
-  left: 15rpx; /* 距离容器左边15rpx (40rpx - 25rpx容器左边距) */
+  margin-top: auto;
+  margin-left: 20rpx;
   display: flex;
   align-items: center;
-  z-index: 1; /* 相对于容器的层级 */
 }
 
 .shop-button-border-wrapper {
   background: #000000;
   border: 2rpx solid rgba(0, 229, 250, 0.6); /* 从 0.2 提升到 0.6，增强亮蓝色外框效果 */
-  border-radius: 40rpx;
-  padding: 6rpx 40rpx 6rpx 8rpx; /* 上下内边距从4rpx微调到6rpx，让文字与边框有一点点间距 */
+  border-radius: 10rpx;
+  padding: 6rpx 10rpx 6rpx 8rpx; /* 上下内边距从4rpx微调到6rpx，让文字与边框有一点点间距 */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2192,6 +2223,14 @@ function handleHistoryNavigation() {
   height: 100%;
   margin-left: 12rpx; /* 文字左移，从24rpx减少到12rpx */
   letter-spacing: 6rpx; /* 增加字符间距，让文字不那么拥挤 */
+}
+
+/* 箭头图标 */
+.arrow-icon {
+  width: 20rpx;
+  height: 20rpx;
+  margin-left: 8rpx;
+  flex-shrink: 0;
 }
 
 /* 运势详情区域 - 作为模糊容器 */

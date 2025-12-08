@@ -248,6 +248,9 @@ importers:
       pinia:
         specifier: ^2.1.6
         version: 2.3.1(typescript@5.9.3)(vue@3.5.22)
+      vconsole:
+        specifier: ^3.15.1
+        version: 3.15.1
       vue:
         specifier: ^3.4.21
         version: 3.5.22(typescript@5.9.3)
@@ -9011,6 +9014,14 @@ packages:
       }
     dev: true
 
+  /copy-text-to-clipboard@3.2.2:
+    resolution:
+      {
+        integrity: sha512-T6SqyLd1iLuqPA90J5N4cTalrtovCySh58iiZDGJ6FGznbclKh4UI+FGacQSgFzwKG77W7XT5gwbVEbd9cIH1A==,
+      }
+    engines: { node: '>=12' }
+    dev: false
+
   /core-js-compat@3.46.0:
     resolution:
       {
@@ -13503,6 +13514,13 @@ packages:
       type-is: 1.6.18
       xtend: 4.0.2
 
+  /mutation-observer@1.0.3:
+    resolution:
+      {
+        integrity: sha512-M/O/4rF2h776hV7qGMZUH3utZLO/jK7p8rnNgGkjKUw8zCGjRQPxB8z6+5l8+VjRUQ3dNYu4vjqXYLr+U8ZVNA==,
+      }
+    dev: false
+
   /mute-stream@2.0.0:
     resolution:
       {
@@ -16592,6 +16610,18 @@ packages:
         integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==,
       }
     engines: { node: '>= 0.8' }
+
+  /vconsole@3.15.1:
+    resolution:
+      {
+        integrity: sha512-KH8XLdrq9T5YHJO/ixrjivHfmF2PC2CdVoK6RWZB4yftMykYIaXY1mxZYAic70vADM54kpMQF+dYmvl5NRNy1g==,
+      }
+    dependencies:
+      '@babel/runtime': 7.28.4
+      copy-text-to-clipboard: 3.2.2
+      core-js: 3.46.0
+      mutation-observer: 1.0.3
+    dev: false
 
   /vite-node@1.6.1(sass@1.93.2)(terser@5.44.0):
     resolution:

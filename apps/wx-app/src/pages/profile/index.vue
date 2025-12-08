@@ -31,8 +31,11 @@
       <text class="guide-title">
         {{ config.texts.mainTitle }}
       </text>
+      <text class="guide-title">
+        {{ config.texts.mainTitleTwo }}
+      </text>
       <text class="guide-subtitle">
-        {{ config.texts.subtitle }}
+        {{ config.texts.subtitleTwo }}
       </text>
     </view>
 
@@ -734,11 +737,13 @@ onLoad(options => {
 .profile-container {
   position: relative;
   /* 使用固定高度，不使用vh单位，避免键盘弹出时重新计算 */
-  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
   height: 1800rpx; /* 增加高度以容纳新增的选择器 */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  /* 禁止容器本身滚动 */
-  overflow: visible;
+  /* 禁止横向滚动，防止键盘弹起时右侧被挤出 */
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
 /* 主背景容器 - 改为绝对定位，随页面一起滚动 */
@@ -753,6 +758,8 @@ onLoad(options => {
   transition: opacity 0.4s ease-in;
   /* 确保背景覆盖整个容器 */
   min-height: 1800rpx;
+  /* 防止背景元素溢出导致横向滚动 */
+  overflow: hidden;
 
   .bg-main {
     position: absolute;
@@ -806,7 +813,7 @@ onLoad(options => {
 /* 引导文字容器 - 使用固定rpx值 */
 .guide-text-container {
   position: absolute;
-  top: 310rpx; /* 调整位置，确保与卡片有合理的间距 */
+  top: 280rpx; /* 调整位置，确保与卡片有合理的间距 */
   left: 14.8%;
   right: 14.8%;
   z-index: 200;
@@ -828,7 +835,7 @@ onLoad(options => {
 .guide-subtitle {
   display: block;
   font-family: 'PingFang SC', sans-serif;
-  font-size: 48rpx;
+  font-size: 32rpx;
   color: #ffffff;
   font-weight: 600;
   line-height: normal;

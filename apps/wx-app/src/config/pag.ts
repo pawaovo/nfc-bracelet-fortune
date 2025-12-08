@@ -17,6 +17,9 @@ export const PAG_CONFIG = {
   /** 循环段结束时间（秒） - 48% */
   loopEnd: 12,
 
+  /** 前景动画停止时间（秒） - 57% */
+  foregroundStop: 14.25,
+
   /** 结束动画开始时间（秒） - 80% */
   endingStart: 20,
 

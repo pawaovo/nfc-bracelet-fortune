@@ -373,22 +373,22 @@ function startPagAnimation() {
   const totalDuration = pagInfo.duration;
   const loopStartProgress = PAG_CONFIG.loopStart / totalDuration;
   const loopEndProgress = PAG_CONFIG.loopEnd / totalDuration;
+  const foregroundStopProgress = PAG_CONFIG.foregroundStop / totalDuration;
 
   pagAnimationState.value.isPlaying = true;
   pagForegroundAnimationState.value.isPlaying = true;
 
-  // 同时播放两个PAG的初始动画
+  // 背景动画播放到40%，前景动画播放到55%
   pagLoadingRef.value.playInitialAnimation(loopStartProgress);
-  pagForegroundRef.value.playInitialAnimation(loopStartProgress);
+  pagForegroundRef.value.playInitialAnimation(foregroundStopProgress);
 
   pagAnimationState.value.loopTimer = setTimeout(() => {
-    if (!pagLoadingRef.value || !pagForegroundRef.value) return;
+    if (!pagLoadingRef.value) return;
     if (!pagAnimationState.value.isPlaying) {
       return;
     }
-    // 同时播放两个PAG的循环动画
+    // 只有背景动画循环播放中间段，前景动画停留不动
     pagLoadingRef.value.startMiddleLoop(loopStartProgress, loopEndProgress);
-    pagForegroundRef.value.startMiddleLoop(loopStartProgress, loopEndProgress);
   }, PAG_CONFIG.loopStart * 1000);
 }
 

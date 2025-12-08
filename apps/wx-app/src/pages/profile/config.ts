@@ -13,7 +13,9 @@ export interface ProfilePageTheme {
   };
   texts: {
     mainTitle: string;
+    mainTitleTwo: string;
     subtitle: string;
+    subtitleTwo: string;
     usernameLabel: string;
     usernamePlaceholder: string;
     nameLabel: string;
@@ -39,8 +41,10 @@ export const defaultTheme: ProfilePageTheme = {
     avatarIcon: '../../static/pages/profile/icon-avatar.svg',
   },
   texts: {
-    mainTitle: '注入灵魂',
+    mainTitle: '仅需一步',
+    mainTitleTwo: '为你的专属运势注入灵魂',
     subtitle: '解锁今日运势',
+    subtitleTwo: '这是你的专属运势···',
     usernameLabel: '账户名*',
     usernamePlaceholder: '请设置 4-32 位账户名',
     nameLabel: '昵称*',

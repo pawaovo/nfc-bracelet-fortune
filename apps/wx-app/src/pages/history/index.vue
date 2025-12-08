@@ -10,7 +10,7 @@
     <view class="top-nav-area">
       <!-- 返回按钮 -->
       <view class="navbar-back" @click="goBack">
-        <text class="back-icon"> ‹ </text>
+        <image class="back-icon" src="/static/pages/history/return.png" mode="aspectFit" />
       </view>
     </view>
 
@@ -42,7 +42,7 @@
       />
 
       <!-- 副标题 -->
-      <text class="sub-title"> 最近更新 {{ latestUpdateDate }} </text>
+      <text class="sub-title"> 最近更新 {{ latestUpdateDate }} 历史记录 </text>
     </view>
 
     <!-- 主内容 -->
@@ -73,11 +73,11 @@
             <view class="timeline-line" />
             <template v-for="(item, index) in historyList" :key="item.date">
               <!-- 年份分组标题 -->
-              <view v-if="shouldShowYearDivider(item, index)" class="year-divider">
+              <!-- <view v-if="shouldShowYearDivider(item, index)" class="year-divider">
                 <text class="year-text">
                   {{ getYearFromDate(item.date) }}
                 </text>
-              </view>
+              </view> -->
 
               <view class="timeline-item" @click="handleItemClick(item)">
                 <view class="timeline-dot">
@@ -85,7 +85,8 @@
                   <view class="dot-inner" />
                 </view>
                 <text class="timeline-date">
-                  {{ formatDateDisplay(item.date) }}
+                  <!-- {{ formatDateDisplay(item.date) }} -->
+                  {{ item.date }}
                 </text>
                 <view class="fortune-card">
                   <image
@@ -99,20 +100,23 @@
                     mode="aspectFit"
                     :style="getFlowerStyle(item.date, index)"
                   />
-                  <!-- 顶部标题行：左侧评语 + 右侧分数 -->
-                  <view class="fortune-card-header">
-                    <text class="fortune-card-title" :class="getTimeColorClass(item)">
-                      {{ formatFortuneComment(item) }}
-                    </text>
-                    <text class="fortune-card-score">
-                      {{ calculateOverallScore(item) }}
-                    </text>
-                  </view>
-                  <!-- 底部总结信息 -->
-                  <view class="fortune-card-info">
-                    <text class="fortune-time">
-                      {{ formatFortuneSummary(item) }}
-                    </text>
+                  <!-- 卡片内容：上下布局 -->
+                  <view class="fortune-card-content">
+                    <!-- 顶部：评语 + 分数 -->
+                    <view class="fortune-card-header">
+                      <text class="fortune-card-title" :class="getTimeColorClass(item)">
+                        {{ formatFortuneComment(item) }}
+                      </text>
+                      <text class="fortune-card-score">
+                        {{ calculateOverallScore(item) }}
+                      </text>
+                    </view>
+                    <!-- 底部：打通背景的摘要信息 -->
+                    <view class="fortune-card-info">
+                      <text class="fortune-time">
+                        {{ formatFortuneSummary(item) }}
+                      </text>
+                    </view>
                   </view>
                 </view>
               </view>
@@ -402,13 +406,13 @@ function getFlowerStyle(date: string, index: number): string {
     hash = hash & hash; // Convert to 32bit integer
   }
 
-  // 限制水平偏移范围：12rpx 到 120rpx（从右边缘向左偏移）
-  // 12rpx 是最小边距，120rpx 确保图标在卡片右半段
-  // 图标宽度52rpx，所以 right: 12rpx 时图标右边缘距离卡片边缘12rpx
-  const minRight = 12;
-  const maxRight = 120;
-  const offsetRange = maxRight - minRight; // 108rpx的偏移范围
-  const rightPosition = minRight + (Math.abs(hash) % offsetRange); // 12 到 120
+  // 限制水平偏移范围：6rpx 到 60rpx（从右边缘向左偏移）
+  // 6rpx 是最小边距，60rpx 确保图标靠近右侧
+  // 图标宽度52rpx，所以 right: 6rpx 时图标右边缘距离卡片边缘6rpx
+  const minRight = 6;
+  const maxRight = 60;
+  const offsetRange = maxRight - minRight; // 54rpx的偏移范围
+  const rightPosition = minRight + (Math.abs(hash) % offsetRange); // 6 到 60
 
   // 生成随机旋转角度：-60到60度
   const rotation = (Math.abs(hash >> 8) % 121) - 60; // -60 到 60
@@ -426,13 +430,14 @@ function getFlowerStyle(date: string, index: number): string {
   min-height: 100vh;
   background: #000000;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* 背景图层通用样式 */
 .bg-stars,
 .bg-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -506,85 +511,61 @@ function getFlowerStyle(date: string, index: number): string {
 
 /* 顶部导航区域 */
 .top-nav-area {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 100%; /* 占满整个屏幕高度，用于定位子元素 */
+  position: relative;
   z-index: 100;
-  background: transparent;
-  pointer-events: none; /* 允许点击穿透 */
+  padding-top: 90rpx;
+  padding-left: 30rpx;
+  padding-bottom: 22rpx;
 }
 
 /* 返回按钮 */
 .navbar-back {
-  position: absolute;
-  top: 100rpx; /* 与微信状态按钮对齐 */
-  left: 32rpx;
-  width: 64rpx;
-  height: 64rpx;
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  backdrop-filter: blur(10rpx);
-  pointer-events: auto; /* 恢复点击事件 */
-  z-index: 101;
+  cursor: pointer;
 }
 
 .back-icon {
-  color: #ffffff;
-  font-size: 48rpx;
-  font-weight: 300;
-  line-height: 1;
-  margin-left: -4rpx;
+  width: 48rpx;
+  height: 48rpx;
 }
 
-/* 顶部固定标题区域 */
+/* 顶部标题区域 */
 .header-section {
-  position: fixed;
-  top: 180rpx; /* 在返回按钮下方 */
-  left: 32rpx;
-  right: 32rpx;
-  z-index: 99;
-  background: transparent;
-  pointer-events: none; /* 允许点击穿透 */
+  position: relative;
+  z-index: 10;
+  padding: 0 30rpx;
+  margin-bottom: 50rpx;
 }
 
 /* 主内容 */
 .main-content {
-  position: fixed;
-  top: 350rpx; /* 在标题区域下方（180 + 标题约60 + 副标题约30 + 装饰线约60 + 间距20） */
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1;
+  position: relative;
+  z-index: 10;
   display: flex;
   flex-direction: column;
-  padding: 0 32rpx 32rpx 32rpx;
-  overflow: hidden; /* 禁止主容器滚动 */
+  padding: 0 30rpx 40rpx 30rpx;
+  min-height: 60vh;
 }
 
 /* 标题 */
 .main-title {
   color: #ffffff;
-  font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-  font-size: 48rpx; /* 从 80rpx 调整为 48rpx */
-  font-weight: 600;
+  font-family: "Alimama ShuHeiTi";
+  font-size: 60rpx; /* 从 80rpx 调整为 48rpx */
+  font-weight: 700;
   line-height: 56rpx;
   display: block;
   margin-bottom: 8rpx;
 }
 
 .sub-title {
-  color: rgba(187, 187, 187, 1);
-  font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
-  font-size: 26rpx;
-  font-weight: 400;
-  line-height: 36rpx;
+  color: #fff;
+  opacity: 0.4;
+  font-family: "PingFang SC";
+  font-size: 25rpx;
+  font-weight: 600;
   display: block;
-  margin-bottom: 16rpx;
 }
 
 /* 装饰线条 */
@@ -592,19 +573,15 @@ function getFlowerStyle(date: string, index: number): string {
   width: 480rpx;
   height: auto;
   opacity: 0.8;
-  margin-top: -22rpx; /* 上移，与标题底部叠放 */
-  margin-bottom: 16rpx; /* 与副标题的间距 */
+  margin-top: -30rpx; /* 上移，与标题底部叠放 */
   margin-left: -100rpx; /* 左移一段距离 */
   display: block;
 }
 
 /* 滚动区域容器 */
 .scroll-wrapper {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  height: 100%; /* 占满剩余空间 */
 }
 
 /* 当日运势标签 */
@@ -615,10 +592,8 @@ function getFlowerStyle(date: string, index: number): string {
   font-weight: 600;
   line-height: 40rpx;
   display: block;
-  flex-shrink: 0;
-  margin-bottom: 16rpx; /* 与时间轴的间距 */
-  margin-left: 0; /* 确保标签从左边缘开始 */
-  pointer-events: auto; /* 恢复点击事件 */
+  margin-bottom: 35rpx;
+  margin-left: 0;
 }
 
 /* 空状态 */
@@ -629,8 +604,7 @@ function getFlowerStyle(date: string, index: number): string {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
-  padding: 60rpx;
+  padding: 120rpx 60rpx;
   text-align: center;
 }
 
@@ -648,15 +622,13 @@ function getFlowerStyle(date: string, index: number): string {
 
 /* 时间轴滚动区域 */
 .timeline-scroll {
-  flex: 1;
-  overflow: hidden;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 时间轴容器 */
 .timeline-container {
   position: relative;
-  min-height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -708,6 +680,11 @@ function getFlowerStyle(date: string, index: number): string {
   z-index: 1;
 }
 
+/* 最后一个时间轴项目无底部间距 */
+.timeline-item:last-of-type {
+  margin-bottom: 0;
+}
+
 /* 时间轴圆点 */
 .timeline-dot {
   position: relative;
@@ -722,11 +699,11 @@ function getFlowerStyle(date: string, index: number): string {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 32rpx;
-  height: 32rpx;
+  width: 20rpx;
+  height: 20rpx;
   border-radius: 50%;
   background: #19131f;
-  border: 6rpx solid #a78bfa; /* 改为紫色 */
+  border: 6rpx solid #7a7293; /* 改为紫色 */
 }
 
 .dot-inner {
@@ -742,12 +719,11 @@ function getFlowerStyle(date: string, index: number): string {
 
 /* 时间轴日期 */
 .timeline-date {
-  color: rgba(187, 187, 187, 1);
-  font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
-  font-size: 24rpx; /* 从 26rpx 减小到 24rpx，让文字更紧凑 */
-  font-weight: 400;
+  color: #fff;
+  opacity: 0.4;
+  font-size: 27rpx; /* 从 26rpx 减小到 24rpx，让文字更紧凑 */
+  font-weight: 600;
   line-height: 36rpx;
-  width: 160rpx; /* 从 140rpx 增加到 160rpx，为星期信息留出空间 */
   flex-shrink: 0;
   padding: 0 12rpx; /* 从 16rpx 减小到 12rpx，节省空间 */
   white-space: nowrap; /* 确保不换行 */
@@ -760,9 +736,10 @@ function getFlowerStyle(date: string, index: number): string {
   flex: 1;
   position: relative;
   border-radius: 24rpx; /* 从 16rpx 增加到 24rpx，更圆润 */
-  padding: 16rpx 24rpx; /* 从 20rpx 28rpx 减小到 16rpx 24rpx，减少内边距 */
+  padding: 24rpx 20rpx 18rpx 38rpx; /* 从 20rpx 28rpx 减小到 16rpx 24rpx，减少内边距 */
   min-height: 88rpx; /* 从 100rpx 减小到 88rpx，降低卡片高度 */
   display: flex;
+  margin-left: 30rpx;
   flex-direction: column; /* 纵向布局 */
   justify-content: center;
   overflow: hidden;
@@ -785,23 +762,29 @@ function getFlowerStyle(date: string, index: number): string {
   opacity: 0.9;
 }
 
-/* 顶部标题行：评语 + 分数 */
-.fortune-card-header {
+/* 卡片内容：上下布局 */
+.fortune-card-content {
   position: relative;
   z-index: 1;
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8rpx; /* 从 10rpx 减小到 8rpx，减少间距 */
+  flex-direction: column;
+  gap: 30rpx;
 }
 
+/* 顶部：评语 + 分数（横向布局） */
+.fortune-card-header {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+/* 评语标题 */
 .fortune-card-title {
   color: #ffffff;
   font-family: 'ABeeZee', 'Noto Sans SC', 'Noto Sans JP', sans-serif;
-  font-size: 28rpx; /* 从 30rpx 减小到 28rpx */
+  font-size: 28rpx;
   font-weight: 600;
-  line-height: 36rpx; /* 从 40rpx 减小到 36rpx */
   flex: 1;
 
   /* 上上运势：90-100分 */
@@ -830,41 +813,41 @@ function getFlowerStyle(date: string, index: number): string {
   }
 }
 
-/* 右侧分数 */
+/* 分数（右侧） */
 .fortune-card-score {
-  font-family: 'ABeeZee', sans-serif;
-  font-size: 64rpx; /* 从 72rpx 减小到 64rpx */
-  font-weight: 700; /* 加粗 */
-  font-style: italic; /* 斜体 */
-  line-height: 1;
+  position: absolute;
+  top: 45rpx;
+  right: 20rpx;
+  font-size: 60rpx;
+  font-weight: 900;
+  font-style: italic;
   flex-shrink: 0;
-  margin-left: 16rpx; /* 从 20rpx 减小到 16rpx */
-  align-self: flex-start; /* 允许独立定位 */
-  transform: translateY(52rpx); /* 从 60rpx 减小到 52rpx，适应新的卡片高度 */
-  color: #ffffff; /* 白色文字 */
-  text-shadow: 0 0 20rpx rgba(255, 255, 255, 0.8); /* 白色高亮发光效果 */
+  color: #ffffff;
+  line-height: 1;
 }
 
+/* 底部总结信息容器 - 背景打通整个宽度 */
 .fortune-card-info {
   position: relative;
-  z-index: 1;
-  background: rgba(250, 226, 255, 0.05);
-  border-radius: 10rpx; /* 从 12rpx 减小到 10rpx */
-  padding: 10rpx 16rpx; /* 从 12rpx 20rpx 减小到 10rpx 16rpx */
-  width: 65%; /* 宽度限制为65% */
+  background: rgba(250, 226, 255, 0.1);
+  border-radius: 10rpx;
+  padding: 4rpx 10rpx;
+  width: 100%;
+  box-sizing: border-box;
 }
 
+/* 摘要文字 - 超长显示省略号 */
 .fortune-time {
   font-family: 'ABeeZee', 'Noto Sans JP', sans-serif;
-  font-size: 24rpx; /* 从 26rpx 减小到 24rpx */
-  font-weight: 400;
-  line-height: 32rpx; /* 从 36rpx 减小到 32rpx */
-  color: #bbbbbb;
+  font-size: 24rpx;
+  font-weight: 600;
+  line-height: 32rpx;
+  color: #d8d8d8;
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  width: 100%;
+  width: 60%;
 }
 
 /* 加载更多 */

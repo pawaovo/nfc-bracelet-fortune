@@ -2,7 +2,7 @@
   <view class="verify-page">
     <view class="background">
       <image class="bg-main" src="/static/pages/profile/bg-main.png" mode="scaleToFill" />
-      <image class="bg-overlay" src="/static/pages/profile/rectangle-9.png" mode="scaleToFill" />
+      <!-- <image class="bg-overlay" src="/static/pages/profile/rectangle-9.png" mode="scaleToFill" /> -->
       <view class="backdrop" />
     </view>
 
@@ -200,6 +200,7 @@ onUnmounted(() => {
   left: -52.38%;
   width: 159.69%;
   height: 107.94%;
+  opacity: 0.4;
   z-index: 1;
 }
 

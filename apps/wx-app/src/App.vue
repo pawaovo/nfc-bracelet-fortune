@@ -519,10 +519,19 @@ function preloadH5PagAssets() {
 <style>
 /* 全局样式 - 确保页面正确适配移动设备 */
 
+/* 自定义字体声明 */
+@font-face {
+  font-family: 'Alimama ShuHeiTi';
+  src: url('/static/fonts/AlimamaShuHeiTi-Bold.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 /* uni-app 页面根元素样式 */
 page {
   /* 确保页面可以滚动 */
   height: 100%;
+  width: 100%;
   /* 使用系统字体 */
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
@@ -532,6 +541,10 @@ page {
   /* 禁止文本选择（提升移动端体验） */
   -webkit-user-select: none;
   user-select: none;
+  /* 防止键盘弹起时页面被横向推出 */
+  overflow-x: hidden;
+  max-width: 100vw;
+  position: relative;
 }
 
 /* 确保所有元素使用border-box */
