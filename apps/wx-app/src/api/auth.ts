@@ -1,14 +1,9 @@
 // 认证相关API服务
-import apiRequest from './request'
-import type {
-  LoginRequest,
-  LoginResponse,
-  ApiResponse
-} from '@shared/types'
+import apiRequest from './request';
+import type { LoginRequest, LoginResponse, ApiResponse } from '@shared/types';
 
 // 认证API服务类
 export class AuthService {
-  
   /**
    * 微信登录并绑定NFC手链
    * @param code 微信登录code
@@ -18,10 +13,10 @@ export class AuthService {
   async login(code: string, nfcId?: string): Promise<ApiResponse<LoginResponse>> {
     const requestData: LoginRequest = {
       code,
-      nfcId
-    }
-    
-    return apiRequest.post<LoginResponse>('auth/login', requestData)
+      nfcId,
+    };
+
+    return apiRequest.post<LoginResponse>('auth/login', requestData);
   }
 
   /**
@@ -30,7 +25,7 @@ export class AuthService {
    * @returns 验证响应
    */
   async verifyNFC(nfcId: string): Promise<ApiResponse<{ status: string }>> {
-    return apiRequest.post<{ status: string }>('auth/verify-nfc', { nfcId })
+    return apiRequest.post<{ status: string }>('auth/verify-nfc', { nfcId });
   }
 
   /**
@@ -38,7 +33,7 @@ export class AuthService {
    * @returns 新的token
    */
   async refreshToken(): Promise<ApiResponse<{ token: string }>> {
-    return apiRequest.post<{ token: string }>('auth/refresh')
+    return apiRequest.post<{ token: string }>('auth/refresh');
   }
 
   /**
@@ -46,13 +41,13 @@ export class AuthService {
    * @returns 登出响应
    */
   async logout(): Promise<ApiResponse<void>> {
-    const response = await apiRequest.post<void>('auth/logout')
-    
+    const response = await apiRequest.post<void>('auth/logout');
+
     // 清除本地存储的token
-    uni.removeStorageSync('token')
-    apiRequest.clearAuthToken()
-    
-    return response
+    uni.removeStorageSync('token');
+    apiRequest.clearAuthToken();
+
+    return response;
   }
 
   /**
@@ -60,36 +55,65 @@ export class AuthService {
    * @returns 用户信息
    */
   async getCurrentUser(): Promise<ApiResponse<any>> {
-    return apiRequest.get('auth/me')
+    return apiRequest.get('auth/me');
   }
 
+  /**
+   * 发送手机验证码
+   * @param phone 手机号
+   * @returns 发送结果
+   */
+  async sendCode(phone: string): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    return apiRequest.post<{ success: boolean; message: string }>('auth/send-code', { phone });
+  }
 
+  /**
+   * 手机号验证码登录
+   * @param phone 手机号
+   * @param code 验证码
+   * @param nfcId NFC手链ID（可选）
+   * @returns 登录响应
+   */
+  async phoneLogin(
+    phone: string,
+    code: string,
+    nfcId?: string
+  ): Promise<
+    ApiResponse<{
+      userId: string;
+      accessToken: string;
+      userType: 'new' | 'existing';
+      profileComplete: boolean;
+    }>
+  > {
+    return apiRequest.post('auth/phone-login', { phone, code, nfcId });
+  }
 }
 
 // 创建认证服务实例
-export const authService = new AuthService()
+export const authService = new AuthService();
 
 // 导出默认实例
-export default authService
+export default authService;
 
 // 便捷方法：设置认证token
 export function setAuthToken(token: string) {
-  uni.setStorageSync('token', token)
-  apiRequest.setAuthToken(token)
+  uni.setStorageSync('token', token);
+  apiRequest.setAuthToken(token);
 }
 
 // 便捷方法：清除认证token
 export function clearAuthToken() {
-  uni.removeStorageSync('token')
-  apiRequest.clearAuthToken()
+  uni.removeStorageSync('token');
+  apiRequest.clearAuthToken();
 }
 
 // 便捷方法：获取当前token
 export function getAuthToken(): string | null {
-  return uni.getStorageSync('token') || null
+  return uni.getStorageSync('token') || null;
 }
 
 // 便捷方法：检查是否已登录
 export function isAuthenticated(): boolean {
-  return !!getAuthToken()
+  return !!getAuthToken();
 }

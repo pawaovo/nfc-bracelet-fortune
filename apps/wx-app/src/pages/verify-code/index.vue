@@ -51,11 +51,14 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
+import { authService, setAuthToken } from '@/api/auth';
 
 const phone = ref('');
 const code = ref('');
 const countdown = ref(0);
 const currentNfcId = ref('');
+const isLoading = ref(false);
+const isSending = ref(false);
 let timer: number | undefined;
 
 onLoad(options => {
@@ -65,28 +68,109 @@ onLoad(options => {
   }
 });
 
-const startCountdown = () => {
-  if (countdown.value > 0) return;
-  countdown.value = 59;
-
-  timer = setInterval(() => {
-    if (countdown.value <= 1) {
-      countdown.value = 0;
-      if (timer) {
-        clearInterval(timer);
-        timer = undefined;
-      }
-      return;
-    }
-    countdown.value -= 1;
-  }, 1000) as unknown as number;
+// 验证手机号格式
+const validatePhone = (phoneNumber: string): boolean => {
+  return /^1[3-9]\d{9}$/.test(phoneNumber);
 };
 
-const handleSubmit = () => {
-  const target = currentNfcId.value
-    ? `/pages/profile/index?nfcId=${currentNfcId.value}`
-    : '/pages/profile/index';
-  uni.redirectTo({ url: target });
+// 发送验证码
+const startCountdown = async () => {
+  if (countdown.value > 0 || isSending.value) return;
+
+  // 验证手机号
+  if (!phone.value) {
+    uni.showToast({ title: '请输入手机号', icon: 'none' });
+    return;
+  }
+  if (!validatePhone(phone.value)) {
+    uni.showToast({ title: '手机号格式不正确', icon: 'none' });
+    return;
+  }
+
+  isSending.value = true;
+
+  try {
+    const response = await authService.sendCode(phone.value);
+
+    if (response.success) {
+      uni.showToast({ title: '验证码已发送', icon: 'success' });
+
+      // 开始倒计时
+      countdown.value = 60;
+      timer = setInterval(() => {
+        if (countdown.value <= 1) {
+          countdown.value = 0;
+          if (timer) {
+            clearInterval(timer);
+            timer = undefined;
+          }
+          return;
+        }
+        countdown.value -= 1;
+      }, 1000) as unknown as number;
+    } else {
+      uni.showToast({ title: response.message || '发送失败', icon: 'none' });
+    }
+  } catch (error: any) {
+    console.error('发送验证码失败:', error);
+    uni.showToast({ title: error.message || '发送失败，请稍后重试', icon: 'none' });
+  } finally {
+    isSending.value = false;
+  }
+};
+
+// 登录
+const handleSubmit = async () => {
+  // 验证输入
+  if (!phone.value) {
+    uni.showToast({ title: '请输入手机号', icon: 'none' });
+    return;
+  }
+  if (!validatePhone(phone.value)) {
+    uni.showToast({ title: '手机号格式不正确', icon: 'none' });
+    return;
+  }
+  if (!code.value) {
+    uni.showToast({ title: '请输入验证码', icon: 'none' });
+    return;
+  }
+  if (code.value.length !== 6) {
+    uni.showToast({ title: '验证码必须是6位数字', icon: 'none' });
+    return;
+  }
+
+  if (isLoading.value) return;
+  isLoading.value = true;
+
+  try {
+    const response = await authService.phoneLogin(
+      phone.value,
+      code.value,
+      currentNfcId.value || undefined
+    );
+
+    if (response.success && response.data) {
+      // 保存token
+      setAuthToken(response.data.accessToken);
+
+      uni.showToast({ title: '登录成功', icon: 'success' });
+
+      // 跳转到个人信息页面
+      setTimeout(() => {
+        const target = currentNfcId.value
+          ? `/pages/profile/index?nfcId=${currentNfcId.value}`
+          : '/pages/profile/index';
+        uni.redirectTo({ url: target });
+      }, 500);
+    } else {
+      uni.showToast({ title: response.message || '登录失败', icon: 'none' });
+    }
+  } catch (error: any) {
+    console.error('登录失败:', error);
+    uni.showToast({ title: error.message || '登录失败，请稍后重试', icon: 'none' });
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 onUnmounted(() => {

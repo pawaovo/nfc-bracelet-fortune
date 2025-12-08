@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { BraceletsModule } from './bracelets/bracelets.module';
 import { ProfileModule } from './profile/profile.module';
 import { FortunesModule } from './fortunes/fortunes.module';
+import { SmsModule } from './common/sms/sms.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { FortunesModule } from './fortunes/fortunes.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    SmsModule,
     AuthModule,
     UsersModule,
     BraceletsModule,

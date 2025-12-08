@@ -5,7 +5,6 @@ import {
   Length,
   Matches,
   IsDateString,
-  MinLength,
   IsInt,
   Min,
   Max,
@@ -19,11 +18,6 @@ export class UpdateProfileDto {
   @Length(1, 32, { message: '用户名长度需在1-32个字符之间' })
   @Transform(({ value }) => value?.trim())
   username: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6, { message: '密码长度不能小于6位' })
-  password: string;
 
   @IsString()
   @IsNotEmpty()

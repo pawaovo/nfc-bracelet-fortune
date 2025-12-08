@@ -12,6 +12,7 @@ import { UsersService } from '../users/users.service';
 import { BraceletsService } from '../bracelets/bracelets.service';
 import { PrismaService } from '../common/prisma.service';
 import { FortunesService } from '../fortunes/fortunes.service';
+import { SmsService } from '../common/sms/sms.service';
 import type { LoginRequest, LoginResponse, User } from '@shared/types';
 
 @Injectable()
@@ -26,6 +27,7 @@ export class AuthService {
     private prisma: PrismaService,
     @Inject(forwardRef(() => FortunesService))
     private fortunesService: FortunesService,
+    private smsService: SmsService,
   ) {}
 
   /**
@@ -248,5 +250,110 @@ export class AuthService {
    */
   private async getRandomRecommendation(): Promise<any> {
     return await this.fortunesService.getRandomRecommendation();
+  }
+
+  /**
+   * 发送手机验证码
+   * @param phone 手机号
+   * @returns 发送结果
+   */
+  async sendVerificationCode(
+    phone: string,
+  ): Promise<{ success: boolean; message: string }> {
+    this.logger.log(
+      `发送验证码请求: ${phone.slice(0, 3)}****${phone.slice(-4)}`,
+    );
+    return await this.smsService.sendCode(phone);
+  }
+
+  /**
+   * 手机号验证码登录
+   * @param phone 手机号
+   * @param code 验证码
+   * @param nfcId NFC ID（可选）
+   * @returns 登录响应
+   */
+  async phoneLogin(
+    phone: string,
+    code: string,
+    nfcId?: string,
+  ): Promise<{
+    userId: string;
+    accessToken: string;
+    userType: 'new' | 'existing';
+    profileComplete: boolean;
+  }> {
+    // 1. 验证验证码
+    const isValid = this.smsService.verifyCode(phone, code);
+    if (!isValid) {
+      throw new BadRequestException('验证码错误或已过期');
+    }
+
+    this.logger.log(
+      `验证码验证成功: ${phone.slice(0, 3)}****${phone.slice(-4)}`,
+    );
+
+    // 2. 查找或创建用户
+    let user = await this.prisma.user.findUnique({
+      where: { phone },
+    });
+
+    let userType: 'new' | 'existing' = 'existing';
+
+    if (!user) {
+      // 创建新用户
+      user = await this.prisma.user.create({
+        data: {
+          phone,
+          wechatOpenId: `phone_${phone}`, // 兼容字段
+        },
+      });
+      userType = 'new';
+      this.logger.log(
+        `创建新用户: ${user.id}, 手机号: ${phone.slice(0, 3)}****${phone.slice(-4)}`,
+      );
+    } else {
+      this.logger.log(
+        `用户已存在: ${user.id}, 手机号: ${phone.slice(0, 3)}****${phone.slice(-4)}`,
+      );
+    }
+
+    // 3. 处理NFC绑定（如果提供了nfcId）
+    if (nfcId) {
+      try {
+        const existingBracelet = await this.braceletsService.findByNfcId(nfcId);
+
+        // 只有当手链未绑定或已绑定给当前用户时才处理
+        if (!existingBracelet || !existingBracelet.userId) {
+          await this.braceletsService.bindToUser(nfcId, user.id);
+          this.logger.log(`绑定NFC ${nfcId} 到用户 ${user.id}`);
+        } else if (existingBracelet.userId === user.id) {
+          this.logger.log(`NFC ${nfcId} 已绑定到当前用户`);
+        } else {
+          this.logger.warn(`NFC ${nfcId} 已被其他用户绑定`);
+        }
+      } catch (error) {
+        this.logger.error(
+          `NFC绑定失败: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        // 不阻断登录流程
+      }
+    }
+
+    // 4. 生成JWT token
+    const accessToken = this.jwtService.generateToken({
+      sub: user.id,
+      openid: user.wechatOpenId,
+    });
+
+    // 5. 检查用户资料完整性
+    const profileComplete = !!(user.name && user.birthday);
+
+    return {
+      userId: user.id,
+      accessToken,
+      userType,
+      profileComplete,
+    };
   }
 }

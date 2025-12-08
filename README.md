@@ -21,7 +21,8 @@
 - **框架**: NestJS (Node.js + TypeScript)
 - **数据库**: PostgreSQL (自建)
 - **ORM**: Prisma
-- **认证**: JWT + 微信登录
+- **认证**: JWT + 手机号验证码登录
+- **短信服务**: 腾讯云短信
 - **日志**: Pino
 - **测试**: Jest
 
@@ -44,11 +45,17 @@
 
 在开始开发前，请准备以下服务凭证：
 
-1. **微信小程序**
+1. **腾讯云短信服务** (必需，用于手机号验证码登录)
+   - SecretId / SecretKey: 从腾讯云控制台获取
+   - SDK AppID: 短信应用ID
+   - 签名名称: 已审核通过的短信签名
+   - 模板ID: 验证码短信模板ID
+
+2. **微信小程序** (可选，H5版本不需要)
    - AppID: 从微信公众平台获取
    - AppSecret: 从微信公众平台获取
 
-2. **OpenAI兼容API** (可选，用于AI运势生成)
+3. **OpenAI兼容API** (可选，用于AI运势生成)
    - API Key: 从OpenAI或其他兼容服务商获取
    - Base URL: API服务地址
 
@@ -78,9 +85,12 @@ cp apps/api/.env.example apps/api/.env
 # 编辑环境变量文件，填入实际的服务凭证
 # 特别注意配置：
 # - DATABASE_URL: PostgreSQL连接字符串
-# - WECHAT_APP_ID: 微信小程序AppID
-# - WECHAT_APP_SECRET: 微信小程序AppSecret
 # - JWT_SECRET: JWT密钥
+# - TENCENT_SMS_SECRET_ID: 腾讯云SecretId
+# - TENCENT_SMS_SECRET_KEY: 腾讯云SecretKey
+# - TENCENT_SMS_SDK_APP_ID: 短信应用ID
+# - TENCENT_SMS_SIGN_NAME: 短信签名名称
+# - TENCENT_SMS_TEMPLATE_ID: 短信模板ID
 # - OPENAI_API_KEY: OpenAI API密钥 (可选)
 ```
 
@@ -129,10 +139,12 @@ pnpm dev:api   # 启动后端API开发服务器
 │   │   └── ...
 │   └── api/             # NestJS后端应用
 │       ├── src/
-│       │   ├── auth/    # 认证模块
+│       │   ├── auth/    # 认证模块 (手机号验证码登录)
 │       │   ├── fortunes/ # 运势模块
 │       │   ├── users/   # 用户模块
-│       │   └── ...
+│       │   ├── profile/ # 用户资料模块
+│       │   ├── bracelets/ # 手链管理模块
+│       │   └── common/  # 共享模块 (短信服务等)
 │       ├── prisma/      # 数据库Schema和种子数据
 │       └── ...
 ├── packages/

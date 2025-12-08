@@ -50,21 +50,6 @@
       />
     </view>
 
-    <!-- 密码输入框 -->
-    <view class="password-input-container">
-      <view class="input-bg" />
-      <text class="input-label"> 密 码 </text>
-      <input
-        v-model="formData.password"
-        class="password-input"
-        type="text"
-        password
-        placeholder="输入你的密码"
-        placeholder-style="color: rgba(255, 255, 255, 0.5);"
-        maxlength="64"
-      />
-    </view>
-
     <!-- 性别选择器 -->
     <view class="gender-selector-container">
       <view
@@ -174,7 +159,6 @@ const fortuneStore = useFortuneStore();
 
 const formData = reactive({
   name: '',
-  password: '',
   birthday: '',
   birthHour: undefined as number | undefined,
   birthplace: '',
@@ -454,12 +438,6 @@ const validateForm = (): boolean => {
     return false;
   }
 
-  const trimmedPassword = formData.password.trim();
-  if (trimmedPassword.length < 6) {
-    uni.showToast({ title: '密码长度需至少 6 位', icon: 'none', duration: 2000 });
-    return false;
-  }
-
   if (!formData.gender) {
     uni.showToast({ title: '请选择性别', icon: 'none', duration: 2000 });
     return false;
@@ -489,7 +467,6 @@ const validateForm = (): boolean => {
 
 const buildSubmitPayload = () => {
   const trimmedName = formData.name.trim();
-  const trimmedPassword = formData.password.trim();
 
   // 网页版：使用表单输入的用户名（formData.name）
   // 小程序版：使用已登录用户的username，如果没有则使用表单输入
@@ -499,7 +476,6 @@ const buildSubmitPayload = () => {
 
   const payload: {
     username: string;
-    password: string;
     name: string;
     birthday: string;
     birthHour?: number;
@@ -508,7 +484,6 @@ const buildSubmitPayload = () => {
     nfcId?: string;
   } = {
     username,
-    password: trimmedPassword,
     name: trimmedName,
     birthday: formData.birthday,
   };
@@ -623,74 +598,35 @@ const submitAsWeb = async () => {
   const payload = buildSubmitPayload();
 
   console.log('[submitAsWeb] nfcId:', nfcId);
-  console.log('[submitAsWeb] payload:', { ...payload, password: '***' });
+  console.log('[submitAsWeb] payload:', payload);
 
-  // 场景判断：检查是否需要登录验证
-  // 如果有nfcId，先尝试登录验证（场景B）
-  if (nfcId) {
-    try {
-      // 尝试登录验证（同时更新昵称和生日）
-      const loginResponse = await profileService.loginWeb({
-        username: payload.username,
-        password: payload.password,
-        name: payload.name,
-        birthday: payload.birthday,
-        nfcId: nfcId,
-      });
-
-      if (loginResponse.success && loginResponse.data) {
-        // 登录成功（场景B：已绑定nfcId的用户登录）
-        console.log('[submitAsWeb] 登录成功，用户类型:', loginResponse.data.userType);
-
-        // 生成开发环境JWT token
-        if (enableDevWebAuth) {
-          const openid = loginResponse.data.wechatOpenId || `web_${loginResponse.data.username}`;
-          const token = generateDevJWT(loginResponse.data.id, openid);
-          authStore.login(token, loginResponse.data, nfcId, loginResponse.data.userType);
-        }
-
-        // 登录成功：老用户，isNewUser = false
-        await handleProfileSuccess(
-          '登录成功',
-          loginResponse.data,
-          loginResponse.data.userType,
-          false
-        );
-        return;
-      }
-    } catch (loginError) {
-      // 登录失败，可能是：
-      // 1. 该nfcId未绑定任何用户（场景A）
-      // 2. 用户名或密码错误
-      // 3. 该nfcId不存在（虚假nfcId，场景C）
-      console.log('[submitAsWeb] 登录验证失败，尝试注册:', loginError);
-
-      // 继续执行注册流程
-    }
-  }
-
-  // 场景A或C：注册/绑定流程
-  const registerPayload = {
-    ...payload,
-    nfcId: nfcId || undefined, // 如果没有nfcId，传undefined
+  // 用户已在验证码页面登录，这里只需要更新用户资料
+  // 使用 profileService.updateProfile 更新用户信息
+  const updatePayload = {
+    username: payload.username,
+    name: payload.name,
+    birthday: payload.birthday,
+    birthHour: payload.birthHour,
+    birthplace: payload.birthplace,
+    gender: payload.gender,
+    nfcId: nfcId || undefined,
   };
 
-  const response = await profileService.registerWeb(registerPayload);
+  const response = await profileService.updateProfile(updatePayload);
   if (!response.success || !response.data) {
-    throw new Error(response.message || '绑定失败');
+    throw new Error(response.message || '保存失败');
   }
 
-  console.log('[submitAsWeb] 注册成功，用户类型:', response.data.userType);
+  console.log('[submitAsWeb] 资料更新成功');
 
-  // 生成开发环境JWT token
-  if (enableDevWebAuth) {
-    const openid = response.data.wechatOpenId || `web_${response.data.username}`;
-    const token = generateDevJWT(response.data.id, openid);
-    authStore.login(token, response.data, nfcId, response.data.userType);
-  }
+  // 更新本地用户信息
+  authStore.updateUserProfile(response.data);
 
-  // 注册成功：新用户，isNewUser = true
-  await handleProfileSuccess('绑定成功', response.data, response.data.userType, true);
+  // 确定用户类型（根据是否有nfcId绑定）
+  const userType = nfcId ? 'bound' : 'visitor';
+
+  // 保存成功
+  await handleProfileSuccess('保存成功', response.data, userType, true);
 };
 
 const submitWithAuth = async () => {
@@ -939,29 +875,6 @@ onLoad(options => {
   z-index: 200;
 }
 
-/* 密码输入框容器 - 使用固定rpx值 */
-.password-input-container {
-  position: absolute;
-  top: 666rpx; /* 昵称输入框下方30rpx间距（540 + 96 + 30 = 666） */
-  left: 12%;
-  right: 12%;
-  height: 96rpx;
-  z-index: 200;
-}
-
-.password-input {
-  position: absolute;
-  top: 0;
-  left: 170rpx;
-  width: calc(100% - 200rpx);
-  height: 100%;
-  padding: 0;
-  font-family: 'PingFang SC', sans-serif;
-  font-size: 28rpx;
-  color: #ffffff;
-  line-height: 96rpx;
-  text-align: left;
-}
 .input-bg {
   position: absolute;
   top: 0;
@@ -1008,7 +921,7 @@ onLoad(options => {
 /* 性别选择器容器 */
 .gender-selector-container {
   position: absolute;
-  top: 792rpx; /* 密码输入框下方30rpx间距（666 + 96 + 30 = 792） */
+  top: 666rpx; /* 昵称输入框下方30rpx间距（540 + 96 + 30 = 666） */
   left: 12%;
   right: 12%;
   height: 96rpx;
@@ -1074,7 +987,7 @@ onLoad(options => {
 /* 生日输入框容器 - 使用固定rpx值 */
 .birthday-input-container {
   position: absolute;
-  top: 918rpx; /* 性别选择器下方30rpx间距（792 + 96 + 30 = 918） */
+  top: 792rpx; /* 性别选择器下方30rpx间距（666 + 96 + 30 = 792） */
   left: 12%;
   right: 12%;
   height: 96rpx;
@@ -1108,7 +1021,7 @@ onLoad(options => {
 /* 出生地输入框容器 */
 .birthplace-input-container {
   position: absolute;
-  top: 1044rpx; /* 生日输入框下方30rpx间距（918 + 96 + 30 = 1044） */
+  top: 918rpx; /* 生日输入框下方30rpx间距（792 + 96 + 30 = 918） */
   left: 12%;
   right: 12%;
   height: 96rpx;
@@ -1145,7 +1058,7 @@ onLoad(options => {
 /* 提交按钮容器 - 与绑定页面保持一致 */
 .submit-button-container {
   position: absolute;
-  top: 1180rpx; /* 出生地输入框下方40rpx间距（1044 + 96 + 40 = 1180） */
+  top: 1054rpx; /* 出生地输入框下方40rpx间距（918 + 96 + 40 = 1054） */
   left: 50%;
   transform: translateX(-50%);
   width: 520rpx; /* 比绑定页面668rpx略短 */

@@ -52,10 +52,6 @@ export class ProfileService {
         updatedAt: new Date(),
       };
 
-      if (updateProfileDto.password) {
-        updatePayload.password = updateProfileDto.password.trim();
-      }
-
       // 添加新字段
       if (updateProfileDto.birthHour !== undefined) {
         updatePayload.birthHour = updateProfileDto.birthHour;
@@ -389,15 +385,14 @@ export class ProfileService {
         select: {
           name: true,
           birthday: true,
-          username: true,
-          password: true,
         },
       });
       if (!user) {
         return false;
       }
 
-      return !!(user.name && user.birthday && user.username && user.password);
+      // 只检查必填字段：昵称和生日
+      return !!(user.name && user.birthday);
     } catch (error) {
       this.logger.error(
         `Failed to check profile completeness for user ${userId}`,

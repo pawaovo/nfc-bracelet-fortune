@@ -16,8 +16,6 @@ export interface ProfilePageTheme {
     subtitle: string;
     usernameLabel: string;
     usernamePlaceholder: string;
-    passwordLabel: string;
-    passwordPlaceholder: string;
     nameLabel: string;
     namePlaceholder: string;
     birthdayLabel: string;
@@ -45,8 +43,6 @@ export const defaultTheme: ProfilePageTheme = {
     subtitle: '解锁今日运势',
     usernameLabel: '账户名*',
     usernamePlaceholder: '请设置 4-32 位账户名',
-    passwordLabel: '密码*',
-    passwordPlaceholder: '请设置至少 6 位密码',
     nameLabel: '昵称*',
     namePlaceholder: '请输入昵称',
     birthdayLabel: '生日*',

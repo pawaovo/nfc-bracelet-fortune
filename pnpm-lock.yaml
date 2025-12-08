@@ -103,6 +103,9 @@ importers:
       rxjs:
         specifier: ^7.8.1
         version: 7.8.2
+      tencentcloud-sdk-nodejs:
+        specifier: ^4.1.154
+        version: 4.1.154
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.2.0
@@ -8230,6 +8233,13 @@ packages:
       - supports-color
     dev: false
 
+  /bignumber.js@9.3.1:
+    resolution:
+      {
+        integrity: sha512-Ko0uX15oIUS7wJ3Rb30Fs6SkVbLmPBAKdlm7q9+ak9bbIeFf0MwuBsQV6z7+X768/cHsfg+WlysDWJcmthjsjQ==,
+      }
+    dev: false
+
   /binary-extensions@2.3.0:
     resolution:
       {
@@ -10541,7 +10551,6 @@ packages:
       es-set-tostringtag: 2.1.0
       hasown: 2.0.2
       mime-types: 2.1.35
-    dev: true
 
   /form-data@4.0.4:
     resolution:
@@ -10736,7 +10745,6 @@ packages:
         integrity: sha512-ts6Wi+2j3jQjqi70w5AlN8DFnkSwC+MqmxEzdEALB2qXZYV3X/b1CTfgPLGJNMeAWxdPfU8FO1ms3NUfaHCPYg==,
       }
     engines: { node: '>=10' }
-    dev: true
 
   /get-stream@8.0.1:
     resolution:
@@ -11174,6 +11182,14 @@ packages:
         integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==,
       }
 
+  /ini@5.0.0:
+    resolution:
+      {
+        integrity: sha512-+N0ngpO3e7cRUWOJAS7qw0IZIVc6XPrW4MlFBdD066F2L4k1L6ker3hLqSq7iXxU5tgS4WGkIUElWn5vogAEnw==,
+      }
+    engines: { node: ^18.17.0 || >=20.5.0 }
+    dev: false
+
   /invert-kv@3.0.1:
     resolution:
       {
@@ -11301,7 +11317,6 @@ packages:
         integrity: sha512-hFoiJiTl63nn+kstHGBtewWSKnQLpyb155KHheA1l39uvtO9nWIop1p3udqPcUd/xbF1VLMO4n7OI6p7RbngDg==,
       }
     engines: { node: '>=8' }
-    dev: true
 
   /is-stream@3.0.0:
     resolution:
@@ -12616,6 +12631,15 @@ packages:
       }
     engines: { node: '>=6' }
     hasBin: true
+
+  /json-bigint@1.0.0:
+    resolution:
+      {
+        integrity: sha512-SiPv/8VpZuWbvLSMtTDU8hEfrZWg/mH/nV/b4o0CYbSxu1UIQPLdwKOCIyLQX+VIPO5vrLX3i8qtqFyhdPSUSQ==,
+      }
+    dependencies:
+      bignumber.js: 9.3.1
+    dev: false
 
   /json-buffer@3.0.1:
     resolution:
@@ -15737,6 +15761,27 @@ packages:
       yallist: 4.0.0
     dev: false
 
+  /tencentcloud-sdk-nodejs@4.1.154:
+    resolution:
+      {
+        integrity: sha512-9/JcYhdQz+C8N1XGzNDK7l5QUgUnwXVRmJtSDKE14SanCQnCpIpdlPaP95G6lJA9cJqYpCoobtzVX6QzE8Z1dA==,
+      }
+    engines: { node: '>=10' }
+    dependencies:
+      form-data: 3.0.4
+      get-stream: 6.0.1
+      https-proxy-agent: 5.0.1
+      ini: 5.0.0
+      is-stream: 2.0.1
+      json-bigint: 1.0.0
+      node-fetch: 2.7.0
+      tslib: 1.13.0
+      uuid: 9.0.1
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
+    dev: false
+
   /terminal-link@2.1.1:
     resolution:
       {
@@ -16104,6 +16149,13 @@ packages:
       minimist: 1.2.8
       strip-bom: 3.0.0
     dev: true
+
+  /tslib@1.13.0:
+    resolution:
+      {
+        integrity: sha512-i/6DQjL8Xf3be4K/E6Wgpekn5Qasl1usyw++dAA35Ue5orEn65VIxOA+YvNNl9HV3qv70T7CNwjODHZrLwvd1Q==,
+      }
+    dev: false
 
   /tslib@2.8.1:
     resolution:
@@ -16487,6 +16539,14 @@ packages:
         integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==,
       }
     engines: { node: '>= 0.4.0' }
+
+  /uuid@9.0.1:
+    resolution:
+      {
+        integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==,
+      }
+    hasBin: true
+    dev: false
 
   /v8-compile-cache-lib@3.0.1:
     resolution:

@@ -12,6 +12,12 @@ import {
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { LoginDto, VerifyNfcDto } from './dto/login.dto';
+import {
+  SendCodeDto,
+  PhoneLoginDto,
+  SendCodeResponseDto,
+  PhoneLoginResponseDto,
+} from './dto/phone-login.dto';
 import type { LoginResponse, ApiResponse } from '@shared/types';
 
 @Controller('auth')
@@ -206,6 +212,83 @@ export class AuthController {
         success: false,
         message: error instanceof Error ? error.message : 'Logout failed',
         code: 'LOGOUT_FAILED',
+      };
+    }
+  }
+
+  /**
+   * 发送手机验证码接口
+   * @param body 请求体（包含手机号）
+   * @returns 发送结果
+   */
+  @Post('send-code')
+  @HttpCode(HttpStatus.OK)
+  async sendCode(
+    @Body() body: SendCodeDto,
+  ): Promise<ApiResponse<SendCodeResponseDto>> {
+    try {
+      this.logger.log('Send code request', {
+        phone: `${body.phone.slice(0, 3)}****${body.phone.slice(-4)}`,
+      });
+
+      const result = await this.authService.sendVerificationCode(body.phone);
+
+      return {
+        success: true,
+        data: result,
+        message: result.message,
+      };
+    } catch (error) {
+      this.logger.error('Send code failed', error);
+
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : '验证码发送失败',
+        code: 'SEND_CODE_FAILED',
+      };
+    }
+  }
+
+  /**
+   * 手机号验证码登录接口
+   * @param body 请求体（包含手机号、验证码、可选的nfcId）
+   * @returns 登录结果
+   */
+  @Post('phone-login')
+  @HttpCode(HttpStatus.OK)
+  async phoneLogin(
+    @Body() body: PhoneLoginDto,
+  ): Promise<ApiResponse<PhoneLoginResponseDto>> {
+    try {
+      this.logger.log('Phone login request', {
+        phone: `${body.phone.slice(0, 3)}****${body.phone.slice(-4)}`,
+        hasNfcId: !!body.nfcId,
+      });
+
+      const result = await this.authService.phoneLogin(
+        body.phone,
+        body.code,
+        body.nfcId,
+      );
+
+      this.logger.log('Phone login successful', {
+        userId: result.userId,
+        userType: result.userType,
+        profileComplete: result.profileComplete,
+      });
+
+      return {
+        success: true,
+        data: result,
+        message: '登录成功',
+      };
+    } catch (error) {
+      this.logger.error('Phone login failed', error);
+
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : '登录失败',
+        code: 'PHONE_LOGIN_FAILED',
       };
     }
   }

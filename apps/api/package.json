@@ -47,7 +47,8 @@
     "pino-http": "^8.5.1",
     "pino-pretty": "^10.2.3",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "tencentcloud-sdk-nodejs": "^4.1.154"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

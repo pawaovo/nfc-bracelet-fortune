@@ -10,7 +10,7 @@ import * as readline from 'readline';
 const REMOTE_DATABASE_CONFIG = {
   // 外部连接（从本地电脑连接）
   external:
-    'postgresql://bracelet-fortune:HvXFmwEwfntnScWZRJyB@47.239.179.9:15432/bracelet-fortune?schema=public',
+    'postgresql://bracelet-fortune:HvXFmwEwfntnScWZRJyB@47.94.8.190:5432/bracelet-fortune?schema=public',
   // 内部连接（从服务器内部连接）
   internal:
     'postgresql://bracelet-fortune:HvXFmwEwfntnScWZRJyB@1Panel-postgresql-0i7g:5432/bracelet-fortune?schema=public',

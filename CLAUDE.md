@@ -12,6 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **前端**: uni-app (Vue 3 + Vite + TypeScript) + Pinia + uView UI - **编译为 H5 网页**
 - **后端**: NestJS + PostgreSQL + Prisma ORM + JWT认证
+- **短信服务**: 腾讯云短信 (手机号验证码登录)
 - **包管理**: pnpm workspaces (需要 pnpm >= 8.0.0)
 
 ## 常用命令
@@ -103,12 +104,15 @@ apps/
 │
 ├── api/             # NestJS后端
 │   ├── src/
-│   │   ├── auth/        # 认证模块 (JWT + 微信登录)
+│   │   ├── auth/        # 认证模块 (JWT + 手机号验证码登录)
 │   │   ├── users/       # 用户管理
 │   │   ├── bracelets/   # 手链管理 (NFC绑定)
 │   │   ├── fortunes/    # 运势生成与查询
 │   │   ├── profile/     # 用户资料
-│   │   └── common/      # 共享模块 (guards, interceptors, etc.)
+│   │   └── common/      # 共享模块
+│   │       ├── sms/     # 腾讯云短信服务
+│   │       ├── guards/  # JWT守卫等
+│   │       └── ...      # 其他共享模块
 │   ├── prisma/
 │   │   ├── schema.prisma  # 数据库Schema
 │   │   ├── migrations/    # 数据库迁移历史
@@ -123,7 +127,14 @@ packages/
 
 **核心实体**:
 
-- `User`: 用户 (微信OpenID + 个人信息)
+- `User`: 用户 (手机号 + 个人信息)
+  - `phone`: 手机号（唯一标识，用于登录）
+  - `wechatOpenId`: 兼容字段（手机号登录时为 `phone_${手机号}`）
+  - `name`: 昵称
+  - `birthday`: 生日
+  - `birthHour`: 出生时辰
+  - `birthplace`: 出生地
+  - `gender`: 性别
 - `Bracelet`: 手链 (NFC ID + 绑定关系)
 - `DailyFortune`: 每日运势 (包含详细运势分析)
 - `Product`: 商品推荐 (抖音店铺链接)
@@ -137,18 +148,28 @@ packages/
 ### 用户流程
 
 1. **NFC扫描** → `pages/bind/index` (绑定手链)
-2. **微信登录** → `pages/verify-code/index` (验证码登录)
-3. **完善信息** → `pages/profile/index` (生日、出生时辰、出生地)
+2. **手机号登录** → `pages/verify-code/index` (手机号+验证码登录)
+3. **完善信息** → `pages/profile/index` (昵称、性别、生日、出生时辰、出生地)
 4. **AI生成** → `pages/ai-generation/index` (生成运势动画)
 5. **查看运势** → `pages/fortune/index` (每日运势详情)
 6. **历史记录** → `pages/history/index` (运势足迹)
 
-### 认证流程 (H5 Web版)
+### 认证流程 (H5 Web版 - 手机号验证码登录)
 
-1. H5页面通过手机号验证码登录或微信授权
-2. 后端验证后返回 JWT token
-3. 前端存储 token (localStorage) 并在请求头中携带
-4. 所有API请求通过 HTTP 标准认证，非微信小程序专有API
+1. 用户在验证码页面输入手机号，点击发送验证码
+2. 后端调用腾讯云短信服务发送验证码（5分钟有效，60秒发送间隔）
+3. 用户输入验证码，后端验证通过后：
+   - 根据手机号查找/创建用户
+   - 生成 JWT token 返回给前端
+4. 前端存储 token (localStorage) 并在请求头中携带
+5. 用户在个人信息页面完善资料后，绑定 NFC 手链
+6. 所有API请求通过 HTTP 标准认证
+
+### 认证相关接口
+
+- `POST /auth/send-code` - 发送手机验证码
+- `POST /auth/phone-login` - 手机号验证码登录
+- `PUT /profile` - 更新用户资料（需JWT认证）
 
 ### 运势生成逻辑
 
@@ -166,9 +187,15 @@ packages/
 后端需要配置 `apps/api/.env`:
 
 - `DATABASE_URL`: PostgreSQL连接字符串
-- `WECHAT_APP_ID` / `WECHAT_APP_SECRET`: 微信凭证 (H5可选)
 - `JWT_SECRET`: JWT密钥 (生产环境必须修改)
+- `WECHAT_APP_ID` / `WECHAT_APP_SECRET`: 微信凭证 (H5可选)
 - `OPENAI_API_KEY` / `OPENAI_BASE_URL`: AI服务配置 (可选)
+- **腾讯云短信配置** (手机号验证码登录必需):
+  - `TENCENT_SMS_SECRET_ID`: 腾讯云 SecretId
+  - `TENCENT_SMS_SECRET_KEY`: 腾讯云 SecretKey
+  - `TENCENT_SMS_SDK_APP_ID`: 短信应用 SDK AppID
+  - `TENCENT_SMS_SIGN_NAME`: 短信签名内容（如"某某科技"）
+  - `TENCENT_SMS_TEMPLATE_ID`: 短信模板ID
 
 H5前端配置 (如需要):
 
