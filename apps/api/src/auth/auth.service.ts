@@ -271,7 +271,7 @@ export class AuthService {
    * @param phone 手机号
    * @param code 验证码
    * @param nfcId NFC ID（可选）
-   * @returns 登录响应
+   * @returns 登录响应，包含完整用户信息和NFC状态
    */
   async phoneLogin(
     phone: string,
@@ -280,8 +280,24 @@ export class AuthService {
   ): Promise<{
     userId: string;
     accessToken: string;
-    userType: 'new' | 'existing';
+    user: {
+      id: string;
+      phone: string | null;
+      name: string | null;
+      birthday: Date | null;
+      birthHour: number | null;
+      birthplace: string | null;
+      gender: string | null;
+      wechatOpenId: string;
+    };
     profileComplete: boolean;
+    hasBindings: boolean;
+    nfcStatus:
+      | 'none'
+      | 'invalid'
+      | 'available'
+      | 'bound_to_self'
+      | 'bound_to_other';
   }> {
     // 1. 验证验证码
     const isValid = this.smsService.verifyCode(phone, code);
@@ -296,9 +312,17 @@ export class AuthService {
     // 2. 查找或创建用户
     let user = await this.prisma.user.findUnique({
       where: { phone },
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+        birthday: true,
+        birthHour: true,
+        birthplace: true,
+        gender: true,
+        wechatOpenId: true,
+      },
     });
-
-    let userType: 'new' | 'existing' = 'existing';
 
     if (!user) {
       // 创建新用户
@@ -307,8 +331,17 @@ export class AuthService {
           phone,
           wechatOpenId: `phone_${phone}`, // 兼容字段
         },
+        select: {
+          id: true,
+          phone: true,
+          name: true,
+          birthday: true,
+          birthHour: true,
+          birthplace: true,
+          gender: true,
+          wechatOpenId: true,
+        },
       });
-      userType = 'new';
       this.logger.log(
         `创建新用户: ${user.id}, 手机号: ${phone.slice(0, 3)}****${phone.slice(-4)}`,
       );
@@ -318,42 +351,60 @@ export class AuthService {
       );
     }
 
-    // 3. 处理NFC绑定（如果提供了nfcId）
-    if (nfcId) {
-      try {
-        const existingBracelet = await this.braceletsService.findByNfcId(nfcId);
+    // 3. 检查用户是否已有绑定的手链
+    const userBracelets = await this.braceletsService.findByUserId(user.id);
+    const hasBindings = userBracelets.length > 0;
 
-        // 只有当手链未绑定或已绑定给当前用户时才处理
-        if (!existingBracelet || !existingBracelet.userId) {
-          await this.braceletsService.bindToUser(nfcId, user.id);
-          this.logger.log(`绑定NFC ${nfcId} 到用户 ${user.id}`);
-        } else if (existingBracelet.userId === user.id) {
-          this.logger.log(`NFC ${nfcId} 已绑定到当前用户`);
-        } else {
-          this.logger.warn(`NFC ${nfcId} 已被其他用户绑定`);
-        }
-      } catch (error) {
-        this.logger.error(
-          `NFC绑定失败: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        // 不阻断登录流程
+    // 4. 检查NFC状态
+    let nfcStatus:
+      | 'none'
+      | 'invalid'
+      | 'available'
+      | 'bound_to_self'
+      | 'bound_to_other' = 'none';
+
+    if (nfcId) {
+      const bracelet = await this.braceletsService.findByNfcId(nfcId);
+
+      if (!bracelet) {
+        // NFC在数据库中不存在
+        nfcStatus = 'invalid';
+        this.logger.log(`NFC ${nfcId} 不存在于数据库中`);
+      } else if (!bracelet.userId) {
+        // NFC存在但未绑定
+        nfcStatus = 'available';
+        this.logger.log(`NFC ${nfcId} 可用于绑定`);
+      } else if (bracelet.userId === user.id) {
+        // NFC已绑定给当前用户
+        nfcStatus = 'bound_to_self';
+        this.logger.log(`NFC ${nfcId} 已绑定到当前用户`);
+      } else {
+        // NFC已被其他用户绑定
+        nfcStatus = 'bound_to_other';
+        this.logger.log(`NFC ${nfcId} 已被其他用户绑定`);
       }
     }
 
-    // 4. 生成JWT token
+    // 5. 生成JWT token
     const accessToken = this.jwtService.generateToken({
       sub: user.id,
       openid: user.wechatOpenId,
     });
 
-    // 5. 检查用户资料完整性
+    // 6. 检查用户资料完整性
     const profileComplete = !!(user.name && user.birthday);
+
+    this.logger.log(
+      `登录成功: userId=${user.id}, profileComplete=${profileComplete}, hasBindings=${hasBindings}, nfcStatus=${nfcStatus}`,
+    );
 
     return {
       userId: user.id,
       accessToken,
-      userType,
+      user,
       profileComplete,
+      hasBindings,
+      nfcStatus,
     };
   }
 }

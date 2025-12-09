@@ -20,12 +20,13 @@ export class ProfileService {
   ) {}
 
   /**
-   * �����û�������Ϣ��������NFC
+   * 更新用户个人信息，可选绑定NFC
+   * 如果NFC已被他人绑定，不抛错，返回visitor类型
    */
   async updateProfile(
     userId: string,
     updateProfileDto: UpdateProfileDto,
-  ): Promise<UserPartial> {
+  ): Promise<UserPartial & { userType?: 'bound' | 'visitor' }> {
     try {
       this.logger.log(`Updating profile for user ${userId}`, {
         hasNfcId: !!updateProfileDto.nfcId,
@@ -78,11 +79,45 @@ export class ProfileService {
         },
       });
 
+      // 处理NFC绑定逻辑
+      let userType: 'bound' | 'visitor' = 'visitor';
+
       if (updateProfileDto.nfcId) {
         this.logger.log(
-          `Binding NFC ${updateProfileDto.nfcId} to user ${userId}`,
+          `Checking NFC ${updateProfileDto.nfcId} binding status for user ${userId}`,
         );
-        await this.braceletsService.bindToUser(updateProfileDto.nfcId, userId);
+
+        // 先检查NFC绑定状态
+        const bindingStatus = await this.braceletsService.getBindingStatus(
+          updateProfileDto.nfcId,
+        );
+
+        if (bindingStatus.isBound && bindingStatus.userId !== userId) {
+          // NFC已被他人绑定，设置为访客模式，不抛错
+          this.logger.warn(
+            `NFC ${updateProfileDto.nfcId} already bound to another user ${bindingStatus.userId}, setting user ${userId} as visitor`,
+          );
+          userType = 'visitor';
+        } else {
+          // NFC未绑定或已属于当前用户，尝试绑定
+          try {
+            await this.braceletsService.bindToUser(
+              updateProfileDto.nfcId,
+              userId,
+            );
+            userType = 'bound';
+            this.logger.log(
+              `Successfully bound NFC ${updateProfileDto.nfcId} to user ${userId}`,
+            );
+          } catch (bindError) {
+            // 绑定失败（理论上不应该发生，因为已经检查过状态）
+            this.logger.warn(
+              `Failed to bind NFC ${updateProfileDto.nfcId}, setting as visitor`,
+              bindError,
+            );
+            userType = 'visitor';
+          }
+        }
       }
 
       return {
@@ -94,6 +129,7 @@ export class ProfileService {
         birthHour: updatedUser.birthHour,
         birthplace: updatedUser.birthplace,
         gender: updatedUser.gender,
+        userType,
       };
     } catch (error) {
       this.logger.error(`Failed to update profile for user ${userId}`, error);

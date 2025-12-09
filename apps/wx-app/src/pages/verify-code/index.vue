@@ -52,6 +52,12 @@
 import { ref, onUnmounted } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { authService, setAuthToken } from '@/api/auth';
+import { fortuneService } from '@/api/fortune';
+import { useAuthStore } from '@/stores/auth';
+import { useFortuneStore } from '@/stores/fortune';
+
+const authStore = useAuthStore();
+const fortuneStore = useFortuneStore();
 
 const phone = ref('');
 const code = ref('');
@@ -150,17 +156,55 @@ const handleSubmit = async () => {
     );
 
     if (response.success && response.data) {
-      // 保存token
-      setAuthToken(response.data.accessToken);
+      const { accessToken, user, profileComplete, hasBindings, nfcStatus } = response.data;
+
+      console.log('[VerifyCode] 登录成功:', {
+        profileComplete,
+        hasBindings,
+        nfcStatus,
+        nfcId: currentNfcId.value,
+      });
+
+      // 保存token和用户信息到authStore
+      setAuthToken(accessToken);
+      authStore.setUser(user);
+
+      // 判断NFC是否有效（可用于绑定）
+      const nfcValid = nfcStatus === 'available' || nfcStatus === 'bound_to_self';
+
+      // 根据条件判断跳转目标
+      let targetUrl = '';
+
+      if (!nfcValid && !hasBindings) {
+        // 场景：无效NFC + 用户从未绑定过手链 → 访客模式
+        console.log('[VerifyCode] 访客模式：NFC无效且用户未绑定过手链');
+        targetUrl = '/pages/fortune/index?mode=visitor';
+        authStore.setUserType('visitor');
+      } else if (nfcValid && !profileComplete) {
+        // 场景：有效NFC + 资料不完整 → 个人信息页
+        console.log('[VerifyCode] 跳转个人信息页：NFC有效但资料不完整');
+        targetUrl = `/pages/profile/index?nfcId=${currentNfcId.value}`;
+      } else if (nfcValid && profileComplete && nfcStatus === 'available') {
+        // 场景：有效NFC + 资料完整 + NFC未绑定 → 个人信息页（需要绑定新手链）
+        console.log('[VerifyCode] 跳转个人信息页：需要绑定新手链');
+        targetUrl = `/pages/profile/index?nfcId=${currentNfcId.value}`;
+      } else if (hasBindings && profileComplete) {
+        // 场景：已有绑定 + 资料完整 → 检查运势
+        console.log('[VerifyCode] 已绑定用户，检查今日运势');
+        authStore.setUserType('bound');
+        targetUrl = await determineFortuneTarget();
+      } else {
+        // 兜底：访客模式
+        console.log('[VerifyCode] 兜底：访客模式');
+        targetUrl = '/pages/fortune/index?mode=visitor';
+        authStore.setUserType('visitor');
+      }
 
       uni.showToast({ title: '登录成功', icon: 'success' });
 
-      // 跳转到个人信息页面
       setTimeout(() => {
-        const target = currentNfcId.value
-          ? `/pages/profile/index?nfcId=${currentNfcId.value}`
-          : '/pages/profile/index';
-        uni.redirectTo({ url: target });
+        console.log('[VerifyCode] 跳转到:', targetUrl);
+        uni.redirectTo({ url: targetUrl });
       }, 500);
     } else {
       uni.showToast({ title: response.message || '登录失败', icon: 'none' });
@@ -172,6 +216,30 @@ const handleSubmit = async () => {
     isLoading.value = false;
   }
 };
+
+// 根据今日运势决定跳转目标
+async function determineFortuneTarget(): Promise<string> {
+  try {
+    const checkResponse = await fortuneService.checkTodayFortuneExists();
+
+    if (checkResponse.success && checkResponse.data?.exists) {
+      // 已有今日运势，获取数据并跳转到运势页面
+      console.log('[VerifyCode] 检测到已有今日运势，获取数据');
+      const fortuneResponse = await fortuneService.getTodayFortune();
+      if (fortuneResponse.success && fortuneResponse.data) {
+        fortuneStore.setFortune(fortuneResponse.data);
+        return '/pages/fortune/index?preloaded=true';
+      }
+    }
+
+    // 没有今日运势或获取失败，跳转到AI生成页面
+    console.log('[VerifyCode] 没有今日运势，跳转到AI生成页面');
+    return '/pages/ai-generation/index';
+  } catch (error) {
+    console.error('[VerifyCode] 检查今日运势失败:', error);
+    return '/pages/ai-generation/index';
+  }
+}
 
 onUnmounted(() => {
   if (timer) {

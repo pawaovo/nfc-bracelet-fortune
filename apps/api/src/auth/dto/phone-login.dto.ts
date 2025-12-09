@@ -40,6 +40,22 @@ export class SendCodeResponseDto {
 export class PhoneLoginResponseDto {
   userId: string;
   accessToken: string;
-  userType: 'new' | 'existing';
+  user: {
+    id: string;
+    phone: string | null;
+    name: string | null;
+    birthday: Date | null;
+    birthHour: number | null;
+    birthplace: string | null;
+    gender: string | null;
+    wechatOpenId: string;
+  };
   profileComplete: boolean;
+  hasBindings: boolean;
+  nfcStatus:
+    | 'none'
+    | 'invalid'
+    | 'available'
+    | 'bound_to_self'
+    | 'bound_to_other';
 }

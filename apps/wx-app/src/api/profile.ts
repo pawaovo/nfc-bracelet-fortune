@@ -9,8 +9,10 @@ import type {
 } from '@shared/types';
 
 export class ProfileService {
-  async updateProfile(profileData: UpdateProfileDto): Promise<ApiResponse<UserPartial>> {
-    return apiRequest.put<UserPartial>('profile', profileData);
+  async updateProfile(
+    profileData: UpdateProfileDto
+  ): Promise<ApiResponse<UserPartial & { userType?: 'bound' | 'visitor' }>> {
+    return apiRequest.put<UserPartial & { userType?: 'bound' | 'visitor' }>('profile', profileData);
   }
 
   async registerWeb(payload: WebRegisterRequest): Promise<ApiResponse<WebAuthResponse>> {

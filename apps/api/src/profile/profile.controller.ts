@@ -29,7 +29,7 @@ export class ProfileController {
   async updateProfile(
     @Request() request: JwtRequest,
     @Body() updateProfileDto: UpdateProfileDto,
-  ): Promise<ApiResponse<UserPartial>> {
+  ): Promise<ApiResponse<UserPartial & { userType?: 'bound' | 'visitor' }>> {
     try {
       const userId = request.user.sub;
       const updatedUser = await this.profileService.updateProfile(

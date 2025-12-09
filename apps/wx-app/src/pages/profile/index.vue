@@ -620,16 +620,20 @@ const submitAsWeb = async () => {
     throw new Error(response.message || '保存失败');
   }
 
-  console.log('[submitAsWeb] 资料更新成功');
+  console.log('[submitAsWeb] 资料更新成功, userType:', response.data.userType);
 
   // 更新本地用户信息
   authStore.updateUserProfile(response.data);
 
-  // 确定用户类型（根据是否有nfcId绑定）
-  const userType = nfcId ? 'bound' : 'visitor';
+  // 使用后端返回的userType，如果手链已被他人绑定会返回'visitor'
+  const userType = response.data.userType || (nfcId ? 'bound' : 'visitor');
+
+  // 根据用户类型显示不同的提示信息
+  const successMessage =
+    userType === 'visitor' && nfcId ? '该手链已绑定，为你展示访客运势' : '保存成功';
 
   // 保存成功
-  await handleProfileSuccess('保存成功', response.data, userType, true);
+  await handleProfileSuccess(successMessage, response.data, userType, true);
 };
 
 const submitWithAuth = async () => {
