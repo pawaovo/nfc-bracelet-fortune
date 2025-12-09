@@ -58,16 +58,16 @@
         <!-- 当日运势标签 -->
         <text class="section-label"> 当日运势 </text>
 
-        <!-- 时间轴列表（动态组件：可滚动或不可滚动） -->
-        <component
-          :is="shouldEnableScroll ? 'scroll-view' : 'view'"
+        <!-- 时间轴列表（可滚动版本） -->
+        <scroll-view
+          v-if="shouldEnableScroll"
           class="timeline-scroll"
-          :scroll-y="shouldEnableScroll"
-          :refresher-enabled="shouldEnableScroll"
-          :refresher-triggered="shouldEnableScroll && isRefreshing"
-          @scrolltolower="shouldEnableScroll && loadMoreHistory()"
-          @refresherrefresh="shouldEnableScroll && onRefresh()"
-          @refresherrestore="shouldEnableScroll && onRefreshRestore()"
+          scroll-y
+          :refresher-enabled="true"
+          :refresher-triggered="isRefreshing"
+          @scrolltolower="loadMoreHistory"
+          @refresherrefresh="onRefresh"
+          @refresherrestore="onRefreshRestore"
         >
           <view class="timeline-container">
             <view class="timeline-line" />
@@ -132,7 +132,74 @@
               <text class="scroll-hint"> 向下滚动查看更多 </text>
             </view>
           </view>
-        </component>
+        </scroll-view>
+
+        <!-- 时间轴列表（不可滚动版本） -->
+        <view v-else class="timeline-scroll">
+          <view class="timeline-container">
+            <view class="timeline-line" />
+            <template v-for="(item, index) in historyList" :key="item.date">
+              <!-- 年份分组标题 -->
+              <!-- <view v-if="shouldShowYearDivider(item, index)" class="year-divider">
+                <text class="year-text">
+                  {{ getYearFromDate(item.date) }}
+                </text>
+              </view> -->
+
+              <view class="timeline-item" @click="handleItemClick(item)">
+                <view class="timeline-dot">
+                  <view class="dot-outer" />
+                  <view class="dot-inner" />
+                </view>
+                <text class="timeline-date">
+                  <!-- {{ formatDateDisplay(item.date) }} -->
+                  {{ item.date }}
+                </text>
+                <view class="fortune-card">
+                  <image
+                    class="fortune-card-bg"
+                    src="/static/pages/history/border.png"
+                    mode="scaleToFill"
+                  />
+                  <image
+                    class="fortune-card-flower"
+                    src="/static/pages/history/flower.png"
+                    mode="aspectFit"
+                    :style="getFlowerStyle(item.date, index)"
+                  />
+                  <!-- 卡片内容：上下布局 -->
+                  <view class="fortune-card-content">
+                    <!-- 顶部：评语 + 分数 -->
+                    <view class="fortune-card-header">
+                      <text class="fortune-card-title" :class="getTimeColorClass(item)">
+                        {{ formatFortuneComment(item) }}
+                      </text>
+                      <text class="fortune-card-score">
+                        {{ calculateOverallScore(item) }}
+                      </text>
+                    </view>
+                    <!-- 底部：打通背景的摘要信息 -->
+                    <view class="fortune-card-info">
+                      <text class="fortune-time">
+                        {{ formatFortuneSummary(item) }}
+                      </text>
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </template>
+            <view v-if="isLoadingMore" class="load-more-container">
+              <view class="loading-more">
+                <view class="loading-more-spinner" />
+                <text class="loading-more-text"> 正在加载... </text>
+              </view>
+            </view>
+            <view v-if="shouldShowScrollIndicator" class="scroll-indicator">
+              <text class="scroll-arrow"> ↓ </text>
+              <text class="scroll-hint"> 向下滚动查看更多 </text>
+            </view>
+          </view>
+        </view>
       </view>
     </view>
   </view>
@@ -551,7 +618,7 @@ function getFlowerStyle(date: string, index: number): string {
 /* 标题 */
 .main-title {
   color: #ffffff;
-  font-family: "Alimama ShuHeiTi";
+  font-family: 'Alimama ShuHeiTi';
   font-size: 60rpx; /* 从 80rpx 调整为 48rpx */
   font-weight: 700;
   line-height: 56rpx;
@@ -562,7 +629,7 @@ function getFlowerStyle(date: string, index: number): string {
 .sub-title {
   color: #fff;
   opacity: 0.4;
-  font-family: "PingFang SC";
+  font-family: 'PingFang SC';
   font-size: 25rpx;
   font-weight: 600;
   display: block;
