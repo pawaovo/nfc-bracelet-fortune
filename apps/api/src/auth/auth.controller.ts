@@ -273,8 +273,9 @@ export class AuthController {
 
       this.logger.log('Phone login successful', {
         userId: result.userId,
-        userType: result.userType,
         profileComplete: result.profileComplete,
+        hasBindings: result.hasBindings,
+        nfcStatus: result.nfcStatus,
       });
 
       return {
